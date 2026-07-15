@@ -26,7 +26,7 @@ jobs:
     if: vars.ENABLE_FRESHNESS_WORKFLOWS == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: taiki-e/install-action@43aecc8d72668fbcfe75c31400bc4f890f1c5853 # releases/v2 (v2.83.2)
         with:
           tool: lychee
