@@ -1,0 +1,15 @@
+---
+source: crates/harness-guard-cli/tests/scan_snapshots.rs
+expression: text
+---
+!! WARNING: Codex CLI persists local session transcripts to history.jsonl under CODEX_HOME.
+   rule codex-history-persist-01 · official-documentation
+   observed: history.persistence unset (documented default "save-all" applies)
+   fix: Add to ~/.codex/config.toml:
+        [history]
+        persistence = "none"
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-15)
+   = harness-guard explain codex-history-persist-01
+
+1 warning · 0 info · 0 unknown · 0 stale · 0 passed — 0 network requests made
+No numeric score is produced — read findings individually.

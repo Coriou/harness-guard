@@ -1,5 +1,6 @@
 mod redact;
 mod render_json;
+mod render_term;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use harness_guard_core::discovery::DiscoveryRoot;
@@ -117,8 +118,15 @@ fn cmd_scan(args: ScanArgs) -> ExitCode {
     if args.json {
         println!("{}", render_json::render(&report));
     } else {
-        // Task 12 replaces this with the §7.1 terminal renderer.
-        render_terminal_stub(&report, &args);
+        let opts = render_term::TermOpts {
+            min_severity: match args.min_severity {
+                MinSeverity::Info => None,
+                MinSeverity::Warning => Some(Severity::Warning),
+            },
+            quiet: args.quiet,
+            verbose: args.verbose,
+        };
+        anstream::print!("{}", render_term::render(&report, &opts));
     }
     for failure in &parse_failures {
         // Source text is deliberately never attached or printed. Task 14
@@ -195,15 +203,4 @@ fn current_os() -> String {
         "linux"
     }
     .to_string()
-}
-
-fn render_terminal_stub(report: &Report, _args: &ScanArgs) {
-    println!(
-        "{} warning · {} info · {} unknown · {} stale · {} passed — 0 network requests made",
-        report.summary.warning,
-        report.summary.info,
-        report.summary.unknown,
-        report.summary.stale,
-        report.summary.passed
-    );
 }
