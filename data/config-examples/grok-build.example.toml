@@ -1,0 +1,8 @@
+# RETIRED EXAMPLE — DO NOT COPY INTO ~/.grok/config.toml.
+#
+# The keys previously shown here are not present in the current official xAI
+# settings reference. Use `grok inspect` and verify the exact installed version
+# against https://docs.x.ai/build/settings/reference.
+#
+# The file is retained temporarily so old links fail safely. It should be
+# removed after legacy-data migration.

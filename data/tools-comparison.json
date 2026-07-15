@@ -1,0 +1,150 @@
+{
+  "status": "legacy-unverified-do-not-consume",
+  "superseded_by": "docs/research/verification-audit-2026-07-13.md",
+  "warning": "Flat fields conflate versions, plans, evidence types, and separate data-practice dimensions. Migrate claims into source-cited version-bounded rules before product use.",
+  "report_date": "2026-07-13",
+  "version": "1.0",
+  "tools": [
+    {
+      "name": "Grok Build (xAI)",
+      "slug": "grok-build",
+      "architecture": "Hybrid TUI + cloud",
+      "full_repo_upload_default": null,
+      "full_repo_upload_details": "Current universal default is unverified. A reproducible v0.2.93 test captured a git bundle containing tracked unread files and history; later public reporting indicates a remote disable flag changed behavior.",
+      "secrets_risk": "High",
+      "telemetry_default": "Not verified",
+      "telemetry_disable_effective": "Not verified",
+      "training_default": "Depends on product/account terms; transmission evidence does not establish training",
+      "strong_privacy_toggle": "Not verified locally",
+      "main_config_paths": [
+        "~/.grok/config.toml",
+        "~/.grok/managed_config.toml"
+      ],
+      "log_paths_macos": [],
+      "env_vars": [],
+      "notes": "Legacy record only. See the verification audit; do not derive a product finding from this object."
+    },
+    {
+      "name": "Cursor",
+      "slug": "cursor",
+      "architecture": "Hybrid (VS Code fork IDE + backend)",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Small chunks for indexing + on-demand context. Summarized in some agent flows.",
+      "secrets_risk": "Medium-High",
+      "telemetry_default": "Configurable",
+      "telemetry_disable_effective": "Yes",
+      "training_default": "Off with Privacy Mode",
+      "strong_privacy_toggle": "Privacy Mode (strong)",
+      "main_config_paths": [
+        "Settings UI",
+        "~/.cursor/",
+        ".cursorignore",
+        ".cursor/mcp.json"
+      ],
+      "log_paths_macos": [
+        "~/Library/Application Support/Cursor/logs/"
+      ],
+      "env_vars": [],
+      "notes": "Even own API keys go through Cursor backend for prompt building. Indexing metadata retained."
+    },
+    {
+      "name": "Claude (Anthropic)",
+      "slug": "claude-anthropic",
+      "architecture": "Hybrid / API agentic",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Selective tool-based reads (on-demand).",
+      "secrets_risk": "Medium",
+      "telemetry_default": "Per client + usage",
+      "telemetry_disable_effective": "Yes",
+      "training_default": "Off if opted out (exceptions remain)",
+      "strong_privacy_toggle": "Account opt-out + commercial ZDR",
+      "main_config_paths": ["Account settings", "Client-specific configs"],
+      "log_paths_macos": ["Client-dependent"],
+      "env_vars": [],
+      "notes": "Agentic sessions explicitly covered in privacy policy."
+    },
+    {
+      "name": "GitHub Copilot",
+      "slug": "github-copilot",
+      "architecture": "Hybrid + cloud agents",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Often summarized workspace structure. Selective.",
+      "secrets_risk": "Medium",
+      "telemetry_default": "Usage metadata (prompt collection optional)",
+      "telemetry_disable_effective": "Yes",
+      "training_default": "Claims limited/no training",
+      "strong_privacy_toggle": "Partial (offline mode)",
+      "main_config_paths": ["VS Code settings", "Org policies", "COPILOT_OFFLINE env"],
+      "log_paths_macos": ["VS Code logs + GitHub session data"],
+      "env_vars": ["COPILOT_OFFLINE"],
+      "notes": "Content exclusion not supported for all agent/CLI modes."
+    },
+    {
+      "name": "OpenAI Codex (CLI)",
+      "slug": "openai-codex",
+      "architecture": "Hybrid CLI/agent",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Relevant context sent to provider.",
+      "secrets_risk": "Medium-High",
+      "telemetry_default": "Optional analytics + OTEL",
+      "telemetry_disable_effective": "Yes",
+      "training_default": "Per OpenAI terms (opt-out available)",
+      "strong_privacy_toggle": "Config-driven",
+      "main_config_paths": [
+        "~/.codex/config.toml",
+        "~/.codex/managed_config.toml"
+      ],
+      "log_paths_macos": ["~/.codex/"],
+      "env_vars": ["CODEX_HOME"],
+      "notes": "Strong sandbox and approval policy support. OTEL export available."
+    },
+    {
+      "name": "Aider",
+      "slug": "aider",
+      "architecture": "Local client to user-chosen LLM",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Explicit reads + git-aware only. No central server for code.",
+      "secrets_risk": "Low (when using local models)",
+      "telemetry_default": "Opt-in only (and never includes code)",
+      "telemetry_disable_effective": "Yes (strong)",
+      "training_default": "Never collects code for training",
+      "strong_privacy_toggle": "Excellent (local models + opt-in analytics)",
+      "main_config_paths": ["CLI flags", "Environment variables"],
+      "log_paths_macos": ["User-specified via --analytics-log"],
+      "env_vars": [],
+      "notes": "Best-in-class explicit privacy stance among the tools surveyed."
+    },
+    {
+      "name": "Continue.dev",
+      "slug": "continue-dev",
+      "architecture": "Local/OSS to user provider",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Selective context to configured provider.",
+      "secrets_risk": "Low (BYO/local)",
+      "telemetry_default": "Removed in final v2.0.0",
+      "telemetry_disable_effective": "N/A",
+      "training_default": "N/A (BYO provider)",
+      "strong_privacy_toggle": "Strong when using local models",
+      "main_config_paths": ["Extension settings", "CLI config"],
+      "log_paths_macos": ["Minimal local state"],
+      "env_vars": [],
+      "notes": "Repo is read-only after acquisition. Community forks may exist."
+    },
+    {
+      "name": "Cline",
+      "slug": "cline",
+      "architecture": "OSS VS Code agent (BYO model)",
+      "full_repo_upload_default": false,
+      "full_repo_upload_details": "Selective + explicit approval gating.",
+      "secrets_risk": "Low",
+      "telemetry_default": "Opt-out anonymous (no code)",
+      "telemetry_disable_effective": "Yes",
+      "training_default": "No",
+      "strong_privacy_toggle": "Strong",
+      "main_config_paths": ["VS Code extension settings"],
+      "log_paths_macos": ["Local"],
+      "env_vars": [],
+      "notes": "Highly recommended for privacy-sensitive users. Transparent reasoning loop."
+    }
+  ]
+}

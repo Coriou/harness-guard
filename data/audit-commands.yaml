@@ -1,0 +1,51 @@
+# LEGACY / DO NOT EXECUTE AS AN AUDIT OR FIX PLAN.
+# This file has not been migrated to source-cited, version-bounded rules.
+# See docs/research/verification-audit-2026-07-13.md.
+
+_status: "legacy-unverified-do-not-execute"
+_superseded_by: "docs/research/verification-audit-2026-07-13.md"
+
+grok_build:
+  discovery:
+    - "Use the documented `grok inspect` command and review https://docs.x.ai/build/settings/reference for the installed version"
+  warning:
+    - "The former GROK_TELEMETRY_* and [telemetry] mitigation keys are absent from current official settings documentation and were removed from this file"
+
+cursor:
+  discovery:
+    - "ls ~/Library/Application\\ Support/Cursor/logs/"
+    - "ls ~/.cursor/"
+    - "find ~/Library/Application\\ Support/Cursor -name '*.log' | head -5"
+  recommended_actions:
+    - "Enable Privacy Mode in Settings > General > Privacy"
+    - "Disable telemetry in Settings"
+    - "Create or update .cursorignore for sensitive directories"
+
+github_copilot:
+  discovery:
+    - "env | grep -i COPILOT"
+    - "Check VS Code settings for telemetry and prompt collection"
+  quick_mitigations:
+    - "export COPILOT_OFFLINE=true"
+    - "Review organization policies"
+
+openai_codex:
+  discovery:
+    - "ls ~/.codex/"
+    - "cat ~/.codex/config.toml"
+    - "env | grep -i CODEX"
+  quick_mitigations:
+    - "Configure analytics: false and OTEL export to your own collector in config.toml"
+
+aider:
+  discovery:
+    - "aider --analytics-log /tmp/aider-audit.jsonl --no-analytics"
+  permanent_disable:
+    - "aider --analytics-disable"
+
+general_recommendations:
+  - "Rotate any secrets that may have been in context after auditing"
+  - "Use local models (Ollama, etc.) wherever possible"
+  - "Maintain strict .gitignore / tool-specific ignore files"
+  - "Prefer tools that let you bring your own key + local execution"
+  - "Re-audit after major tool version updates"
