@@ -2,7 +2,7 @@
 //! NEVER runs the tool. npm layouts yield a version; standalone/Homebrew
 //! layouts legitimately yield None → stale-ruleset ("version not detected").
 use crate::discovery::DiscoveryRoot;
-use crate::readfs::read_bounded_regular_with_hook;
+use crate::readfs::{BoundedReadError, read_bounded_regular_with_hook};
 use harness_guard_rules::schema::TestedVersion;
 use std::path::{Path, PathBuf};
 
@@ -17,17 +17,11 @@ pub fn detect_codex_version(root: &DiscoveryRoot) -> Option<String> {
 
 fn detect_codex_version_with_hook(
     root: &DiscoveryRoot,
-    after_package_metadata: impl FnOnce(),
+    after_package_open: impl FnOnce(),
 ) -> Option<String> {
     let binary = find_codex_entry(root)?;
     let resolved = resolve_bounded(&binary)?;
-    let package_json = nearest_package_json(&resolved)?;
-    let bytes = read_bounded_regular_with_hook(
-        &package_json,
-        MAX_PACKAGE_JSON_BYTES,
-        after_package_metadata,
-    )
-    .ok()?;
+    let bytes = read_nearest_package_json_with_hook(&resolved, after_package_open)?;
     let text = String::from_utf8(bytes).ok()?;
     let package: serde_json::Value = serde_json::from_str(&text).ok()?;
     if package.get("name").and_then(|name| name.as_str()) != Some(EXPECTED_PACKAGE) {
@@ -71,16 +65,25 @@ fn resolve_bounded(start: &Path) -> Option<PathBuf> {
     None
 }
 
-fn nearest_package_json(resolved_binary: &Path) -> Option<PathBuf> {
+fn read_nearest_package_json_with_hook(
+    resolved_binary: &Path,
+    after_package_open: impl FnOnce(),
+) -> Option<Vec<u8>> {
     let mut directory = resolved_binary.parent()?;
+    let mut after_package_open = Some(after_package_open);
     for _ in 0..MAX_PARENT_WALK {
         let candidate = directory.join("package.json");
-        if let Ok(metadata) = std::fs::symlink_metadata(&candidate) {
-            if metadata.file_type().is_file() {
-                return Some(candidate);
+        match read_bounded_regular_with_hook(&candidate, MAX_PACKAGE_JSON_BYTES, || {
+            after_package_open
+                .take()
+                .expect("package open hook runs at most once")();
+        }) {
+            Ok(bytes) => return Some(bytes),
+            Err(BoundedReadError::NotFound) => {
+                directory = directory.parent()?;
             }
+            Err(_) => return None,
         }
-        directory = directory.parent()?;
     }
     None
 }
@@ -242,11 +245,11 @@ mod tests {
         assert_eq!(detect_codex_version(&root), None);
     }
 
-    #[cfg(unix)]
     #[test]
-    fn package_swap_between_metadata_and_open_is_refused_without_replacement_content() {
+    fn regular_package_replacement_after_open_uses_stable_original_handle() {
         let (_dir, root) = npm_layout(r#"{"name":"@openai/codex","version":"0.144.4"}"#);
         let package_json = root.path_dirs[0].parent().unwrap().join("package.json");
+        let displaced = package_json.with_file_name("original.json");
         let replacement = package_json.with_file_name("replacement.json");
         std::fs::write(
             &replacement,
@@ -255,11 +258,12 @@ mod tests {
         .unwrap();
 
         let detected = detect_codex_version_with_hook(&root, || {
-            std::fs::remove_file(&package_json).unwrap();
-            std::os::unix::fs::symlink(&replacement, &package_json).unwrap();
+            std::fs::rename(&package_json, &displaced).unwrap();
+            std::fs::rename(&replacement, &package_json).unwrap();
         });
 
-        assert_eq!(detected, None);
+        assert_eq!(detected, Some("0.144.4".to_string()));
+        assert_ne!(detected, Some("9.9.9".to_string()));
     }
 
     #[cfg(unix)]

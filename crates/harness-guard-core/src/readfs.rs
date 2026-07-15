@@ -1,8 +1,8 @@
-//! Bounded, refusing reads (§9): symlink_metadata before open, regular
-//! files only, 1 MiB cap, UTF-8 only. Refusal is a value, not an error —
-//! callers map it to `unknown` findings.
+//! Bounded, refusing reads (§9): hardened no-follow/nonblocking open,
+//! opened-handle validation, regular files only, 1 MiB cap, UTF-8 only.
+//! Refusal is a value, not an error — callers map it to `unknown` findings.
 use crate::discovery::DiscoveryRoot;
-use std::fs::{File, Metadata, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::path::Path;
 
@@ -47,7 +47,6 @@ pub(crate) enum BoundedReadError {
     NotRegularFile,
     Oversized,
     PermissionDenied,
-    ChangedBeforeOpen,
     Io,
 }
 
@@ -68,7 +67,7 @@ pub fn read_config(root: &DiscoveryRoot) -> ConfigReadOutcome {
         Err(BoundedReadError::PermissionDenied) => {
             return ConfigReadOutcome::Refused(RefusalReason::PermissionDenied);
         }
-        Err(BoundedReadError::ChangedBeforeOpen | BoundedReadError::Io) => {
+        Err(BoundedReadError::Io) => {
             return ConfigReadOutcome::Refused(RefusalReason::Io);
         }
     };
@@ -79,9 +78,9 @@ pub fn read_config(root: &DiscoveryRoot) -> ConfigReadOutcome {
     }
 }
 
-/// Read a bounded regular file without following a path swapped to a symlink
-/// between metadata inspection and open. The opened handle is revalidated
-/// before any bytes are read.
+/// Read through one hardened handle. Type, size, and content decisions all
+/// come from that handle, so path replacement after open cannot redirect the
+/// read to replacement content.
 pub(crate) fn read_bounded_regular(
     path: &Path,
     max_bytes: u64,
@@ -92,32 +91,22 @@ pub(crate) fn read_bounded_regular(
 pub(crate) fn read_bounded_regular_with_hook(
     path: &Path,
     max_bytes: u64,
-    after_metadata: impl FnOnce(),
+    after_open: impl FnOnce(),
 ) -> Result<Vec<u8>, BoundedReadError> {
-    let before = std::fs::symlink_metadata(path).map_err(classify_io_error)?;
-    if before.file_type().is_symlink() {
+    let file = open_read_only_no_follow_nonblocking(path)
+        .map_err(|error| classify_open_error(path, error))?;
+    let opened = file.metadata().map_err(classify_io_error)?;
+    if opened.file_type().is_symlink() {
         return Err(BoundedReadError::Symlink);
     }
-    if !before.file_type().is_file() {
-        return Err(BoundedReadError::NotRegularFile);
-    }
-    if before.len() > max_bytes {
-        return Err(BoundedReadError::Oversized);
-    }
-
-    after_metadata();
-
-    let file = open_read_only_no_follow_nonblocking(path).map_err(classify_io_error)?;
-    let opened = file.metadata().map_err(classify_io_error)?;
     if !opened.file_type().is_file() {
         return Err(BoundedReadError::NotRegularFile);
-    }
-    if !same_file_identity(&before, &opened) {
-        return Err(BoundedReadError::ChangedBeforeOpen);
     }
     if opened.len() > max_bytes {
         return Err(BoundedReadError::Oversized);
     }
+
+    after_open();
 
     let mut bytes = Vec::with_capacity(opened.len() as usize);
     file.take(max_bytes + 1)
@@ -127,6 +116,17 @@ pub(crate) fn read_bounded_regular_with_hook(
         return Err(BoundedReadError::Oversized);
     }
     Ok(bytes)
+}
+
+fn classify_open_error(path: &Path, error: std::io::Error) -> BoundedReadError {
+    // O_NOFOLLOW reports a platform-specific error kind. Inspecting the path
+    // here is only for a value-free refusal label; an open error always stays
+    // a refusal regardless of any subsequent path race.
+    if std::fs::symlink_metadata(path).is_ok_and(|metadata| metadata.file_type().is_symlink()) {
+        BoundedReadError::Symlink
+    } else {
+        classify_io_error(error)
+    }
 }
 
 fn classify_io_error(error: std::io::Error) -> BoundedReadError {
@@ -178,7 +178,11 @@ fn configure_hardened_open(options: &mut OpenOptions) {
 fn configure_hardened_open(options: &mut OpenOptions) {
     use std::os::windows::fs::OpenOptionsExt;
     const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
-    options.custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    const FILE_SHARE_READ: u32 = 0x1;
+    const FILE_SHARE_DELETE: u32 = 0x4;
+    options
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_DELETE)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
 }
 
 #[cfg(not(any(
@@ -194,17 +198,6 @@ fn configure_hardened_open(options: &mut OpenOptions) {
     windows
 )))]
 fn configure_hardened_open(_options: &mut OpenOptions) {}
-
-#[cfg(unix)]
-fn same_file_identity(before: &Metadata, opened: &Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    before.dev() == opened.dev() && before.ino() == opened.ino()
-}
-
-#[cfg(not(unix))]
-fn same_file_identity(_before: &Metadata, _opened: &Metadata) -> bool {
-    true
-}
 
 #[cfg(test)]
 mod tests {
@@ -267,11 +260,11 @@ mod tests {
         ));
     }
 
-    #[cfg(unix)]
     #[test]
-    fn config_swap_between_metadata_and_open_is_refused_without_replacement_content() {
+    fn regular_config_replacement_after_open_reads_stable_original_handle() {
         let (_dir, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
         let config = root.config_path();
+        let displaced = root.codex_home.join("original.toml");
         let replacement = root.codex_home.join("replacement.toml");
         std::fs::write(
             &replacement,
@@ -280,11 +273,13 @@ mod tests {
         .unwrap();
 
         let outcome = read_bounded_regular_with_hook(&config, MAX_CONFIG_BYTES, || {
-            std::fs::remove_file(&config).unwrap();
-            std::os::unix::fs::symlink(&replacement, &config).unwrap();
+            std::fs::rename(&config, &displaced).unwrap();
+            std::fs::rename(&replacement, &config).unwrap();
         });
 
-        assert!(outcome.is_err());
+        let text = String::from_utf8(outcome.unwrap()).unwrap();
+        assert!(text.contains("persistence = \"none\""));
+        assert!(!text.contains("replacement-must-not-be-read"));
     }
 
     #[test]
