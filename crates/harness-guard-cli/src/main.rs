@@ -9,6 +9,7 @@ use harness_guard_core::discovery::DiscoveryRoot;
 use harness_guard_core::scan::{ScanResult, scan_codex};
 use harness_guard_rules::loader::{load_rules, ruleset_version};
 use harness_guard_rules::report::{Platform, Report, Severity, Status, Summary};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::OnceLock;
@@ -95,12 +96,31 @@ fn main() -> ExitCode {
         Cmd::List => cmd_list(),
         Cmd::Explain { rule_id } => cmd_explain(&rule_id),
         Cmd::Version => cmd_version(),
-        Cmd::Completions { shell } => {
-            let mut command = cli_command();
-            clap_complete::generate(shell, &mut command, "harness-guard", &mut std::io::stdout());
-            ExitCode::SUCCESS
-        }
+        Cmd::Completions { shell } => cmd_completions(shell),
     }
+}
+
+fn cmd_completions(shell: clap_complete::Shell) -> ExitCode {
+    let mut command = cli_command();
+
+    if shell == clap_complete::Shell::Bash {
+        let mut output = Vec::new();
+        clap_complete::generate(shell, &mut command, "harness-guard", &mut output);
+
+        // clap_complete 4.6 renders a hyphenated root command differently in
+        // Bash state assignments and case arms. Normalize the case-arm form so
+        // every generated subcommand state is reachable.
+        let output = String::from_utf8(output)
+            .expect("clap_complete generated non-UTF-8 Bash completions")
+            .replace("harness__subcmd__guard", "harness__guard");
+        std::io::stdout()
+            .write_all(output.as_bytes())
+            .expect("failed to write Bash completions");
+    } else {
+        clap_complete::generate(shell, &mut command, "harness-guard", &mut std::io::stdout());
+    }
+
+    ExitCode::SUCCESS
 }
 
 fn cli_command() -> clap::Command {

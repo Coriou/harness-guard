@@ -150,10 +150,13 @@ fn top_level_version_reports_binary_and_ruleset_separately() {
 }
 
 #[test]
-fn completions_emit_something() {
+fn bash_completions_have_reachable_subcommand_states() {
     let output = run_case("hardened", &["completions", "bash"]);
     assert_eq!(output.status.code(), Some(0));
-    assert!(!output.stdout.is_empty());
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(text.contains("cmd=\"harness__guard__subcmd__scan\""));
+    assert!(text.contains("harness__guard__subcmd__scan)"));
+    assert!(!text.contains("harness__subcmd__guard"));
 }
 
 #[test]
