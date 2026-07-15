@@ -143,8 +143,16 @@ fn explicit_codex_home_outside_home_is_symbolic() {
     );
     assert_eq!(output.status.code(), Some(1));
 
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let rendered_path = report["tools"][0]["config_paths"][0]
+        .as_str()
+        .expect("config path is rendered as a string");
+    assert!(
+        rendered_path == "$CODEX_HOME/config.toml" || rendered_path.starts_with("~/"),
+        "config path must use a safe symbolic root, got {rendered_path:?}"
+    );
+
     let text = String::from_utf8_lossy(&output.stdout);
-    assert!(text.contains("$CODEX_HOME/config.toml"));
     assert!(
         !text.contains(&codex_home.to_string_lossy().into_owned()),
         "absolute explicit CODEX_HOME leaked"
