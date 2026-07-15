@@ -58,3 +58,16 @@ This file tracks work done in successive sessions for continuity.
 ## Future sessions
 
 (Add dated entries here with summary of what was accomplished, decisions made, and open questions.)
+
+## 2026-07-15 — v1 thin slice implemented
+
+Implemented per `docs/superpowers/plans/2026-07-14-harness-guard-v1-thin-slice.md`
+(spec: `docs/superpowers/specs/2026-07-14-harness-guard-v1-thin-slice-design.md`):
+git repo initialized (docs-first commit); Phase 0 schemas; 3-crate workspace
+with cargo-deny + core-scoped clippy no-egress gates; `codex-history-persist-01`
+end-to-end with fresh evidence (retrieved 2026-07-15, hashed, archived); 13-case
+synthetic fixture matrix with goldens; scan/list/explain/version CLI with
+terminal + JSON views from shared structs; sandbox-exec no-egress proof run
+locally (strace job authored in CI); freshness workflows + runbook authored,
+NOT enabled. Slice is now at the human review gate — no second rule or tool
+until review.

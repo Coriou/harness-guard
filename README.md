@@ -1,16 +1,15 @@
 # Harness Guard
 
-Harness Guard is a planned local-only, source-cited posture auditor for AI coding tools. It will help developers understand locally observable privacy, retention, synchronization, telemetry, permission, sandbox, and network settings without reading their code or executing the tools being audited.
+Harness Guard is a local, execution-free, per-finding-cited config auditor for privacy/retention/telemetry posture. It helps developers understand locally observable privacy, retention, synchronization, telemetry, permission, sandbox, and network settings without reading their code or executing the tools being audited.
 
-## Status — 2026-07-13
+## Status — 2026-07-15
 
-The project has completed a second-pass feasibility and verification review. The decision is to proceed conditionally with a narrow, read-only CLI validation slice—not a full desktop application yet.
+The one-rule Codex CLI thin slice is implemented and is now at the human review gate. It remains a narrow, read-only validation slice—not a full desktop application.
 
-- No implementation exists yet.
-- Start with Claude Code, OpenAI Codex CLI, and GitHub Copilot CLI.
-- Build a cross-platform Rust core/CLI before considering Tauri.
-- Make scans offline, non-executing, and sanitized.
-- Release the core free/open source if user validation succeeds.
+- The implemented slice covers Codex CLI history persistence only.
+- The cross-platform Rust core/CLI and source-cited rules data package are in place.
+- Scans are offline, non-executing, and sanitized.
+- Repository publishing and workflow enablement remain separate user decisions.
 - Defer the App Store, automatic fixes, session/secret scanning, and team product.
 
 Read [the product decision](docs/product/decision-and-strategy.md) and [implementation plan](docs/product/implementation-plan.md).
