@@ -24,20 +24,45 @@ pub fn run_in(files_root: &Path, args: &[&str]) -> Output {
     )
 }
 
+/// Run against synthetic roots with the environment cleared but deliberately
+/// omit `NO_COLOR`, so explicit `--color` behavior can be tested independently.
+#[allow(dead_code)] // Used by scan_snapshots; integration tests compile this module separately.
+pub fn run_in_without_no_color(files_root: &Path, args: &[&str]) -> Output {
+    run_with_roots_and_color_env(
+        &files_root.join("codex-home"),
+        &files_root.join("path"),
+        files_root,
+        args,
+        false,
+    )
+}
+
 pub fn run_with_roots(codex_home: &Path, path_dir: &Path, home: &Path, args: &[&str]) -> Output {
-    std::process::Command::new(env!("CARGO_BIN_EXE_harness-guard"))
-        .args(args)
-        .env_clear()
-        .env("CODEX_HOME", codex_home)
-        .env("PATH", path_dir)
-        .env("NO_COLOR", "1")
-        .env("HOME", home)
-        .output()
-        .expect("harness-guard binary runs")
+    run_with_roots_and_color_env(codex_home, path_dir, home, args, true)
 }
 
 pub fn run_case(case: &str, args: &[&str]) -> Output {
     run_in(&fixture(case), args)
+}
+
+fn run_with_roots_and_color_env(
+    codex_home: &Path,
+    path_dir: &Path,
+    home: &Path,
+    args: &[&str],
+    set_no_color: bool,
+) -> Output {
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_harness-guard"));
+    command
+        .args(args)
+        .env_clear()
+        .env("CODEX_HOME", codex_home)
+        .env("PATH", path_dir)
+        .env("HOME", home);
+    if set_no_color {
+        command.env("NO_COLOR", "1");
+    }
+    command.output().expect("harness-guard binary runs")
 }
 
 /// Recursively assert that every expected key exists and matches. Arrays are

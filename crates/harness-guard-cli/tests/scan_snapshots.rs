@@ -98,14 +98,22 @@ fn detection_confidence_is_lowercase() {
 }
 
 #[test]
-fn no_color_and_color_never_emit_no_escape_sequences() {
-    for args in [&["scan"][..], &["scan", "--color", "never"][..]] {
-        let output = run_case("risky-unset", args);
-        assert!(
-            !output.stdout.contains(&0x1b) && !output.stderr.contains(&0x1b),
-            "{args:?} emitted a terminal escape sequence"
-        );
-    }
+fn no_color_environment_emits_no_escape_sequences() {
+    let output = run_case("risky-unset", &["scan"]);
+    assert!(
+        !output.stdout.contains(&0x1b) && !output.stderr.contains(&0x1b),
+        "NO_COLOR environment emitted a terminal escape sequence"
+    );
+}
+
+#[test]
+fn color_never_emits_no_escape_sequences_without_no_color_environment() {
+    let files_root = fixture("risky-unset");
+    let output = run_in_without_no_color(&files_root, &["scan", "--color", "never"]);
+    assert!(
+        !output.stdout.contains(&0x1b) && !output.stderr.contains(&0x1b),
+        "--color never emitted a terminal escape sequence without NO_COLOR"
+    );
 }
 
 #[test]
