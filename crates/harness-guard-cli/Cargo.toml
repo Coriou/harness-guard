@@ -1,0 +1,29 @@
+[package]
+name = "harness-guard-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "harness-guard"
+path = "src/main.rs"
+
+[dependencies]
+harness-guard-core = { path = "../harness-guard-core" }
+harness-guard-rules = { path = "../harness-guard-rules" }
+clap = { version = "4", features = ["derive", "wrap_help"] }
+clap_complete = "4"
+anstream = "0.6"
+owo-colors = "4"
+colorchoice-clap = "1"
+comfy-table = "7"
+directories = "6"
+miette = { version = "7", features = ["fancy-no-backtrace"] }
+serde.workspace = true
+serde_json.workspace = true
+time.workspace = true
+
+[dev-dependencies]
+insta = { version = "1", features = ["filters"] }
+tempfile = "3"

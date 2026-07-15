@@ -1,0 +1,18 @@
+[package]
+name = "harness-guard-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+harness-guard-rules = { path = "../harness-guard-rules" }
+serde_json.workspace = true # package.json version reads only
+toml.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.clippy]
+disallowed_methods = "deny"
+disallowed_types = "deny"
