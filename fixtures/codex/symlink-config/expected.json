@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "case": "symlink-config",
+  "description": "The committed base is mutated in a temporary directory so config.toml is a symlink that must not be followed.",
+  "expected_report": {
+    "ruleset_version": "2026.07.15",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "codex",
+        "detected_version": "0.144.4",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "0.144.4",
+        "rules_verified_date": "2026-07-15",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "codex-history-persist-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine history persistence posture: config file is a symlink — not followed",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.144.4",
+            "valid_until": "0.144.4",
+            "unknown_reason": "config file is a symlink — not followed",
+            "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 1,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}

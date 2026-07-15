@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "case": "version-out-of-range",
+  "description": "A safe-looking value with a synthetic version beyond the tested range conservatively produces a stale-ruleset result.",
+  "expected_report": {
+    "ruleset_version": "2026.07.15",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "codex",
+        "detected_version": "9.9.9",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "0.144.4",
+        "rules_verified_date": "2026-07-15",
+        "version_in_range": false,
+        "findings": [
+          {
+            "rule_id": "codex-history-persist-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Session history persistence is disabled (history.persistence = \"none\"). Observed: history.persistence = \"none\".",
+            "observation": "history.persistence = \"none\"",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-15"
+            },
+            "valid_from": "<=0.144.4",
+            "valid_until": "0.144.4",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.144.4)"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 0,
+      "stale": 1,
+      "passed": 0
+    }
+  }
+}
