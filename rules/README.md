@@ -8,9 +8,10 @@ an **independently usable, forkable, permissively licensed data package from
 day one**, not a folder convention.
 
 - License: Apache-2.0 (see `LICENSE` in this directory).
-- Contract: every file validates against `../schemas/rule.schema.json`
-  (JSON Schema draft 2020-12). Consume rules only through that schema —
-  the Harness Guard binary does exactly this and nothing more.
+- Contract: every per-rule file under `<tool>/` validates against
+  `../schemas/rule.schema.json` (JSON Schema draft 2020-12). Consume rules
+  only through that schema — the Harness Guard binary does exactly this and
+  nothing more. `ruleset.json` is the package manifest, not a rule file.
 - Layout: `ruleset.json` (CalVer `ruleset_version`) + one JSON file per rule
   under `<tool>/<rule>.json`.
 - Guarantees encoded in the schema: non-`unknown` outcomes structurally

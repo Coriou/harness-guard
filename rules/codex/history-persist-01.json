@@ -4,7 +4,7 @@
   "tool": "codex",
   "category": "retention",
   "title": "Session history persistence",
-  "why_it_matters": "By default, Codex CLI saves every session transcript — your prompts and the commands run — in plaintext to history.jsonl under CODEX_HOME, with no expiry. Anything sensitive you type or paste is retained on disk until you delete it yourself.",
+  "why_it_matters": "By default, Codex CLI saves local session transcripts to history.jsonl under CODEX_HOME. Sensitive content included in a transcript may remain on disk; a separate optional history.max_bytes cap can compact the oldest entries, and this slice does not inspect that cap.",
   "os": ["macos", "linux", "windows"],
   "scopes": ["user"],
   "auth_prerequisites": null,
@@ -28,7 +28,7 @@
       "status": "finding",
       "severity": "warning",
       "confidence": "high",
-      "message": "Codex CLI persists full session history to disk in plaintext with no expiry.",
+      "message": "Codex CLI persists local session transcripts to history.jsonl under CODEX_HOME.",
       "remediation": {
         "summary": "Disable local session history persistence.",
         "command": "Add to ~/.codex/config.toml:\n[history]\npersistence = \"none\""
@@ -68,11 +68,12 @@
       "retrieved": "2026-07-15",
       "content_hash": "sha256:64a75750e6f8c3b00edd04384a5edbfaf3485f601d5bd1a18c30f67bb58bef66",
       "archived_url": "https://web.archive.org/web/20260715052912/https://learn.chatgpt.com/docs/config-file/config-advanced",
-      "notes": "States the default persistence behavior (save-all) applied when the key is unset. The developers.openai.com/codex/config-advanced alias redirects to this canonical URL."
+      "notes": "States the default persistence behavior applied when the key is unset and documents optional history.max_bytes compaction. The developers.openai.com/codex/config-advanced alias redirects to this canonical URL."
     }
   ],
   "limitations": [
     "Project-level config is not inspected in this slice; only the user-scope config.toml is read.",
+    "This rule does not inspect history.max_bytes; a configured cap may compact the oldest entries in history.jsonl.",
     "This rule cannot confirm any server-side or remote retention — no local file can.",
     "Auth method (ChatGPT sign-in vs API key) changes data-policy interpretation and is user-confirmed-or-unknown; this rule never infers it."
   ],
