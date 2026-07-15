@@ -1,6 +1,5 @@
-# Authored in the thin slice; runs only after the user pushes the repo to
-# GitHub (a deferred, user-triggered decision). Until then the same steps
-# run locally: cargo fmt/clippy/deny/test + scripts/no-egress/run-macos.sh.
+# Local equivalent: cargo fmt/clippy/deny/test plus the platform no-egress
+# proof. The scan itself remains offline; CI setup may install build tools.
 name: ci
 
 on:
@@ -52,8 +51,7 @@ jobs:
 
   no-egress-linux-strace:
     # Layer 3, Linux flavor: scan under strace network tracing and assert
-    # zero inet socket/connect/send/receive syscalls. Authored now; runs
-    # only after the user publishes the repository and enables CI.
+    # zero inet socket/connect/send/receive syscalls.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
