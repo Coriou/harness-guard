@@ -19,9 +19,14 @@ pub fn render(report: &Report, opts: &TermOpts) -> String {
     let mut output = String::new();
 
     if !opts.quiet {
+        let network_summary = if report.network_requests_made == 0 {
+            "no network requests made".to_string()
+        } else {
+            format!("{} network requests made", report.network_requests_made)
+        };
         let _ = writeln!(
             output,
-            "harness-guard {} · ruleset {} · scanned {} · no network requests made\n",
+            "harness-guard {} · ruleset {} · scanned {} · {network_summary}\n",
             report.harness_guard_version, report.ruleset_version, report.scanned_at
         );
         let _ = writeln!(output, "detected tools");
@@ -57,12 +62,13 @@ pub fn render(report: &Report, opts: &TermOpts) -> String {
     let summary = &report.summary;
     let _ = writeln!(
         output,
-        "{} warning · {} info · {} unknown · {} stale · {} passed — 0 network requests made",
+        "{} warning · {} info · {} unknown · {} stale · {} passed — {} network requests made",
         summary.warning,
         summary.info,
         summary.unknown,
         summary.stale,
-        summary.passed.green()
+        summary.passed.green(),
+        report.network_requests_made
     );
     let _ = writeln!(
         output,
@@ -193,5 +199,47 @@ fn confidence_label(confidence: Confidence) -> &'static str {
         Confidence::Low => "low",
         Confidence::Medium => "medium",
         Confidence::High => "high",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use harness_guard_rules::report::Platform;
+
+    #[test]
+    fn network_wording_comes_from_the_report() {
+        let report = Report {
+            schema_version: "1.0".to_string(),
+            harness_guard_version: "0.1.0".to_string(),
+            ruleset_version: "test".to_string(),
+            scanned_at: "2026-07-15T00:00:00Z".to_string(),
+            network_requests_made: 3,
+            platform: Platform {
+                os: "test".to_string(),
+            },
+            tools: vec![],
+            summary: Summary {
+                tools_scanned: 0,
+                warning: 0,
+                info: 0,
+                unknown: 0,
+                stale: 0,
+                passed: 0,
+            },
+        };
+
+        let output = render(
+            &report,
+            &TermOpts {
+                min_severity: None,
+                quiet: false,
+                verbose: false,
+            },
+        );
+
+        assert_eq!(output.matches("3 network requests made").count(), 2);
+        assert!(!output.contains("no network requests made"));
+        assert!(!output.contains("0 network requests made"));
     }
 }

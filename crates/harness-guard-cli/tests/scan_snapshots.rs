@@ -96,3 +96,69 @@ fn detection_confidence_is_lowercase() {
     assert!(text.contains("confidence high"));
     assert!(!text.contains("confidence High"));
 }
+
+#[test]
+fn no_color_and_color_never_emit_no_escape_sequences() {
+    for args in [&["scan"][..], &["scan", "--color", "never"][..]] {
+        let output = run_case("risky-unset", args);
+        assert!(
+            !output.stdout.contains(&0x1b) && !output.stderr.contains(&0x1b),
+            "{args:?} emitted a terminal escape sequence"
+        );
+    }
+}
+
+#[test]
+fn color_always_styles_only_prescribed_lines() {
+    assert_color_lines(
+        "risky-unset",
+        &["scan", "--color", "always"],
+        &["!! WARNING:", "passed"],
+        &["!! WARNING:"],
+    );
+    assert_color_lines(
+        "unrecognized-value",
+        &["scan", "--color", "always"],
+        &["?? UNKNOWN:", "passed"],
+        &["?? UNKNOWN:"],
+    );
+    assert_color_lines(
+        "unknown-version",
+        &["scan", "--color", "always"],
+        &[
+            "rules verified ≤",
+            "~ UNVERIFIED (stale ruleset):",
+            "passed",
+        ],
+        &["rules verified ≤", "~ UNVERIFIED (stale ruleset):"],
+    );
+    assert_color_lines(
+        "hardened",
+        &["scan", "--verbose", "--color", "always"],
+        &["ok PASS:", "passed"],
+        &["ok PASS:"],
+    );
+}
+
+fn assert_color_lines(case: &str, args: &[&str], allowed: &[&str], required: &[&str]) {
+    let output = run_case(case, args);
+    let text = String::from_utf8_lossy(&output.stdout);
+    let colored: Vec<_> = text.lines().filter(|line| line.contains('\x1b')).collect();
+
+    assert!(
+        !colored.is_empty(),
+        "{case} emitted no color with --color always"
+    );
+    for line in &colored {
+        assert!(
+            allowed.iter().any(|marker| line.contains(marker)),
+            "{case} styled a non-prescribed line: {line:?}"
+        );
+    }
+    for marker in required {
+        assert!(
+            colored.iter().any(|line| line.contains(marker)),
+            "{case} did not style prescribed marker {marker:?}"
+        );
+    }
+}
