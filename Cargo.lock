@@ -457,6 +457,7 @@ dependencies = [
  "harness-guard-core",
  "harness-guard-rules",
  "insta",
+ "jsonschema",
  "miette",
  "owo-colors",
  "serde",

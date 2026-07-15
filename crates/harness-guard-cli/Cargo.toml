@@ -26,4 +26,5 @@ time.workspace = true
 
 [dev-dependencies]
 insta = { version = "1", features = ["filters"] }
+jsonschema = { version = "0.30", default-features = false }
 tempfile = "3"
