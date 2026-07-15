@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "checked": "2026-07-15",
+  "packages": {
+    "@anthropic-ai/claude-code": {
+      "dist_tag": "stable",
+      "version": "2.1.202"
+    },
+    "@openai/codex": {
+      "dist_tag": "latest",
+      "version": "0.144.4"
+    },
+    "@github/copilot": {
+      "dist_tag": "latest",
+      "version": "1.0.70"
+    }
+  }
+}

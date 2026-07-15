@@ -1,0 +1,81 @@
+# Authored in the thin slice; runs only after the user pushes the repo to
+# GitHub (a deferred, user-triggered decision). Until then the same steps
+# run locally: cargo fmt/clippy/deny/test + scripts/no-egress/run-macos.sh.
+name: ci
+
+on:
+  push: {}
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - run: cargo deny check
+
+  test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --workspace
+
+  no-egress-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: scripts/no-egress/run-macos.sh
+
+  no-egress-linux-strace:
+    # Layer 3, Linux flavor: scan under strace network tracing and assert
+    # zero inet socket/connect/send/receive syscalls. Authored now; runs
+    # only after the user publishes the repository and enables CI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build -p harness-guard-cli
+      - name: scan under strace, assert no network syscalls
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y strace
+          case_dir="fixtures/codex/risky-unset/files"
+          set +e
+          # PATH includes the fixture path dir so version detection sees the
+          # synthetic npm marker (in range => warning finding => exit 1).
+          /usr/bin/env -i \
+            HOME="$PWD/$case_dir" \
+            CODEX_HOME="$PWD/$case_dir/codex-home" \
+            NO_COLOR=1 \
+            PATH="$PWD/$case_dir/path:/usr/bin:/bin" \
+            /usr/bin/strace -f -e trace=network -o /tmp/net.trace \
+            target/debug/harness-guard scan --json > /dev/null
+          code=$?
+          set -e
+          [ "$code" -eq 1 ] || { echo "expected exit 1, got $code"; exit 1; }
+          if grep -E 'socket\(AF_(INET|INET6)|connect\(|send(to|msg)?\(|recv(from|msg)?\(' /tmp/net.trace; then
+            echo "network syscalls observed — no-egress violated"
+            exit 1
+          fi
+          echo "strace: zero inet socket syscalls"

@@ -1,0 +1,52 @@
+# AUTHORED, NOT ENABLED: schedules run only after the repo is published and
+# the user enables workflows. GitHub also auto-disables cron after 60 days
+# without repository activity (see docs/maintenance/runbook.md).
+# Automation only opens triage issues; bots never set verdicts or edit rules.
+name: release-watch
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 6 * * 1" # weekly, Monday 06:17 UTC
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: diff npm dist-tags against freshness/last-seen.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          check() {
+            pkg="$1"
+            tag="$2"
+            notes="$3"
+            encoded=$(printf '%s' "$pkg" | sed 's|/|%2F|')
+            latest=$(curl --fail --silent --show-error \
+              -H 'Accept: application/vnd.npm.install-v1+json' \
+              "https://registry.npmjs.org/$encoded" \
+              | jq -r ".\"dist-tags\".\"$tag\" // empty")
+            [ -n "$latest" ] || { echo "WARN: no $tag tag for $pkg"; return 0; }
+            seen=$(jq -r ".packages[\"$pkg\"].version // empty" freshness/last-seen.json)
+            if [ "$latest" != "$seen" ]; then
+              gh issue create \
+                --title "release-watch: $pkg $tag moved $seen -> $latest" \
+                --body "Detected by release-watch. Re-verify affected rules against the new version, then update tested_versions and freshness/last-seen.json. Release notes: $notes. For @openai/codex use the GitHub release body, not CHANGELOG.md. No rule is edited and no verdict is set by automation."
+            fi
+          }
+          # Watch exactly these tags: stable for claude-code (not latest or
+          # next), latest for codex (ignore its other dist-tags and filter
+          # -alpha. if releases.atom is ever used), and latest for copilot
+          # (not prerelease).
+          check "@anthropic-ai/claude-code" "stable" \
+            "https://github.com/anthropics/claude-code/releases"
+          check "@openai/codex" "latest" \
+            "https://github.com/openai/codex/releases"
+          check "@github/copilot" "latest" \
+            "https://www.npmjs.com/package/@github/copilot"

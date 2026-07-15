@@ -1,0 +1,53 @@
+# AUTHORED, NOT ENABLED. Weekly semantic-drift tripwire over every URL cited
+# by rules/. Uses the SAME normalization as rule content_hash
+# (scripts/freshness/normalize.sh), so citation anchors and drift detection
+# share one definition.
+# Known pitfalls: JS-rendered vendor docs may need a per-page Playwright
+# fallback later (not default); CDN edge-caching can stagger detection.
+name: doc-drift
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "43 6 * * 1" # weekly, Monday 06:43 UTC
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: lychee
+      - name: dead-link pass
+        # lychee reads the newline URL list from stdin. A dead-link result is
+        # evidence for triage, not permission for automation to edit a rule.
+        continue-on-error: true
+        run: scripts/freshness/extract-urls.sh | lychee --no-progress --max-retries 3 -
+      - name: semantic-text hash pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          scripts/freshness/extract-urls.sh | while read -r url; do
+            new="sha256:$(curl --fail --silent --show-error --location "$url" \
+              | scripts/freshness/normalize.sh)"
+            old=$(jq -r --arg url "$url" '.hashes[$url] // empty' freshness/url-hashes.json)
+            if [ "$new" != "$old" ]; then
+              # Evidence anchors: the citing rule's archived_url (old) and a
+              # fresh Wayback SPN2 snapshot (new).
+              old_snapshot=$(jq -sr --arg url "$url" \
+                '[.[] | .. | objects | select(.url? == $url) | .archived_url? // empty][0] // "unavailable"' \
+                rules/**/*.json)
+              snapshot=$(curl --silent --show-error \
+                "https://web.archive.org/save/$url" \
+                --output /dev/null --write-out '%{redirect_url}' || true)
+              gh issue create \
+                --title "doc-drift: cited page changed: $url" \
+                --body "Semantic-text hash drifted (old $old, new $new). Old snapshot: $old_snapshot. New snapshot: $snapshot. A human re-verifies the rule, updates retrieved/content_hash and freshness/url-hashes.json, and bumps the ruleset version. Automation never edits rules or sets verdicts."
+            fi
+          done
