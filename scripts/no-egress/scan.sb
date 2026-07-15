@@ -1,5 +1,5 @@
 ;; Layer 3 of the no-egress proof (§10.1): deny ALL network under sandbox-exec.
-;; Any egress attempt errors visibly instead of silently succeeding.
+;; Any egress attempt is denied and tagged for unified-log verification.
 (version 1)
 (allow default)
-(deny network*)
+(deny network* (with message "HARNESS_GUARD_NETWORK_DENIED"))
