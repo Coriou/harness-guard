@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-guard:fixture:1.0",
+  "title": "Harness Guard fixture expectation",
+  "type": "object",
+  "required": ["schema_version", "case", "description", "expected_report"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "case": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "description": { "type": "string", "minLength": 1 },
+    "expected_report": {
+      "type": "object",
+      "description": "A subset of the report schema; tests assert every key present here matches the produced report recursively."
+    }
+  }
+}
