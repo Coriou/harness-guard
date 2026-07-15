@@ -4,3 +4,4 @@
 pub mod discovery;
 pub mod parse;
 pub mod readfs;
+pub mod version;
