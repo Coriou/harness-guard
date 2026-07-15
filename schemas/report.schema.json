@@ -88,8 +88,10 @@
         "stale_reason": { "type": ["string", "null"] }
       },
       "allOf": [
-        { "if": { "properties": { "status": { "enum": ["pass", "finding"] } } },
-          "then": { "properties": { "source": { "type": "object" }, "confidence": { "enum": ["low", "medium", "high"] } } } },
+        { "if": { "properties": { "status": { "const": "pass" } } },
+          "then": { "properties": { "source": { "type": "object" }, "severity": { "const": null }, "confidence": { "enum": ["low", "medium", "high"] } } } },
+        { "if": { "properties": { "status": { "const": "finding" } } },
+          "then": { "properties": { "source": { "type": "object" }, "severity": { "enum": ["info", "warning"] }, "confidence": { "enum": ["low", "medium", "high"] } } } },
         { "if": { "properties": { "status": { "const": "unknown" } } },
           "then": { "properties": { "unknown_reason": { "type": "string" }, "severity": { "const": null }, "confidence": { "const": null } } } },
         { "if": { "properties": { "status": { "const": "stale-ruleset" } } },
