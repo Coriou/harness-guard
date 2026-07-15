@@ -2,6 +2,8 @@
 //! Everything takes an explicit DiscoveryRoot — no env, no network,
 //! no process spawning (clippy + cargo-deny enforced).
 pub mod discovery;
+pub mod evaluate;
 pub mod parse;
 pub mod readfs;
+pub mod scan;
 pub mod version;
