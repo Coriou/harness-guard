@@ -67,6 +67,7 @@ fn run_with_roots_and_color_env(
 
 /// Recursively assert that every expected key exists and matches. Arrays are
 /// ordered and match element-by-element because report ordering is contractual.
+#[allow(dead_code)] // Only fixture-golden test crates need the subset assertion.
 pub fn assert_json_subset(expected: &serde_json::Value, actual: &serde_json::Value, path: &str) {
     use serde_json::Value;
 

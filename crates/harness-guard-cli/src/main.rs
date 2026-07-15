@@ -1,14 +1,16 @@
+mod explain;
 mod redact;
 mod render_json;
 mod render_term;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum};
 use harness_guard_core::discovery::DiscoveryRoot;
 use harness_guard_core::scan::{ScanResult, scan_codex};
 use harness_guard_rules::loader::{load_rules, ruleset_version};
 use harness_guard_rules::report::{Platform, Report, Severity, Status, Summary};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::sync::OnceLock;
 
 /// local, execution-free, per-finding-cited config auditor for
 /// privacy/retention/telemetry posture
@@ -71,15 +73,32 @@ enum FailOn {
 }
 
 fn main() -> ExitCode {
-    let cli = Cli::parse();
+    let matches = cli_command().get_matches();
+    let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|error| error.exit());
     cli.color.write_global();
     match cli.cmd {
         Cmd::Scan(args) => cmd_scan(args),
-        Cmd::List => todo!("Task 13"),
-        Cmd::Explain { rule_id: _ } => todo!("Task 13"),
-        Cmd::Version => todo!("Task 13"),
-        Cmd::Completions { shell: _ } => todo!("Task 13"),
+        Cmd::List => cmd_list(),
+        Cmd::Explain { rule_id } => cmd_explain(&rule_id),
+        Cmd::Version => cmd_version(),
+        Cmd::Completions { shell } => {
+            let mut command = cli_command();
+            clap_complete::generate(shell, &mut command, "harness-guard", &mut std::io::stdout());
+            ExitCode::SUCCESS
+        }
     }
+}
+
+fn cli_command() -> clap::Command {
+    static VERSION: OnceLock<String> = OnceLock::new();
+    let version = VERSION.get_or_init(|| {
+        format!(
+            "{}\nruleset {}",
+            env!("CARGO_PKG_VERSION"),
+            ruleset_version()
+        )
+    });
+    Cli::command().version(version.as_str())
 }
 
 fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
@@ -160,6 +179,69 @@ fn cmd_scan(args: ScanArgs) -> ExitCode {
     } else {
         ExitCode::SUCCESS
     }
+}
+
+fn cmd_list() -> ExitCode {
+    // Detection only: this command never loads or evaluates rules.
+    let (root, home) = discovery_root_from_env();
+    let mut table = comfy_table::Table::new();
+    table.set_header(["tool", "version", "config", "confidence"]);
+
+    let home_exists = root.codex_home_exists();
+    let on_path = harness_guard_core::version::binary_on_path(&root);
+    if home_exists || on_path {
+        let version = harness_guard_core::version::detect_codex_version(&root)
+            .unwrap_or_else(|| "version not detected".to_string());
+        let config_path = root.config_path();
+        let config = if std::fs::symlink_metadata(&config_path).is_ok() {
+            redact::redact_config_path(
+                &config_path.to_string_lossy(),
+                home.as_deref(),
+                &root.codex_home,
+            )
+        } else {
+            "no config file".to_string()
+        };
+        let confidence = if version == "version not detected" {
+            "medium"
+        } else {
+            "high"
+        };
+        table.add_row(["codex", version.as_str(), config.as_str(), confidence]);
+    } else {
+        table.add_row(["codex", "not detected", "-", "-"]);
+    }
+
+    anstream::println!("{table}");
+    ExitCode::SUCCESS
+}
+
+fn cmd_explain(rule_id: &str) -> ExitCode {
+    let rules = load_rules();
+    match rules.iter().find(|rule| rule.raw().id == rule_id) {
+        Some(rule) => {
+            anstream::print!("{}", explain::render_rule(rule));
+            ExitCode::SUCCESS
+        }
+        None => {
+            let ids: Vec<&str> = rules.iter().map(|rule| rule.raw().id.as_str()).collect();
+            match explain::nearest(rule_id, &ids) {
+                Some(nearest) => {
+                    eprintln!("unknown rule id {rule_id:?} — did you mean {nearest:?}?")
+                }
+                None => eprintln!("unknown rule id {rule_id:?}"),
+            }
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn cmd_version() -> ExitCode {
+    // These versions are deliberately separate because bundled rules can be
+    // revised independently of the binary release.
+    println!("harness-guard {}", env!("CARGO_PKG_VERSION"));
+    println!("ruleset {}", ruleset_version());
+    ExitCode::SUCCESS
 }
 
 fn build_report(results: &[ScanResult], home: Option<&Path>, codex_home: &Path) -> Report {
