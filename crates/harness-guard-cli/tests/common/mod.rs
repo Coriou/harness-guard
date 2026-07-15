@@ -16,13 +16,22 @@ pub fn fixture(case: &str) -> PathBuf {
 /// and `HOME` point only into a synthetic fixture, so the real home and Codex
 /// config are unreachable by construction.
 pub fn run_in(files_root: &Path, args: &[&str]) -> Output {
+    run_with_roots(
+        &files_root.join("codex-home"),
+        &files_root.join("path"),
+        files_root,
+        args,
+    )
+}
+
+pub fn run_with_roots(codex_home: &Path, path_dir: &Path, home: &Path, args: &[&str]) -> Output {
     std::process::Command::new(env!("CARGO_BIN_EXE_harness-guard"))
         .args(args)
         .env_clear()
-        .env("CODEX_HOME", files_root.join("codex-home"))
-        .env("PATH", files_root.join("path"))
+        .env("CODEX_HOME", codex_home)
+        .env("PATH", path_dir)
         .env("NO_COLOR", "1")
-        .env("HOME", files_root)
+        .env("HOME", home)
         .output()
         .expect("harness-guard binary runs")
 }

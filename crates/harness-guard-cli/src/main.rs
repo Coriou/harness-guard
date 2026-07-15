@@ -112,7 +112,7 @@ fn cmd_scan(args: ScanArgs) -> ExitCode {
         .filter_map(|result| result.parse_failure.clone())
         .collect();
 
-    let report = build_report(&results, home.as_deref());
+    let report = build_report(&results, home.as_deref(), &root.codex_home);
 
     if args.json {
         println!("{}", render_json::render(&report));
@@ -154,7 +154,7 @@ fn cmd_scan(args: ScanArgs) -> ExitCode {
     }
 }
 
-fn build_report(results: &[ScanResult], home: Option<&Path>) -> Report {
+fn build_report(results: &[ScanResult], home: Option<&Path>, codex_home: &Path) -> Report {
     let mut tools: Vec<_> = results
         .iter()
         .map(|result| {
@@ -162,7 +162,7 @@ fn build_report(results: &[ScanResult], home: Option<&Path>) -> Report {
             tool.config_paths = tool
                 .config_paths
                 .iter()
-                .map(|path| redact::redact_home(path, home))
+                .map(|path| redact::redact_config_path(path, home, codex_home))
                 .collect();
             tool
         })

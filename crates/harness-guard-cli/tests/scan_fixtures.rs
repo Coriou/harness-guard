@@ -129,3 +129,28 @@ fn output_paths_are_redacted() {
     );
     assert!(!text.contains("/Users/"), "absolute home path leaked");
 }
+
+#[test]
+fn explicit_codex_home_outside_home_is_symbolic() {
+    let files_root = fixture("risky-unset");
+    let codex_home = files_root.join("codex-home");
+    let synthetic_home = tempfile::tempdir().unwrap();
+    let output = run_with_roots(
+        &codex_home,
+        &files_root.join("path"),
+        synthetic_home.path(),
+        &["scan", "--json"],
+    );
+    assert_eq!(output.status.code(), Some(1));
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(text.contains("$CODEX_HOME/config.toml"));
+    assert!(
+        !text.contains(&codex_home.to_string_lossy().into_owned()),
+        "absolute explicit CODEX_HOME leaked"
+    );
+    assert!(
+        !text.contains(&synthetic_home.path().to_string_lossy().into_owned()),
+        "absolute HOME leaked"
+    );
+}
