@@ -1,5 +1,7 @@
-# AUTHORED, NOT ENABLED. Weekly semantic-drift tripwire over every URL cited
-# by rules/. Uses the SAME normalization as rule content_hash
+# AUTHORED, NOT ENABLED. Even after publication, scheduled and manual runs are
+# job-gated until ENABLE_FRESHNESS_WORKFLOWS is explicitly set true. This
+# semantic-drift tripwire covers every URL cited by rules/ and uses the SAME
+# normalization as rule content_hash
 # (scripts/freshness/normalize.sh), so citation anchors and drift detection
 # share one definition.
 # Known pitfalls: JS-rendered vendor docs may need a per-page Playwright
@@ -15,39 +17,81 @@ permissions:
   issues: write
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   drift:
+    if: vars.ENABLE_FRESHNESS_WORKFLOWS == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: taiki-e/install-action@43aecc8d72668fbcfe75c31400bc4f890f1c5853 # releases/v2 (v2.83.2)
         with:
           tool: lychee
       - name: dead-link pass
         # lychee reads the newline URL list from stdin. A dead-link result is
         # evidence for triage, not permission for automation to edit a rule.
         continue-on-error: true
-        run: scripts/freshness/extract-urls.sh | lychee --no-progress --max-retries 3 -
+        run: |
+          set -euo pipefail
+          scripts/freshness/extract-urls.sh \
+            | lychee --no-progress --max-retries 3 -
       - name: semantic-text hash pass
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -eu
-          scripts/freshness/extract-urls.sh | while read -r url; do
-            new="sha256:$(curl --fail --silent --show-error --location "$url" \
-              | scripts/freshness/normalize.sh)"
-            old=$(jq -r --arg url "$url" '.hashes[$url] // empty' freshness/url-hashes.json)
+          set -euo pipefail
+          tmp_dir=$(mktemp -d)
+          trap 'rm -rf "$tmp_dir"' EXIT
+          urls_file="$tmp_dir/urls.txt"
+          issues_file="$tmp_dir/open-issues.json"
+
+          jq -e 'type == "object" and (.hashes | type == "object")' \
+            freshness/url-hashes.json > /dev/null
+          scripts/freshness/extract-urls.sh > "$urls_file"
+          [ -s "$urls_file" ] || { echo "no cited URLs found"; exit 1; }
+          gh issue list --state open --limit 1000 --json title > "$issues_file"
+          jq -e 'type == "array" and all(.[]; .title | type == "string")' \
+            "$issues_file" > /dev/null
+
+          mapfile -d '' rule_files \
+            < <(find rules -type f -name '*.json' -print0)
+          [ "${#rule_files[@]}" -gt 0 ] || { echo "no rule files found"; exit 1; }
+
+          while IFS= read -r url; do
+            document=$(mktemp "$tmp_dir/document.XXXXXX")
+            curl --fail --silent --show-error --location "$url" \
+              --output "$document"
+            [ -s "$document" ] || { echo "empty document fetched: $url"; exit 1; }
+            hash=$(scripts/freshness/normalize.sh "$document")
+            [[ "$hash" =~ ^[0-9a-f]{64}$ ]] \
+              || { echo "invalid semantic hash for: $url"; exit 1; }
+            new="sha256:$hash"
+            old=$(jq -er --arg url "$url" \
+              '.hashes[$url] | strings | select(test("^sha256:[0-9a-f]{64}$"))' \
+              freshness/url-hashes.json)
             if [ "$new" != "$old" ]; then
               # Evidence anchors: the citing rule's archived_url (old) and a
               # fresh Wayback SPN2 snapshot (new).
-              old_snapshot=$(jq -sr --arg url "$url" \
+              old_snapshot=$(jq -ser --arg url "$url" \
                 '[.[] | .. | objects | select(.url? == $url) | .archived_url? // empty][0] // "unavailable"' \
-                rules/**/*.json)
-              snapshot=$(curl --silent --show-error \
+                "${rule_files[@]}")
+              snapshot=$(curl --fail --silent --show-error \
                 "https://web.archive.org/save/$url" \
                 --output /dev/null --write-out '%{redirect_url}' || true)
-              gh issue create \
-                --title "doc-drift: cited page changed: $url" \
-                --body "Semantic-text hash drifted (old $old, new $new). Old snapshot: $old_snapshot. New snapshot: $snapshot. A human re-verifies the rule, updates retrieved/content_hash and freshness/url-hashes.json, and bumps the ruleset version. Automation never edits rules or sets verdicts."
+              if [ -z "$snapshot" ]; then
+                snapshot="unavailable (Wayback snapshot request failed or returned no snapshot URL)"
+              fi
+              title="doc-drift: cited page changed: $url"
+              if jq -e --arg title "$title" \
+                'any(.[]; .title == $title)' "$issues_file" > /dev/null; then
+                echo "open triage issue already exists: $title"
+              else
+                gh issue create \
+                  --title "$title" \
+                  --body "Semantic-text hash drifted (old $old, new $new). Old snapshot: $old_snapshot. New snapshot: $snapshot. A human re-verifies the rule, updates retrieved/content_hash and freshness/url-hashes.json, and bumps the ruleset version. Automation never edits rules or sets verdicts."
+              fi
             fi
-          done
+          done < "$urls_file"

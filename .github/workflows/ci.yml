@@ -10,21 +10,25 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
 
   deny:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: taiki-e/install-action@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - uses: taiki-e/install-action@43aecc8d72668fbcfe75c31400bc4f890f1c5853 # releases/v2 (v2.83.2)
         with:
           tool: cargo-deny
       - run: cargo deny check
@@ -35,15 +39,15 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - run: cargo test --workspace
 
   no-egress-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - run: scripts/no-egress/run-macos.sh
 
   no-egress-linux-strace:
@@ -52,12 +56,12 @@ jobs:
     # only after the user publishes the repository and enables CI.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - run: cargo build -p harness-guard-cli
       - name: scan under strace, assert no network syscalls
         run: |
-          set -eu
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y strace
           case_dir="fixtures/codex/risky-unset/files"
@@ -69,13 +73,14 @@ jobs:
             CODEX_HOME="$PWD/$case_dir/codex-home" \
             NO_COLOR=1 \
             PATH="$PWD/$case_dir/path:/usr/bin:/bin" \
-            /usr/bin/strace -f -e trace=network -o /tmp/net.trace \
+            /usr/bin/strace -f -qq -e trace=network -o /tmp/net.trace \
             target/debug/harness-guard scan --json > /dev/null
           code=$?
           set -e
           [ "$code" -eq 1 ] || { echo "expected exit 1, got $code"; exit 1; }
-          if grep -E 'socket\(AF_(INET|INET6)|connect\(|send(to|msg)?\(|recv(from|msg)?\(' /tmp/net.trace; then
+          if [ -s /tmp/net.trace ]; then
             echo "network syscalls observed — no-egress violated"
+            cat /tmp/net.trace
             exit 1
           fi
-          echo "strace: zero inet socket syscalls"
+          echo "strace: zero-byte network trace"

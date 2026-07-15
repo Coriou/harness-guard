@@ -2,13 +2,22 @@
 
 ## Scheduled workflows: authored, not enabled
 
-`release-watch.yml` and `doc-drift.yml` exist in-tree but do not run: the
-repository is local-only. Publishing the repository and enabling workflow
-schedules are separate, user-triggered decisions.
+`release-watch.yml` and `doc-drift.yml` exist in-tree but are default-off. Both
+their scheduled and manual-dispatch jobs require the repository variable
+`ENABLE_FRESHNESS_WORKFLOWS` to equal the lower-case string `true`. Publishing
+the repository alone does not run either freshness job.
 
-GitHub automatically disables scheduled workflows after 60 days without
-repository activity. To re-enable one: open the repository's **Actions** tab,
-select the workflow, then select **Enable workflow**. Check this whenever
+After the separate decision to publish, opt in at **Settings → Secrets and
+variables → Actions → Variables → New repository variable**. Set the name to
+`ENABLE_FRESHNESS_WORKFLOWS` and the value to `true`. To disable the jobs again,
+change that value to `false` or delete the variable. The job-level guard treats
+an absent variable, any other value, scheduled events, and manual dispatches as
+disabled.
+
+For public repositories, GitHub automatically disables scheduled workflows
+after 60 days without repository activity. Re-enable the workflow itself at
+**Actions → select workflow → Enable workflow**, then confirm the repository
+variable remains intentionally set to `true`. Check this whenever public-repo
 activity has lapsed; a private calendar reminder after 45 days is the cheapest
 guard.
 

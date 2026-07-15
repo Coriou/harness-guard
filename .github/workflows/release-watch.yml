@@ -1,6 +1,6 @@
-# AUTHORED, NOT ENABLED: schedules run only after the repo is published and
-# the user enables workflows. GitHub also auto-disables cron after 60 days
-# without repository activity (see docs/maintenance/runbook.md).
+# AUTHORED, NOT ENABLED: even after publication, both scheduled and manual
+# runs are job-gated until ENABLE_FRESHNESS_WORKFLOWS is explicitly set true.
+# See docs/maintenance/runbook.md for opt-in and disable steps.
 # Automation only opens triage issues; bots never set verdicts or edit rules.
 name: release-watch
 
@@ -13,31 +13,59 @@ permissions:
   issues: write
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   watch:
+    if: vars.ENABLE_FRESHNESS_WORKFLOWS == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: diff npm dist-tags against freshness/last-seen.json
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -eu
+          set -euo pipefail
+          tmp_dir=$(mktemp -d)
+          trap 'rm -rf "$tmp_dir"' EXIT
+          issues_file="$tmp_dir/open-issues.json"
+
+          jq -e 'type == "object" and (.packages | type == "object")' \
+            freshness/last-seen.json > /dev/null
+          gh issue list --state open --limit 1000 --json title > "$issues_file"
+          jq -e 'type == "array" and all(.[]; .title | type == "string")' \
+            "$issues_file" > /dev/null
+
           check() {
             pkg="$1"
             tag="$2"
             notes="$3"
             encoded=$(printf '%s' "$pkg" | sed 's|/|%2F|')
-            latest=$(curl --fail --silent --show-error \
+            registry_file=$(mktemp "$tmp_dir/registry.XXXXXX.json")
+            curl --fail --silent --show-error \
               -H 'Accept: application/vnd.npm.install-v1+json' \
               "https://registry.npmjs.org/$encoded" \
-              | jq -r ".\"dist-tags\".\"$tag\" // empty")
-            [ -n "$latest" ] || { echo "WARN: no $tag tag for $pkg"; return 0; }
-            seen=$(jq -r ".packages[\"$pkg\"].version // empty" freshness/last-seen.json)
+              --output "$registry_file"
+            jq -e 'type == "object" and (."dist-tags" | type == "object")' \
+              "$registry_file" > /dev/null
+            latest=$(jq -er --arg tag "$tag" \
+              '."dist-tags"[$tag] | strings | select(length > 0)' \
+              "$registry_file")
+            seen=$(jq -er --arg pkg "$pkg" \
+              '.packages[$pkg].version | strings | select(length > 0)' \
+              freshness/last-seen.json)
             if [ "$latest" != "$seen" ]; then
-              gh issue create \
-                --title "release-watch: $pkg $tag moved $seen -> $latest" \
-                --body "Detected by release-watch. Re-verify affected rules against the new version, then update tested_versions and freshness/last-seen.json. Release notes: $notes. For @openai/codex use the GitHub release body, not CHANGELOG.md. No rule is edited and no verdict is set by automation."
+              title="release-watch: $pkg $tag moved $seen -> $latest"
+              if jq -e --arg title "$title" \
+                'any(.[]; .title == $title)' "$issues_file" > /dev/null; then
+                echo "open triage issue already exists: $title"
+              else
+                gh issue create \
+                  --title "$title" \
+                  --body "Detected by release-watch. Re-verify affected rules against the new version, then update tested_versions and freshness/last-seen.json. Release notes: $notes. For @openai/codex use the GitHub release body, not CHANGELOG.md. No rule is edited and no verdict is set by automation."
+              fi
             fi
           }
           # Watch exactly these tags: stable for claude-code (not latest or
