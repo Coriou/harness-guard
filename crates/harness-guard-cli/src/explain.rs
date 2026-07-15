@@ -22,10 +22,11 @@ pub fn render_rule(rule: &ValidatedRule) -> String {
     let _ = writeln!(output, "outcomes");
     for outcome in &rule.outcomes {
         let severity = outcome.severity.as_deref().unwrap_or("-");
+        let confidence = outcome.confidence.as_deref().unwrap_or("-");
         let _ = writeln!(
             output,
-            "  [{}/{}] when {}\n      {}",
-            outcome.status, severity, outcome.when, outcome.message
+            "  [{}/{}] when {}\n      confidence: {}\n      {}",
+            outcome.status, severity, outcome.when, confidence, outcome.message
         );
         if let Some(remediation) = &outcome.remediation {
             let _ = writeln!(output, "      fix: {}", remediation.summary);

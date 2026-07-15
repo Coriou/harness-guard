@@ -18,6 +18,16 @@ pub struct ScanResult {
     pub parse_failure: Option<ParseFailure>,
 }
 
+/// Confidence in tool detection, shared by scan reports and detection-only
+/// surfaces so the same evidence always receives the same label.
+pub fn detection_confidence(detected_version: Option<&str>, codex_home_exists: bool) -> Confidence {
+    match (detected_version, codex_home_exists) {
+        (Some(_), true) => Confidence::High,
+        (Some(_), false) | (None, true) => Confidence::Medium,
+        (None, false) => Confidence::Low,
+    }
+}
+
 /// Returns `None` iff neither the injected Codex home nor a regular Codex
 /// entry in the injected path directories is present.
 pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanResult> {
@@ -86,11 +96,7 @@ pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanR
         })
         .unwrap_or((None, None));
 
-    let detection_confidence = match (&detected_version, home_exists) {
-        (Some(_), true) => Confidence::High,
-        (Some(_), false) | (None, true) => Confidence::Medium,
-        (None, false) => Confidence::Low,
-    };
+    let detection_confidence = detection_confidence(detected_version.as_deref(), home_exists);
 
     Some(ScanResult {
         tool_report: ToolReport {
@@ -113,6 +119,20 @@ mod tests {
     use super::*;
     use harness_guard_rules::loader::load_rules;
     use harness_guard_rules::report::Status;
+
+    #[test]
+    fn detection_confidence_matrix_is_explicit() {
+        assert_eq!(
+            detection_confidence(Some("0.144.4"), true),
+            Confidence::High
+        );
+        assert_eq!(
+            detection_confidence(Some("0.144.4"), false),
+            Confidence::Medium
+        );
+        assert_eq!(detection_confidence(None, true), Confidence::Medium);
+        assert_eq!(detection_confidence(None, false), Confidence::Low);
+    }
 
     #[test]
     fn undetected_tool_returns_none() {

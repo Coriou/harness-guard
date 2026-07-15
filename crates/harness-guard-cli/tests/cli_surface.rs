@@ -36,9 +36,55 @@ fn list_symbolically_redacts_explicit_codex_home() {
     );
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
-    assert!(text.contains("$CODEX_HOME/config.toml"));
+    assert!(
+        text.contains("$CODEX_HOME/config.toml") || text.contains("~/"),
+        "config path must have a symbolic root: {text}"
+    );
     assert!(!text.contains(&codex_home.to_string_lossy().into_owned()));
     assert!(!text.contains(&synthetic_home.path().to_string_lossy().into_owned()));
+}
+
+#[test]
+fn list_path_only_version_detection_has_medium_confidence() {
+    let synthetic = tempfile::tempdir().unwrap();
+    let path = synthetic.path().join("path");
+    std::fs::create_dir_all(&path).unwrap();
+    std::fs::write(path.join("codex"), "synthetic marker; never executed").unwrap();
+    std::fs::write(
+        path.join("package.json"),
+        r#"{"name":"@openai/codex","version":"0.144.4"}"#,
+    )
+    .unwrap();
+
+    let output = run_with_roots(
+        &synthetic.path().join("absent-codex-home"),
+        &path,
+        &synthetic.path().join("home"),
+        &["list"],
+    );
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(output.status.code(), Some(0));
+    assert!(text.contains("0.144.4"));
+    assert!(text.contains("medium"));
+}
+
+#[test]
+fn list_path_marker_without_version_or_home_has_low_confidence() {
+    let synthetic = tempfile::tempdir().unwrap();
+    let path = synthetic.path().join("path");
+    std::fs::create_dir_all(&path).unwrap();
+    std::fs::write(path.join("codex"), "synthetic marker; never executed").unwrap();
+
+    let output = run_with_roots(
+        &synthetic.path().join("absent-codex-home"),
+        &path,
+        &synthetic.path().join("home"),
+        &["list"],
+    );
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(output.status.code(), Some(0));
+    assert!(text.contains("version not detected"));
+    assert!(text.contains("low"));
 }
 
 #[test]
@@ -60,12 +106,18 @@ fn explain_shows_full_evidence_record() {
         "limitations",
         "unknown conditions",
         "why it matters",
+        "confidence: high",
     ] {
         assert!(
             text.to_lowercase().contains(&needle.to_lowercase()),
             "explain output missing {needle:?}"
         );
     }
+    assert_eq!(
+        text.matches("confidence:").count(),
+        3,
+        "each outcome must state its confidence explicitly"
+    );
 }
 
 #[test]
@@ -122,6 +174,7 @@ fn help_uses_positioning_and_never_the_forbidden_phrase() {
         vec!["list", "--help"],
         vec!["explain", "--help"],
         vec!["version", "--help"],
+        vec!["completions", "--help"],
     ] {
         let output = run_case("hardened", &args);
         let text = format!(
@@ -129,10 +182,18 @@ fn help_uses_positioning_and_never_the_forbidden_phrase() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
+        let forbidden = ["AI agent", "security scanner"].join(" ");
         assert!(
-            !text.contains("AI agent security scanner"),
+            !text.contains(&forbidden),
             "forbidden positioning phrase in {args:?}"
         );
+        let examples = text
+            .find("Examples:")
+            .unwrap_or_else(|| panic!("Examples block missing from {args:?}"));
+        let usage = text
+            .find("Usage:")
+            .unwrap_or_else(|| panic!("Usage block missing from {args:?}"));
+        assert!(examples < usage, "Examples must precede Usage in {args:?}");
     }
 
     let output = run_case("hardened", &["--help"]);

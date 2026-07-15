@@ -15,7 +15,13 @@ use std::sync::OnceLock;
 /// local, execution-free, per-finding-cited config auditor for
 /// privacy/retention/telemetry posture
 #[derive(Parser)]
-#[command(name = "harness-guard", version, about, long_about = None)]
+#[command(
+    name = "harness-guard",
+    version,
+    about,
+    long_about = None,
+    before_help = "Examples:\n  harness-guard scan\n  harness-guard explain codex-history-persist-01\n  harness-guard scan --json"
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -26,14 +32,21 @@ struct Cli {
 #[derive(Subcommand)]
 enum Cmd {
     /// Scan detected tools' local config (reads files only; never executes tools)
+    #[command(
+        before_help = "Examples:\n  harness-guard scan\n  harness-guard scan --json\n  harness-guard scan --tool codex --color never"
+    )]
     Scan(ScanArgs),
     /// Show detected tools, versions, and config paths — no rule evaluation
+    #[command(before_help = "Examples:\n  harness-guard list")]
     List,
     /// Show a rule's full evidence record (works offline)
+    #[command(before_help = "Examples:\n  harness-guard explain codex-history-persist-01")]
     Explain { rule_id: String },
     /// Show binary version and ruleset version separately
+    #[command(before_help = "Examples:\n  harness-guard version")]
     Version,
     /// Generate shell completions
+    #[command(before_help = "Examples:\n  harness-guard completions bash")]
     Completions { shell: clap_complete::Shell },
 }
 
@@ -202,10 +215,13 @@ fn cmd_list() -> ExitCode {
         } else {
             "no config file".to_string()
         };
-        let confidence = if version == "version not detected" {
-            "medium"
-        } else {
-            "high"
+        let confidence = match harness_guard_core::scan::detection_confidence(
+            (version != "version not detected").then_some(version.as_str()),
+            home_exists,
+        ) {
+            harness_guard_rules::report::Confidence::Low => "low",
+            harness_guard_rules::report::Confidence::Medium => "medium",
+            harness_guard_rules::report::Confidence::High => "high",
         };
         table.add_row(["codex", version.as_str(), config.as_str(), confidence]);
     } else {
