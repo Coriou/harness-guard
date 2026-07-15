@@ -11,8 +11,9 @@ After the separate decision to publish, opt in at **Settings → Secrets and
 variables → Actions → Variables → New repository variable**. Set the name to
 `ENABLE_FRESHNESS_WORKFLOWS` and the value to `true`. To disable the jobs again,
 change that value to `false` or delete the variable. The job-level guard treats
-an absent variable, any other value, scheduled events, and manual dispatches as
-disabled.
+both scheduled events and manual dispatches as disabled when the variable is
+absent or is not exactly lower-case `true`; when it is `true`, both event types
+may run.
 
 For public repositories, GitHub automatically disables scheduled workflows
 after 60 days without repository activity. Re-enable the workflow itself at
