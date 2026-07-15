@@ -1,0 +1,24 @@
+# Layer 2 of the no-egress proof (§10.1): core must never touch ambient
+# environment, spawn processes, or open sockets. Env/home resolution is
+# allowed only in harness-guard-cli.
+disallowed-methods = [
+    "std::env::var",
+    "std::env::var_os",
+    "std::env::vars",
+    "std::env::vars_os",
+    "std::env::args",
+    "std::env::args_os",
+    "std::env::current_dir",
+    "std::env::current_exe",
+    "std::env::home_dir",
+    "std::env::set_var",
+    "std::env::remove_var",
+    "std::process::Command::new",
+]
+disallowed-types = [
+    "std::process::Command",
+    "std::net::TcpStream",
+    "std::net::TcpListener",
+    "std::net::UdpSocket",
+    "std::net::SocketAddr",
+]
