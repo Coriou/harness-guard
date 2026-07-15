@@ -53,9 +53,9 @@
         },
         "allOf": [
           { "if": { "properties": { "status": { "const": "finding" } } },
-            "then": { "required": ["severity", "confidence"], "properties": { "severity": { "enum": ["info", "warning"] } } } },
+            "then": { "required": ["severity", "confidence"], "properties": { "severity": { "enum": ["info", "warning"] }, "confidence": { "enum": ["low", "medium", "high"] } } } },
           { "if": { "properties": { "status": { "const": "pass" } } },
-            "then": { "required": ["confidence"], "properties": { "severity": { "const": null } } } },
+            "then": { "required": ["confidence"], "properties": { "severity": { "const": null }, "confidence": { "enum": ["low", "medium", "high"] } } } },
           { "if": { "properties": { "status": { "const": "unknown" } } },
             "then": { "required": ["unknown_reason"], "properties": { "severity": { "const": null }, "confidence": { "const": null } } } }
         ]

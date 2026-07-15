@@ -71,6 +71,30 @@ fn finding_outcome_with_null_severity_fails_schema_validation() {
 }
 
 #[test]
+fn finding_outcome_with_null_confidence_fails_schema_validation() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    let finding = outcome_json_mut(&mut json, "finding");
+    finding["confidence"] = serde_json::Value::Null;
+    assert!(
+        v.validate(&json).is_err(),
+        "a finding outcome with null confidence MUST fail validation"
+    );
+}
+
+#[test]
+fn pass_outcome_with_null_confidence_fails_schema_validation() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    let pass = outcome_json_mut(&mut json, "pass");
+    pass["confidence"] = serde_json::Value::Null;
+    assert!(
+        v.validate(&json).is_err(),
+        "a pass outcome with null confidence MUST fail validation"
+    );
+}
+
+#[test]
 fn report_finding_with_null_severity_fails_schema_validation() {
     let v = compiled("report.schema.json");
     let mut json = valid_report_with_status("finding", serde_json::json!("warning"));
@@ -125,15 +149,15 @@ fn rules_load_and_validate_via_types() {
     let rules = harness_guard_rules::loader::load_rules();
     assert_eq!(rules.len(), 1);
     let r = &rules[0];
-    assert_eq!(r.raw.id, "codex-history-persist-01");
+    assert_eq!(r.raw().id, "codex-history-persist-01");
     assert_eq!(
-        r.raw.observation.allowed_render,
+        r.raw().observation.allowed_render,
         vec!["save-all", "none", "unset"]
     );
-    assert!(r.primary_source.url.starts_with("https://"));
-    assert!(!r.primary_source.retrieved.is_empty());
-    assert!(!r.raw.limitations.is_empty());
-    assert!(!r.raw.unknown_conditions.is_empty());
+    assert!(r.primary_source().url.starts_with("https://"));
+    assert!(!r.primary_source().retrieved.is_empty());
+    assert!(!r.raw().limitations.is_empty());
+    assert!(!r.raw().unknown_conditions.is_empty());
 }
 
 #[test]
@@ -147,9 +171,125 @@ fn ruleset_version_is_calver() {
 #[test]
 fn non_unknown_outcome_without_source_is_unconstructible() {
     let rules = harness_guard_rules::loader::load_rules();
-    let mut raw = rules[0].raw.clone();
+    let mut raw = rules[0].raw().clone();
     raw.sources.clear();
     assert!(harness_guard_rules::loader::ValidatedRule::try_from_raw(raw).is_err());
+}
+
+#[test]
+fn unknown_outcome_status_is_rejected_by_runtime_validation() {
+    assert_raw_rejected(|raw| raw.outcomes[0].status = "surprise".into());
+}
+
+#[test]
+fn pass_outcome_matrix_is_enforced_by_runtime_validation() {
+    assert_raw_rejected(|raw| outcome_mut(raw, "pass").confidence = None);
+    assert_raw_rejected(|raw| outcome_mut(raw, "pass").confidence = Some("certain".into()));
+    assert_raw_rejected(|raw| outcome_mut(raw, "pass").severity = Some("info".into()));
+    assert_raw_rejected(|raw| {
+        outcome_mut(raw, "pass").remediation = Some(harness_guard_rules::schema::Remediation {
+            summary: "not valid for pass".into(),
+            command: "none".into(),
+        });
+    });
+}
+
+#[test]
+fn finding_outcome_matrix_is_enforced_by_runtime_validation() {
+    assert_raw_rejected(|raw| outcome_mut(raw, "finding").severity = None);
+    assert_raw_rejected(|raw| outcome_mut(raw, "finding").severity = Some("critical".into()));
+    assert_raw_rejected(|raw| outcome_mut(raw, "finding").confidence = None);
+    assert_raw_rejected(|raw| outcome_mut(raw, "finding").confidence = Some("certain".into()));
+    assert_raw_rejected(|raw| {
+        outcome_mut(raw, "finding")
+            .remediation
+            .as_mut()
+            .unwrap()
+            .command
+            .clear();
+    });
+}
+
+#[test]
+fn unknown_outcome_matrix_is_enforced_by_runtime_validation() {
+    assert_raw_rejected(|raw| outcome_mut(raw, "unknown").severity = Some("info".into()));
+    assert_raw_rejected(|raw| outcome_mut(raw, "unknown").confidence = Some("low".into()));
+    assert_raw_rejected(|raw| outcome_mut(raw, "unknown").unknown_reason = None);
+    assert_raw_rejected(|raw| outcome_mut(raw, "unknown").unknown_reason = Some(String::new()));
+    assert_raw_rejected(|raw| {
+        outcome_mut(raw, "unknown").remediation = Some(harness_guard_rules::schema::Remediation {
+            summary: "not valid for unknown".into(),
+            command: "none".into(),
+        });
+    });
+}
+
+#[test]
+fn malformed_sources_are_rejected_by_runtime_validation() {
+    assert_raw_rejected(|raw| raw.sources[0].schema_version = "2.0".into());
+    assert_raw_rejected(|raw| raw.sources[0].url = "http://example.invalid".into());
+    assert_raw_rejected(|raw| raw.sources[0].url = "https:///missing-host".into());
+    assert_raw_rejected(|raw| raw.sources[0].publisher.clear());
+    assert_raw_rejected(|raw| raw.sources[0].title.clear());
+    assert_raw_rejected(|raw| raw.sources[0].evidence_class = "rumor".into());
+    assert_raw_rejected(|raw| raw.sources[0].retrieved = "2026-02-30".into());
+    assert_raw_rejected(|raw| raw.sources[0].content_hash = "sha256:abcd".into());
+    assert_raw_rejected(|raw| {
+        raw.sources[0].archived_url = Some("http://archive.example.invalid".into());
+    });
+}
+
+#[test]
+fn malformed_tested_versions_are_rejected_by_runtime_validation() {
+    assert_raw_rejected(|raw| raw.tested_versions[0].min = "v0.144.4".into());
+    assert_raw_rejected(|raw| raw.tested_versions[0].max = "0.144".into());
+    assert_raw_rejected(|raw| raw.tested_versions[0].verified_on = "2026-02-30".into());
+    assert_raw_rejected(|raw| {
+        raw.tested_versions[0].min = "0.200.0".into();
+        raw.tested_versions[0].max = "0.144.4".into();
+    });
+    assert_raw_rejected(|raw| raw.tested_versions[0].min = "<=0.100.0".into());
+}
+
+fn rule_json() -> serde_json::Value {
+    let raw =
+        std::fs::read_to_string(repo_root().join("rules/codex/history-persist-01.json")).unwrap();
+    serde_json::from_str(&raw).unwrap()
+}
+
+fn outcome_json_mut<'a>(
+    json: &'a mut serde_json::Value,
+    status: &str,
+) -> &'a mut serde_json::Value {
+    json["outcomes"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|outcome| outcome["status"] == status)
+        .unwrap()
+}
+
+fn raw_rule() -> harness_guard_rules::schema::RawRule {
+    harness_guard_rules::loader::load_rules()[0].raw().clone()
+}
+
+fn outcome_mut<'a>(
+    raw: &'a mut harness_guard_rules::schema::RawRule,
+    status: &str,
+) -> &'a mut harness_guard_rules::schema::RawOutcome {
+    raw.outcomes
+        .iter_mut()
+        .find(|outcome| outcome.status == status)
+        .unwrap()
+}
+
+fn assert_raw_rejected(mutate: impl FnOnce(&mut harness_guard_rules::schema::RawRule)) {
+    let mut raw = raw_rule();
+    mutate(&mut raw);
+    assert!(
+        harness_guard_rules::loader::ValidatedRule::try_from_raw(raw).is_err(),
+        "mutated raw rule must fail runtime validation"
+    );
 }
 
 fn valid_report_with_status(status: &str, severity: serde_json::Value) -> serde_json::Value {
