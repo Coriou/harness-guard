@@ -16,13 +16,45 @@ fn copy_dir(source: &Path, destination: &Path) {
     std::fs::create_dir_all(destination).unwrap();
     for entry in std::fs::read_dir(source).unwrap() {
         let entry = entry.unwrap();
+        let metadata = std::fs::symlink_metadata(entry.path()).unwrap();
         let destination_entry = destination.join(entry.file_name());
-        if entry.path().is_dir() {
+        assert!(
+            !metadata.file_type().is_symlink(),
+            "synthetic fixture trees must not contain symlinks"
+        );
+        if metadata.is_dir() {
             copy_dir(&entry.path(), &destination_entry);
-        } else {
+        } else if metadata.is_file() {
             std::fs::copy(entry.path(), destination_entry).unwrap();
+        } else {
+            panic!("synthetic fixture trees must contain only regular files and directories");
         }
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn fixture_copy_rejects_symlinks_without_copying_the_target() {
+    let temp = tempfile::tempdir().unwrap();
+    let source = temp.path().join("source");
+    let destination = temp.path().join("destination");
+    let external_sentinel = temp.path().join("external-sentinel");
+    std::fs::create_dir(&source).unwrap();
+    std::fs::write(&external_sentinel, "must never be copied").unwrap();
+    std::os::unix::fs::symlink(&external_sentinel, source.join("escape")).unwrap();
+
+    let result = std::panic::catch_unwind(|| copy_dir(&source, &destination));
+
+    assert!(result.is_err(), "fixture symlink must be rejected");
+    assert!(
+        !destination.join("escape").exists(),
+        "the symlink target must not be copied into the destination"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&external_sentinel).unwrap(),
+        "must never be copied",
+        "the external sentinel must remain unchanged"
+    );
 }
 
 fn expected_report(case: &str) -> serde_json::Value {
