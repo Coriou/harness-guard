@@ -182,6 +182,15 @@ fn unknown_outcome_status_is_rejected_by_runtime_validation() {
 }
 
 #[test]
+fn invalid_applicability_metadata_is_rejected_by_runtime_validation() {
+    assert_raw_rejected(|raw| raw.category = "bogus".into());
+    assert_raw_rejected(|raw| raw.os.clear());
+    assert_raw_rejected(|raw| raw.os = vec!["bogus".into()]);
+    assert_raw_rejected(|raw| raw.scopes.clear());
+    assert_raw_rejected(|raw| raw.scopes = vec!["bogus".into()]);
+}
+
+#[test]
 fn pass_outcome_matrix_is_enforced_by_runtime_validation() {
     assert_raw_rejected(|raw| outcome_mut(raw, "pass").confidence = None);
     assert_raw_rejected(|raw| outcome_mut(raw, "pass").confidence = Some("certain".into()));

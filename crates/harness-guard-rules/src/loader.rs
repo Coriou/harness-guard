@@ -66,6 +66,35 @@ fn validate_rule(raw: &RawRule) -> Result<(), RuleValidationError> {
     if raw.tool != "codex" {
         return invalid(raw, "tool must be codex in this slice");
     }
+    if !matches!(
+        raw.category.as_str(),
+        "retention"
+            | "telemetry"
+            | "training"
+            | "transfer"
+            | "sync"
+            | "permissions"
+            | "sandbox"
+            | "network"
+    ) {
+        return invalid(raw, "category is not recognized");
+    }
+    if raw.os.is_empty()
+        || raw
+            .os
+            .iter()
+            .any(|os| !matches!(os.as_str(), "macos" | "linux" | "windows"))
+    {
+        return invalid(raw, "os must contain only macos, linux, or windows");
+    }
+    if raw.scopes.is_empty()
+        || raw
+            .scopes
+            .iter()
+            .any(|scope| !matches!(scope.as_str(), "user" | "project"))
+    {
+        return invalid(raw, "scopes must contain only user or project");
+    }
     if raw.title.is_empty() || raw.why_it_matters.is_empty() {
         return invalid(raw, "title and why_it_matters must be non-empty");
     }
