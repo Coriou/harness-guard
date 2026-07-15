@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "generated": "2026-07-15",
+  "hashes": {
+    "https://learn.chatgpt.com/docs/config-file/config-reference": "sha256:365bffc58b3bb6363b64d558baa25126d9da314efdcd84f3d0b8b62e705d1d95",
+    "https://learn.chatgpt.com/docs/config-file/config-advanced": "sha256:64a75750e6f8c3b00edd04384a5edbfaf3485f601d5bd1a18c30f67bb58bef66"
+  }
+}
