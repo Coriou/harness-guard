@@ -9,3 +9,8 @@ license.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 time.workspace = true
+
+[dev-dependencies]
+# default-features = false: MUST NOT pull an HTTP resolver into the graph
+# (cargo-deny would reject it; schemas are self-contained, no remote $ref).
+jsonschema = { version = "0.30", default-features = false }

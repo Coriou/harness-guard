@@ -1,1 +1,4 @@
-//! Schema-backed rule data and sanitized report types.
+//! Rule/report types mirroring schemas/, plus embedded rule loading.
+pub mod loader;
+pub mod report;
+pub mod schema;
