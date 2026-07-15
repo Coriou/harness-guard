@@ -2,18 +2,33 @@
 //! NEVER runs the tool. npm layouts yield a version; standalone/Homebrew
 //! layouts legitimately yield None → stale-ruleset ("version not detected").
 use crate::discovery::DiscoveryRoot;
+use crate::readfs::read_bounded_regular_with_hook;
 use harness_guard_rules::schema::TestedVersion;
 use std::path::{Path, PathBuf};
 
 const MAX_SYMLINK_HOPS: usize = 5;
 const MAX_PARENT_WALK: usize = 5;
 const EXPECTED_PACKAGE: &str = "@openai/codex";
+const MAX_PACKAGE_JSON_BYTES: u64 = 64 * 1024;
 
 pub fn detect_codex_version(root: &DiscoveryRoot) -> Option<String> {
+    detect_codex_version_with_hook(root, || {})
+}
+
+fn detect_codex_version_with_hook(
+    root: &DiscoveryRoot,
+    after_package_metadata: impl FnOnce(),
+) -> Option<String> {
     let binary = find_codex_entry(root)?;
     let resolved = resolve_bounded(&binary)?;
     let package_json = nearest_package_json(&resolved)?;
-    let text = std::fs::read_to_string(package_json).ok()?;
+    let bytes = read_bounded_regular_with_hook(
+        &package_json,
+        MAX_PACKAGE_JSON_BYTES,
+        after_package_metadata,
+    )
+    .ok()?;
+    let text = String::from_utf8(bytes).ok()?;
     let package: serde_json::Value = serde_json::from_str(&text).ok()?;
     if package.get("name").and_then(|name| name.as_str()) != Some(EXPECTED_PACKAGE) {
         return None;
@@ -25,7 +40,9 @@ pub fn detect_codex_version(root: &DiscoveryRoot) -> Option<String> {
 
 /// Tool-on-PATH check used for detection confidence and the `list` command.
 pub fn binary_on_path(root: &DiscoveryRoot) -> bool {
-    find_codex_entry(root).is_some()
+    find_codex_entry(root)
+        .and_then(|entry| resolve_bounded(&entry))
+        .is_some()
 }
 
 fn find_codex_entry(root: &DiscoveryRoot) -> Option<PathBuf> {
@@ -42,7 +59,7 @@ fn resolve_bounded(start: &Path) -> Option<PathBuf> {
     for _ in 0..=MAX_SYMLINK_HOPS {
         let metadata = std::fs::symlink_metadata(&current).ok()?;
         if !metadata.file_type().is_symlink() {
-            return Some(current);
+            return metadata.file_type().is_file().then_some(current);
         }
         let target = std::fs::read_link(&current).ok()?;
         current = if target.is_absolute() {
@@ -196,6 +213,53 @@ mod tests {
             path_dirs: vec![bin],
         };
         assert_eq!(detect_codex_version(&root), None);
+    }
+
+    #[test]
+    fn oversized_package_json_is_refused() {
+        let padding = "x".repeat(MAX_PACKAGE_JSON_BYTES as usize);
+        let package =
+            format!(r#"{{"name":"@openai/codex","version":"0.144.4","padding":"{padding}"}}"#);
+        let (_dir, root) = npm_layout(&package);
+        assert_eq!(detect_codex_version(&root), None);
+    }
+
+    #[test]
+    fn codex_directory_is_not_a_binary() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = dir.path().join("bin");
+        std::fs::create_dir_all(bin.join("codex")).unwrap();
+        std::fs::write(
+            bin.join("package.json"),
+            r#"{"name":"@openai/codex","version":"0.144.4"}"#,
+        )
+        .unwrap();
+        let root = DiscoveryRoot {
+            codex_home: dir.path().join("x"),
+            path_dirs: vec![bin],
+        };
+        assert!(!binary_on_path(&root));
+        assert_eq!(detect_codex_version(&root), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn package_swap_between_metadata_and_open_is_refused_without_replacement_content() {
+        let (_dir, root) = npm_layout(r#"{"name":"@openai/codex","version":"0.144.4"}"#);
+        let package_json = root.path_dirs[0].parent().unwrap().join("package.json");
+        let replacement = package_json.with_file_name("replacement.json");
+        std::fs::write(
+            &replacement,
+            r#"{"name":"@openai/codex","version":"9.9.9","secret":"must-not-be-read"}"#,
+        )
+        .unwrap();
+
+        let detected = detect_codex_version_with_hook(&root, || {
+            std::fs::remove_file(&package_json).unwrap();
+            std::os::unix::fs::symlink(&replacement, &package_json).unwrap();
+        });
+
+        assert_eq!(detected, None);
     }
 
     #[cfg(unix)]
