@@ -1,3 +1,4 @@
+mod diagnostics;
 mod explain;
 mod redact;
 mod render_json;
@@ -161,12 +162,13 @@ fn cmd_scan(args: ScanArgs) -> ExitCode {
         anstream::print!("{}", render_term::render(&report, &opts));
     }
     for failure in &parse_failures {
-        // Source text is deliberately never attached or printed. Task 14
-        // replaces this structural line/column diagnostic with miette.
-        eprintln!(
-            "config parse failure at line {:?} col {:?}: {}",
-            failure.line, failure.col, failure.message
-        );
+        let path = report
+            .tools
+            .first()
+            .and_then(|tool| tool.config_paths.first())
+            .cloned()
+            .unwrap_or_else(|| "config.toml".to_string());
+        eprint!("{}", diagnostics::report_parse_failure(failure, &path));
     }
 
     let threshold = match args.fail_on {
