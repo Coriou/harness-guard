@@ -10,6 +10,9 @@ pub struct RawRule {
     pub category: String,
     pub title: String,
     pub why_it_matters: String,
+    /// Subject of the engine's fixed unknown-message template:
+    /// "Cannot determine {unknown_subject}: {reason}".
+    pub unknown_subject: String,
     pub os: Vec<String>,
     pub scopes: Vec<String>,
     pub auth_prerequisites: Option<String>,
@@ -29,6 +32,38 @@ pub struct Observation {
     #[serde(rename = "type")]
     pub value_type: String,
     pub allowed_render: Vec<String>,
+    #[serde(default)]
+    pub integer_bounds: Option<IntegerBounds>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IntegerBounds {
+    pub min: i64,
+    pub max: i64,
+}
+
+/// The closed match-primitive set (spec §6.2). Externally tagged: exactly one
+/// primitive key per outcome; serde rejects multiple keys, the JSON schema
+/// oneOf pins the shapes, and loader validation (§6.3) proves totality.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum MatchSpec {
+    Equals { value: MatchValue },
+    AnyOf { values: Vec<MatchValue> },
+    IntRange { min: Option<i64>, max: Option<i64> },
+    Unset(bool),
+    Unrecognized(bool),
+}
+
+/// Untagged and ordered: JSON true/false → Bool, integers → Int (floats and
+/// out-of-i64 numbers fail deserialization), strings → Str.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum MatchValue {
+    Bool(bool),
+    Int(i64),
+    Str(String),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -36,6 +71,8 @@ pub struct Observation {
 pub struct RawOutcome {
     pub when: String,
     pub status: String, // "pass" | "finding" | "unknown" (schema-constrained)
+    #[serde(rename = "match")]
+    pub match_spec: MatchSpec,
     #[serde(default)]
     pub severity: Option<String>,
     #[serde(default)]

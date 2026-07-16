@@ -1,10 +1,11 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "id": "codex-history-persist-01",
   "tool": "codex",
   "category": "retention",
   "title": "Session history persistence",
   "why_it_matters": "Codex CLI's built-in default saves local session transcripts to history.jsonl under CODEX_HOME. Sensitive content included in a transcript may remain on disk; a separate optional history.max_bytes cap can compact the oldest entries, and this rule does not inspect that cap or every configuration layer that can override the user-level setting.",
+  "unknown_subject": "history persistence posture",
   "os": ["macos", "linux"],
   "scopes": ["user"],
   "auth_prerequisites": null,
@@ -18,6 +19,7 @@
     {
       "when": "history.persistence is explicitly \"none\"",
       "status": "pass",
+      "match": { "equals": { "value": "none" } },
       "severity": null,
       "confidence": "high",
       "message": "The inspected user-level config sets history.persistence = \"none\".",
@@ -26,6 +28,7 @@
     {
       "when": "history.persistence is explicitly \"save-all\" in the user-level config",
       "status": "finding",
+      "match": { "equals": { "value": "save-all" } },
       "severity": "warning",
       "confidence": "high",
       "message": "The inspected user-level config explicitly enables local history persistence (history.persistence = \"save-all\").",
@@ -37,6 +40,7 @@
     {
       "when": "history.persistence is unset in the user-level config or the user-level config is absent",
       "status": "unknown",
+      "match": { "unset": true },
       "severity": null,
       "confidence": null,
       "message": "Effective history persistence cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
@@ -46,10 +50,11 @@
     {
       "when": "history.persistence is set to a value outside the documented enum",
       "status": "unknown",
+      "match": { "unrecognized": true },
       "severity": null,
       "confidence": null,
       "message": "history.persistence is set to an unrecognized value — raw values are never displayed.",
-      "unknown_reason": "Value is outside the documented enum for the tested version range; it cannot be interpreted safely.",
+      "unknown_reason": "history.persistence is set to an unrecognized value — raw values are never displayed",
       "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference"
     }
   ],

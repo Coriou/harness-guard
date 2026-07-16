@@ -50,8 +50,8 @@ impl ValidatedRule {
 }
 
 fn validate_rule(raw: &RawRule) -> Result<(), RuleValidationError> {
-    if raw.schema_version != "1.0" {
-        return invalid(raw, "schema_version must be 1.0");
+    if raw.schema_version != "1.1" {
+        return invalid(raw, "schema_version must be 1.1");
     }
     if raw.id.is_empty()
         || !raw.id.split('-').all(|part| {
@@ -63,8 +63,8 @@ fn validate_rule(raw: &RawRule) -> Result<(), RuleValidationError> {
     {
         return invalid(raw, "id must be non-empty lowercase kebab-case");
     }
-    if raw.tool != "codex" {
-        return invalid(raw, "tool must be codex in this slice");
+    if !matches!(raw.tool.as_str(), "codex" | "claude-code" | "grok-build") {
+        return invalid(raw, "tool must be codex, claude-code, or grok-build");
     }
     if !matches!(
         raw.category.as_str(),
@@ -91,16 +91,25 @@ fn validate_rule(raw: &RawRule) -> Result<(), RuleValidationError> {
         || raw
             .scopes
             .iter()
-            .any(|scope| !matches!(scope.as_str(), "user" | "project"))
+            .any(|scope| !matches!(scope.as_str(), "user" | "project" | "local" | "managed"))
     {
-        return invalid(raw, "scopes must contain only user or project");
+        return invalid(
+            raw,
+            "scopes must contain only user, project, local, or managed",
+        );
     }
     if raw.title.is_empty() || raw.why_it_matters.is_empty() {
         return invalid(raw, "title and why_it_matters must be non-empty");
     }
+    if raw.unknown_subject.is_empty() {
+        return invalid(raw, "unknown_subject must be non-empty");
+    }
     if raw.observation.file.is_empty()
         || raw.observation.key.is_empty()
-        || !matches!(raw.observation.value_type.as_str(), "enum" | "bool")
+        || !matches!(
+            raw.observation.value_type.as_str(),
+            "enum" | "bool" | "integer"
+        )
         || raw.observation.allowed_render.is_empty()
         || raw.observation.allowed_render.iter().any(String::is_empty)
     {

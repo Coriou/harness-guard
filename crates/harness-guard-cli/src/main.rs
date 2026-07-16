@@ -309,7 +309,7 @@ fn build_report(results: &[ScanResult], home: Option<&Path>, codex_home: &Path) 
         .expect("RFC3339 formatting");
 
     Report {
-        schema_version: "1.0".to_string(),
+        schema_version: "1.1".to_string(),
         harness_guard_version: env!("CARGO_PKG_VERSION").to_string(),
         ruleset_version: ruleset_version(),
         scanned_at,

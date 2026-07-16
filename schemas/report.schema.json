@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "harness-guard:report:1.0",
+  "$id": "harness-guard:report:1.1",
   "title": "Harness Guard sanitized report",
   "type": "object",
   "required": ["schema_version", "harness_guard_version", "ruleset_version", "scanned_at", "network_requests_made", "platform", "tools", "summary"],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "1.0" },
+    "schema_version": { "const": "1.1" },
     "harness_guard_version": { "type": "string" },
     "ruleset_version": { "type": "string", "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}$" },
     "scanned_at": { "type": "string" },
@@ -24,7 +24,7 @@
         "required": ["tool", "detected_version", "config_paths", "detection_confidence", "rules_last_verified_version", "rules_verified_date", "version_in_range", "findings"],
         "additionalProperties": false,
         "properties": {
-          "tool": { "enum": ["codex"] },
+          "tool": { "enum": ["claude-code", "codex", "grok-build"] },
           "detected_version": { "type": ["string", "null"] },
           "config_paths": { "type": "array", "items": { "type": "string" } },
           "detection_confidence": { "enum": ["high", "medium", "low"] },

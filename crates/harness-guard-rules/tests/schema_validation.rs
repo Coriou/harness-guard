@@ -432,6 +432,58 @@ fn malformed_tested_versions_are_rejected_by_runtime_validation() {
     assert_raw_rejected(|raw| raw.tested_versions[0].min = "<=0.100.0".into());
 }
 
+#[test]
+fn rule_schema_rejects_missing_match() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    json["outcomes"][0].as_object_mut().unwrap().remove("match");
+    assert!(
+        v.validate(&json).is_err(),
+        "match is required on every outcome"
+    );
+}
+
+#[test]
+fn rule_schema_rejects_multiple_primitives_in_one_match() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    json["outcomes"][0]["match"] =
+        serde_json::json!({ "equals": { "value": "none" }, "unset": true });
+    assert!(v.validate(&json).is_err());
+}
+
+#[test]
+fn rule_schema_rejects_unset_match_with_pass_status() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    json["outcomes"][0]["match"] = serde_json::json!({ "unset": true });
+    // outcome 0 has status "pass" — unset must force status unknown
+    assert!(v.validate(&json).is_err());
+}
+
+#[test]
+fn rule_schema_rejects_empty_any_of_and_inverted_int_range_shape() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    json["outcomes"][0]["match"] = serde_json::json!({ "any_of": { "values": [] } });
+    assert!(v.validate(&json).is_err(), "empty any_of must fail");
+    let mut json = rule_json();
+    json["outcomes"][0]["match"] = serde_json::json!({ "int_range": { "min": 1 } });
+    assert!(
+        v.validate(&json).is_err(),
+        "int_range requires both min and max keys"
+    );
+}
+
+#[test]
+fn rule_schema_requires_integer_bounds_for_integer_observations() {
+    let v = compiled("rule.schema.json");
+    let mut json = rule_json();
+    json["observation"]["type"] = serde_json::json!("integer");
+    // no integer_bounds supplied
+    assert!(v.validate(&json).is_err());
+}
+
 fn rule_json() -> serde_json::Value {
     let raw =
         std::fs::read_to_string(repo_root().join("rules/codex/history-persist-01.json")).unwrap();
@@ -475,7 +527,7 @@ fn assert_raw_rejected(mutate: impl FnOnce(&mut harness_guard_rules::schema::Raw
 
 fn valid_report_with_status(status: &str, severity: serde_json::Value) -> serde_json::Value {
     serde_json::json!({
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "harness_guard_version": "0.1.0",
         "ruleset_version": "2026.07.15",
         "scanned_at": "2026-07-16T00:00:00Z",
