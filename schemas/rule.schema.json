@@ -48,16 +48,16 @@
               "command": { "type": "string", "minLength": 1 }
             }
           },
-          "unknown_reason": { "type": "string", "minLength": 1 },
-          "verify_url": { "type": ["string", "null"] }
+          "unknown_reason": { "type": ["string", "null"], "minLength": 1 },
+          "verify_url": { "type": ["string", "null"], "pattern": "^https://[^\\s/?#]+" }
         },
         "allOf": [
           { "if": { "properties": { "status": { "const": "finding" } } },
-            "then": { "required": ["severity", "confidence"], "properties": { "severity": { "enum": ["info", "warning"] }, "confidence": { "enum": ["low", "medium", "high"] } } } },
+            "then": { "required": ["severity", "confidence"], "properties": { "severity": { "enum": ["info", "warning"] }, "confidence": { "enum": ["low", "medium", "high"] }, "unknown_reason": { "const": null }, "verify_url": { "const": null } } } },
           { "if": { "properties": { "status": { "const": "pass" } } },
-            "then": { "required": ["confidence"], "properties": { "severity": { "const": null }, "confidence": { "enum": ["low", "medium", "high"] } } } },
+            "then": { "required": ["confidence"], "properties": { "severity": { "const": null }, "confidence": { "enum": ["low", "medium", "high"] }, "remediation": { "const": null }, "unknown_reason": { "const": null }, "verify_url": { "const": null } } } },
           { "if": { "properties": { "status": { "const": "unknown" } } },
-            "then": { "required": ["unknown_reason"], "properties": { "severity": { "const": null }, "confidence": { "const": null } } } }
+            "then": { "required": ["unknown_reason"], "properties": { "severity": { "const": null }, "confidence": { "const": null }, "remediation": { "const": null }, "unknown_reason": { "type": "string", "minLength": 1 } } } }
         ]
       }
     },
@@ -96,13 +96,13 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": { "const": "1.0" },
-        "url": { "type": "string", "minLength": 1, "pattern": "^https://" },
+        "url": { "type": "string", "minLength": 1, "pattern": "^https://[^\\s/?#]+" },
         "publisher": { "type": "string", "minLength": 1 },
         "title": { "type": "string", "minLength": 1 },
         "evidence_class": { "enum": ["local-observation", "official-documentation", "official-policy", "independent-reproduction", "inference"] },
         "retrieved": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
         "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
-        "archived_url": { "type": ["string", "null"] },
+        "archived_url": { "type": ["string", "null"], "pattern": "^https://[^\\s/?#]+" },
         "notes": { "type": ["string", "null"] }
       }
     }

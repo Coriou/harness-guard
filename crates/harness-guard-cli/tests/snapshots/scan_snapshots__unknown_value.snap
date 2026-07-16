@@ -5,9 +5,9 @@ expression: text
 harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
-  ● codex 0.144.4 · config [CONFIG_PATH] · confidence high
+  ● codex 0.144.5 · config [CONFIG_PATH] · confidence high
 
-codex 0.144.4 — rules verified ≤0.144.4 · 2026-07-15
+codex 0.144.5 — rules verified ≤0.144.5 · 2026-07-16
 0 warning · 0 info · 1 unknown · 0 stale · 0 passed
 
 ?? UNKNOWN: Cannot determine history persistence posture: history.persistence is set to an unrecognized value — raw values are never displayed

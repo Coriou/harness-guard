@@ -5,9 +5,9 @@ use common::*;
 /// Runtime-mutated hostile cases are exercised separately in Task 14.
 const CASES: &[(&str, i32)] = &[
     ("missing", 0),
-    ("minimal", 1),
+    ("minimal", 0),
     ("hardened", 0),
-    ("risky-unset", 1),
+    ("risky-unset", 0),
     ("risky-explicit", 1),
     ("malformed-toml", 2),
     ("unrecognized-value", 0),
@@ -58,6 +58,19 @@ fn json_report_validates_against_report_schema() {
             .map(|error| error.to_string())
             .collect::<Vec<_>>()
     );
+}
+
+#[test]
+fn json_platform_matches_the_supported_build_target() {
+    let output = run_case("hardened", &["scan", "--json"]);
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+
+    #[cfg(target_os = "macos")]
+    let expected = "macos";
+    #[cfg(target_os = "linux")]
+    let expected = "linux";
+
+    assert_eq!(report["platform"]["os"], expected);
 }
 
 #[test]
@@ -122,7 +135,11 @@ fn output_paths_are_redacted() {
     let files_root = fixture("risky-unset");
     let output = run_in(&files_root, &["scan", "--json"]);
     let text = String::from_utf8_lossy(&output.stdout);
-    assert!(text.contains("~/.codex/config.toml"));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(
+        report["tools"][0]["config_paths"][0],
+        "~/codex-home/config.toml"
+    );
     assert!(
         !text.contains(&files_root.to_string_lossy().into_owned()),
         "absolute fixture home leaked"
@@ -132,7 +149,7 @@ fn output_paths_are_redacted() {
 
 #[test]
 fn explicit_codex_home_outside_home_is_symbolic() {
-    let files_root = fixture("risky-unset");
+    let files_root = fixture("risky-explicit");
     let codex_home = files_root.join("codex-home");
     let synthetic_home = tempfile::tempdir().unwrap();
     let output = run_with_roots(

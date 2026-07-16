@@ -1,66 +1,95 @@
 # CONTEXT.md — Read this first in every session
 
-**Project:** Harness Guard  
-**Purpose:** Local-only, source-cited privacy and configuration posture auditor for AI coding tools.  
-**Context date:** 2026-07-14  
-**Current phase:** Product direction decided; pre-implementation research (competition, maintainability, UX) complete with binding constraints; implementation is gated by evidence-schema work and a narrow CLI validation slice.
+**Project:** Harness Guard
+**Purpose:** Local, execution-free, per-finding-cited config auditor.
+**Context date:** 2026-07-16
+**Current phase:** Codex CLI thin slice implemented; release, security, evidence,
+and public-readiness validation in progress.
 
-## Current decision
+## Current implemented scope
 
-Proceed with a **free/open-source, cross-platform CLI/core first**. Start read-only with Claude Code, OpenAI Codex CLI, and GitHub Copilot CLI. A GUI, automatic fixes, App Store distribution, broad tool coverage, and a paid product are deferred until user evidence justifies them.
+Harness Guard is a free/open-source, read-only Rust CLI and core. Runtime code
+currently supports **Codex CLI only**, with a single source-cited rule for local
+history persistence. The bundled ruleset is the authoritative record of the
+tested Codex version range.
 
-The canonical product decision is [`docs/product/decision-and-strategy.md`](docs/product/decision-and-strategy.md). The production path is [`docs/product/implementation-plan.md`](docs/product/implementation-plan.md).
+Claude Code, GitHub Copilot CLI, Grok, and the other tools discussed in early
+research and product-strategy documents are not implemented or supported. Those
+documents describe possible sequencing, not shipped coverage. Adding a harness,
+rule, write/fix behavior, network feature, database, output format, GUI, or new
+public claim requires explicit approval and fresh primary evidence.
+
+The CLI supports macOS and Linux. Unsupported build targets fail at compile
+time rather than falling back to an unhardened filesystem open or being
+reported as another operating system. Windows is deferred until its full path
+traversal can meet the same race-resistant, reparse-point-refusing invariant.
 
 ## Required reading order
 
-1. `README.md`
-2. `CONTEXT.md`
-3. `docs/product/decision-and-strategy.md`
-4. `docs/research/verification-audit-2026-07-13.md`
-5. `docs/product/implementation-plan.md`
-6. `docs/research/synthesis-2026-07-14.md` (binding constraints from competition/maintainability/UX research)
-7. Only then, relevant legacy report/data or per-tool notes
+1. `AGENTS.md`
+2. `CONTRIBUTING.md`
+3. `README.md`
+4. `SECURITY.md`
+5. `docs/maintenance/runbook.md`
+6. The thin-slice design, plan, and review findings under `docs/superpowers/`
+7. Relevant production code, schemas, bundled rules, freshness state, synthetic
+   fixtures, workflows, and no-egress scripts
+
+Historical product and research documents remain useful context, but they are
+not proof of runtime support or current vendor behavior.
 
 ## Critical data-quality warning
 
-The original report, comparison JSON, audit-command YAML, and config examples are **research artifacts, not application ground truth**. The verification audit found material stale/unsupported claims, including Grok mitigation keys absent from current official documentation and oversimplified account/plan behavior across Cursor, Claude Code, Copilot CLI, and Codex CLI.
-
-Do not execute `data/audit-commands.yaml`, build rules directly from `data/tools-comparison.json`, or repeat the old executive table without re-verifying the exact claim, version, OS, plan/auth context, and source.
+The original reports, comparison JSON, audit-command YAML, and config examples
+under legacy research areas are quarantined artifacts, not application inputs
+or rule evidence. Never derive a rule from `data/` or repeat a historical claim
+without freshly verifying its exact version, operating system, product,
+plan/auth context, and official primary source.
 
 ## Product safety invariants
 
-- Normal scans make no network requests.
-- Never execute a detected harness, MCP server, skill, plugin, hook, or arbitrary command.
-- Do not read source code, prompt transcripts, shell history, `.env` files, or secret values in the initial product.
-- Store/report normalized findings only; redact usernames, home paths, tokens, and raw configuration.
-- Separate inference transfer, retention, training, telemetry, feedback, sync/sharing, permissions, sandbox, and network access.
-- Report locally unknowable account/remote state as `unknown` with an official verification link.
-- Every rule is version-bounded, source-cited, dated, fixture-tested, and explicit about limitations.
-- Prefer concrete findings and actions over a false-precision numeric risk score.
-- Never position publicly as an "AI agent security scanner"; the claim is "local, execution-free, per-finding-cited privacy/configuration posture auditor."
-- Do not publicly claim a verification cadence (e.g., "verified monthly") before the automated freshness pipeline (release-watch, doc-drift detection, fixture tripwires) is operational.
+- Scans make no network requests and execute nothing discovered.
+- Core receives an explicit `DiscoveryRoot`; it never resolves ambient homes or
+  environment variables.
+- Never test against a developer's real harness store. Use synthetic roots under
+  `fixtures/` or temporary directories derived from them.
+- Do not read source code, prompt/session transcripts, history contents, shell
+  history, `.env` files, credentials, or secret values.
+- Reads are bounded, regular-file-only, symlink/reparse-point refusing,
+  depth-bounded, and resistant to path replacement.
+- Reports contain only normalized, allowlisted observations. Redact usernames,
+  home paths, raw config values, and source snippets.
+- Keep local storage distinct from data transmission and vendor-side
+  collection, training, telemetry, and retention.
+- Report locally unknowable account/auth/remote state as `unknown`; never infer
+  authentication method from local artifacts.
+- Every non-unknown finding is version-bounded, source-cited, dated,
+  fixture-tested, and explicit about limitations.
+- Never position Harness Guard as an agent-security scanner. Do not claim a
+  public verification cadence while freshness workflows remain default-off.
 
-## Next authorized work package
+## Architecture and release state
 
-Phase 0 plus one thin vertical slice:
+- `harness-guard-core`: explicit discovery roots, bounded reads, parsing, and
+  evaluation; no environment, process, or network APIs.
+- `harness-guard-rules`: schema-mirroring types, validation, and bundled rule
+  loading. The top-level `rules/` directory is an independently usable
+  Apache-2.0 data package.
+- `harness-guard-cli`: argument parsing, environment/home resolution, sanitized
+  rendering, and exit-code semantics.
 
-1. Define source, rule, finding, fixture, and sanitized-report schemas.
-2. Create the Rust library/CLI workspace.
-3. Implement safe Codex config discovery/parsing against synthetic fixtures.
-4. Evaluate one source-cited rule such as history persistence.
-5. Render terminal and JSON output and prove the scan has no egress.
-6. Review the slice before adding rules or tools.
-
-This does not authorize a full desktop build.
+The repository is under Git version control. Release work must preserve private
+visibility until local gates and private CI pass. Freshness workflows remain
+triage-only and disabled. Do not publish packages, create a GitHub Release, or
+make other external changes without the exact authorization required by
+`AGENTS.md`.
 
 ## Session continuity
 
-- Log completed work in `notes/session-history.md`.
-- Record product/research choices in `notes/research-decisions.md`.
-- Preserve retrieved dates and exact source links for research changes.
-- Treat upstream tool behavior as volatile; degrade to `unknown` outside tested versions.
-- This directory is not currently a Git repository. Establish version control before implementation/release work.
-
-## Business direction
-
-The core should be free and open source (Apache-2.0 is the current recommendation). Use the tool, evidence pages, and a transparent case study on `benjsmin.com` to demonstrate product/security engineering and offer a fixed-scope team AI-coding posture review. Build paid team policy/fleet capabilities only after repeated requests or paid pilots. Do not begin with a $0.99 App Store app.
+- Follow `docs/maintenance/runbook.md` for evidence and rule changes.
+- Preserve actual retrieval dates, exact official URLs, semantic hashes, archive
+  URLs when available, and version evidence.
+- Treat upstream behavior as volatile. When no verified range matches, degrade
+  to `stale-ruleset`/`unknown`; never infer support.
+- Keep changes within the currently authorized work package and record unresolved
+  safety, evidence, or release risks in the handoff.

@@ -153,8 +153,8 @@ fn valid_record(status: Status) -> FindingRecord {
         observation: Some("history.persistence = allowlisted-value".into()),
         remediation: None,
         source: Some(source()),
-        valid_from: Some("<=0.144.4".into()),
-        valid_until: Some("0.144.4".into()),
+        valid_from: Some("<=0.144.5".into()),
+        valid_until: Some("0.144.5".into()),
         limitations: vec!["Synthetic limitation.".into()],
         unknown_reason: None,
         verify_url: None,
@@ -186,7 +186,7 @@ fn valid_record(status: Status) -> FindingRecord {
 fn source() -> SourceCite {
     SourceCite {
         url: "https://example.invalid/official-documentation".into(),
-        retrieved: "2026-07-15".into(),
+        retrieved: "2026-07-16".into(),
     }
 }
 
@@ -200,11 +200,11 @@ fn remediation() -> Remediation {
 fn tool_with(findings: Vec<FindingRecord>) -> ToolReport {
     ToolReport {
         tool: "codex".into(),
-        detected_version: Some("0.144.4".into()),
+        detected_version: Some("0.144.5".into()),
         config_paths: vec!["~/.codex/config.toml".into()],
         detection_confidence: Confidence::High,
-        rules_last_verified_version: Some("0.144.4".into()),
-        rules_verified_date: Some("2026-07-15".into()),
+        rules_last_verified_version: Some("0.144.5".into()),
+        rules_verified_date: Some("2026-07-16".into()),
         version_in_range: true,
         findings,
     }

@@ -51,6 +51,18 @@ fn rule_missing_source_fails_schema_validation() {
 }
 
 #[test]
+fn rule_schema_rejects_source_urls_without_https_hosts() {
+    let validator = compiled("rule.schema.json");
+    let mut json = rule_json();
+    json["sources"][0]["url"] = serde_json::json!("https:///missing-host");
+    assert!(validator.validate(&json).is_err());
+
+    let mut json = rule_json();
+    json["sources"][0]["archived_url"] = serde_json::json!("https:///missing-host");
+    assert!(validator.validate(&json).is_err());
+}
+
+#[test]
 fn finding_outcome_with_null_severity_fails_schema_validation() {
     // Regression pin for review finding 4: presence alone is insufficient.
     let v = compiled("rule.schema.json");
@@ -95,6 +107,60 @@ fn pass_outcome_with_null_confidence_fails_schema_validation() {
 }
 
 #[test]
+fn rule_outcome_schema_rejects_cross_status_fields() {
+    let v = compiled("rule.schema.json");
+    let cases = [
+        (
+            "pass",
+            "remediation",
+            serde_json::json!({
+                "summary": "Not valid for a pass outcome.",
+                "command": "synthetic command"
+            }),
+        ),
+        (
+            "pass",
+            "unknown_reason",
+            serde_json::json!("Not valid for a pass outcome."),
+        ),
+        (
+            "pass",
+            "verify_url",
+            serde_json::json!("https://example.invalid/verify"),
+        ),
+        (
+            "finding",
+            "unknown_reason",
+            serde_json::json!("Not valid for a finding outcome."),
+        ),
+        (
+            "finding",
+            "verify_url",
+            serde_json::json!("https://example.invalid/verify"),
+        ),
+        ("unknown", "severity", serde_json::json!("info")),
+        ("unknown", "confidence", serde_json::json!("low")),
+        (
+            "unknown",
+            "remediation",
+            serde_json::json!({
+                "summary": "Not valid for an unknown outcome.",
+                "command": "synthetic command"
+            }),
+        ),
+    ];
+
+    for (status, field, value) in cases {
+        let mut json = rule_json();
+        outcome_json_mut(&mut json, status)[field] = value;
+        assert!(
+            v.validate(&json).is_err(),
+            "{field} must be rejected for rule outcome status {status}"
+        );
+    }
+}
+
+#[test]
 fn report_finding_with_null_severity_fails_schema_validation() {
     let v = compiled("report.schema.json");
     let mut json = valid_report_with_status("finding", serde_json::json!("warning"));
@@ -122,6 +188,112 @@ fn report_pass_with_warning_severity_fails_schema_validation() {
         v.validate(&json).is_err(),
         "a report pass with warning severity MUST fail validation"
     );
+}
+
+#[test]
+fn report_schema_rejects_cross_status_fields() {
+    let v = compiled("report.schema.json");
+    let cases = [
+        (
+            "pass",
+            "remediation",
+            serde_json::json!({
+                "summary": "Not valid for a pass result.",
+                "command": "synthetic command"
+            }),
+        ),
+        (
+            "pass",
+            "unknown_reason",
+            serde_json::json!("Not valid for a pass result."),
+        ),
+        (
+            "pass",
+            "stale_reason",
+            serde_json::json!("Not valid for a pass result."),
+        ),
+        (
+            "finding",
+            "unknown_reason",
+            serde_json::json!("Not valid for a finding result."),
+        ),
+        (
+            "finding",
+            "stale_reason",
+            serde_json::json!("Not valid for a finding result."),
+        ),
+        ("unknown", "severity", serde_json::json!("info")),
+        ("unknown", "confidence", serde_json::json!("low")),
+        (
+            "unknown",
+            "source",
+            serde_json::json!({
+                "url": "https://example.invalid/source",
+                "retrieved": "2026-07-16"
+            }),
+        ),
+        (
+            "unknown",
+            "remediation",
+            serde_json::json!({
+                "summary": "Not valid for an unknown result.",
+                "command": "synthetic command"
+            }),
+        ),
+        (
+            "unknown",
+            "stale_reason",
+            serde_json::json!("Not valid for an unknown result."),
+        ),
+        ("unknown", "unknown_reason", serde_json::json!("")),
+        ("stale-ruleset", "severity", serde_json::json!("info")),
+        ("stale-ruleset", "confidence", serde_json::json!("low")),
+        ("stale-ruleset", "source", serde_json::Value::Null),
+        (
+            "stale-ruleset",
+            "remediation",
+            serde_json::json!({
+                "summary": "Not valid for a stale result.",
+                "command": "synthetic command"
+            }),
+        ),
+        (
+            "stale-ruleset",
+            "unknown_reason",
+            serde_json::json!("Not valid for a stale result."),
+        ),
+        ("stale-ruleset", "stale_reason", serde_json::json!("")),
+    ];
+
+    for (status, field, value) in cases {
+        let mut json = valid_report_with_exact_status(status);
+        assert!(
+            v.validate(&json).is_ok(),
+            "synthetic {status} baseline must validate before mutation: {:?}",
+            v.iter_errors(&json)
+                .map(|error| error.to_string())
+                .collect::<Vec<_>>()
+        );
+        json["tools"][0]["findings"][0][field] = value;
+        assert!(
+            v.validate(&json).is_err(),
+            "{field} must be rejected for report status {status}"
+        );
+    }
+}
+
+#[test]
+fn report_schema_rejects_malformed_source_url_and_date() {
+    let validator = compiled("report.schema.json");
+    let mut malformed_url = valid_report_with_exact_status("pass");
+    malformed_url["tools"][0]["findings"][0]["source"]["url"] =
+        serde_json::json!("https:///missing-host");
+    assert!(validator.validate(&malformed_url).is_err());
+
+    let mut malformed_date = valid_report_with_exact_status("pass");
+    malformed_date["tools"][0]["findings"][0]["source"]["retrieved"] =
+        serde_json::json!("2026/07/16");
+    assert!(validator.validate(&malformed_date).is_err());
 }
 
 #[test]
@@ -250,12 +422,12 @@ fn malformed_sources_are_rejected_by_runtime_validation() {
 
 #[test]
 fn malformed_tested_versions_are_rejected_by_runtime_validation() {
-    assert_raw_rejected(|raw| raw.tested_versions[0].min = "v0.144.4".into());
+    assert_raw_rejected(|raw| raw.tested_versions[0].min = "v0.144.5".into());
     assert_raw_rejected(|raw| raw.tested_versions[0].max = "0.144".into());
     assert_raw_rejected(|raw| raw.tested_versions[0].verified_on = "2026-02-30".into());
     assert_raw_rejected(|raw| {
         raw.tested_versions[0].min = "0.200.0".into();
-        raw.tested_versions[0].max = "0.144.4".into();
+        raw.tested_versions[0].max = "0.144.5".into();
     });
     assert_raw_rejected(|raw| raw.tested_versions[0].min = "<=0.100.0".into());
 }
@@ -306,16 +478,16 @@ fn valid_report_with_status(status: &str, severity: serde_json::Value) -> serde_
         "schema_version": "1.0",
         "harness_guard_version": "0.1.0",
         "ruleset_version": "2026.07.15",
-        "scanned_at": "2026-07-15T00:00:00Z",
+        "scanned_at": "2026-07-16T00:00:00Z",
         "network_requests_made": 0,
         "platform": { "os": "linux" },
         "tools": [{
             "tool": "codex",
-            "detected_version": "0.144.4",
+            "detected_version": "0.144.5",
             "config_paths": ["~/.codex/config.toml"],
             "detection_confidence": "high",
-            "rules_last_verified_version": "0.144.4",
-            "rules_verified_date": "2026-07-15",
+            "rules_last_verified_version": "0.144.5",
+            "rules_verified_date": "2026-07-16",
             "version_in_range": true,
             "findings": [{
                 "rule_id": "codex-history-persist-01",
@@ -328,10 +500,10 @@ fn valid_report_with_status(status: &str, severity: serde_json::Value) -> serde_
                 "remediation": null,
                 "source": {
                     "url": "https://example.invalid/official-documentation",
-                    "retrieved": "2026-07-15"
+                    "retrieved": "2026-07-16"
                 },
                 "valid_from": null,
-                "valid_until": "0.144.4",
+                "valid_until": "0.144.5",
                 "limitations": ["Synthetic test limitation."],
                 "unknown_reason": null,
                 "verify_url": null,
@@ -347,6 +519,31 @@ fn valid_report_with_status(status: &str, severity: serde_json::Value) -> serde_
             "passed": 0
         }
     })
+}
+
+fn valid_report_with_exact_status(status: &str) -> serde_json::Value {
+    let mut json = match status {
+        "pass" => valid_report_with_status("pass", serde_json::Value::Null),
+        "finding" => valid_report_with_status("finding", serde_json::json!("warning")),
+        "unknown" => {
+            let mut json = valid_report_with_status("unknown", serde_json::Value::Null);
+            let finding = &mut json["tools"][0]["findings"][0];
+            finding["confidence"] = serde_json::Value::Null;
+            finding["source"] = serde_json::Value::Null;
+            finding["unknown_reason"] = serde_json::json!("Synthetic unknown reason.");
+            json
+        }
+        "stale-ruleset" => {
+            let mut json = valid_report_with_status("stale-ruleset", serde_json::Value::Null);
+            let finding = &mut json["tools"][0]["findings"][0];
+            finding["confidence"] = serde_json::Value::Null;
+            finding["stale_reason"] = serde_json::json!("Synthetic stale reason.");
+            json
+        }
+        other => panic!("unsupported synthetic status {other}"),
+    };
+    json["tools"][0]["findings"][0]["status"] = serde_json::json!(status);
+    json
 }
 
 fn walk_json(dir: &Path) -> Vec<PathBuf> {

@@ -15,7 +15,7 @@
       "type": "object",
       "required": ["os"],
       "additionalProperties": false,
-      "properties": { "os": { "enum": ["macos", "linux", "windows"] } }
+      "properties": { "os": { "enum": ["macos", "linux"] } }
     },
     "tools": {
       "type": "array",
@@ -76,26 +76,26 @@
           "required": ["url", "retrieved"],
           "additionalProperties": false,
           "properties": {
-            "url": { "type": "string" },
-            "retrieved": { "type": "string" }
+            "url": { "type": "string", "pattern": "^https://[^\\s/?#]+" },
+            "retrieved": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
           }
         },
         "valid_from": { "type": ["string", "null"] },
         "valid_until": { "type": ["string", "null"] },
         "limitations": { "type": "array", "items": { "type": "string" } },
         "unknown_reason": { "type": ["string", "null"] },
-        "verify_url": { "type": ["string", "null"] },
+        "verify_url": { "type": ["string", "null"], "pattern": "^https://[^\\s/?#]+" },
         "stale_reason": { "type": ["string", "null"] }
       },
       "allOf": [
         { "if": { "properties": { "status": { "const": "pass" } } },
-          "then": { "properties": { "source": { "type": "object" }, "severity": { "const": null }, "confidence": { "enum": ["low", "medium", "high"] } } } },
+          "then": { "properties": { "source": { "type": "object" }, "severity": { "const": null }, "confidence": { "enum": ["low", "medium", "high"] }, "remediation": { "const": null }, "unknown_reason": { "const": null }, "stale_reason": { "const": null } } } },
         { "if": { "properties": { "status": { "const": "finding" } } },
-          "then": { "properties": { "source": { "type": "object" }, "severity": { "enum": ["info", "warning"] }, "confidence": { "enum": ["low", "medium", "high"] } } } },
+          "then": { "properties": { "source": { "type": "object" }, "severity": { "enum": ["info", "warning"] }, "confidence": { "enum": ["low", "medium", "high"] }, "unknown_reason": { "const": null }, "stale_reason": { "const": null } } } },
         { "if": { "properties": { "status": { "const": "unknown" } } },
-          "then": { "properties": { "unknown_reason": { "type": "string" }, "severity": { "const": null }, "confidence": { "const": null } } } },
+          "then": { "properties": { "unknown_reason": { "type": "string", "minLength": 1 }, "severity": { "const": null }, "confidence": { "const": null }, "source": { "const": null }, "remediation": { "const": null }, "stale_reason": { "const": null } } } },
         { "if": { "properties": { "status": { "const": "stale-ruleset" } } },
-          "then": { "properties": { "stale_reason": { "type": "string" }, "source": { "type": "object" }, "severity": { "const": null }, "confidence": { "const": null } } } }
+          "then": { "properties": { "stale_reason": { "type": "string", "minLength": 1 }, "source": { "type": "object" }, "severity": { "const": null }, "confidence": { "const": null }, "remediation": { "const": null }, "unknown_reason": { "const": null } } } }
       ]
     }
   }

@@ -5,19 +5,15 @@ expression: text
 harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
-  ● codex 0.144.4 · config [CONFIG_PATH] · confidence high
+  ● codex 0.144.5 · config [CONFIG_PATH] · confidence high
 
-codex 0.144.4 — rules verified ≤0.144.4 · 2026-07-15
-1 warning · 0 info · 0 unknown · 0 stale · 0 passed
+codex 0.144.5 — rules verified ≤0.144.5 · 2026-07-16
+0 warning · 0 info · 1 unknown · 0 stale · 0 passed
 
-!! WARNING: Codex CLI persists local session transcripts to history.jsonl under CODEX_HOME.
-   rule codex-history-persist-01 · official-documentation
-   observed: history.persistence unset (documented default "save-all" applies)
-   fix: Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):
-        [history]
-        persistence = "none"
-   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-15)
+?? UNKNOWN: Cannot determine history persistence posture: history.persistence is unset in the user-level config; uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   reason: history.persistence is unset in the user-level config; uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   verify: https://learn.chatgpt.com/docs/config-file/config-reference
    = harness-guard explain codex-history-persist-01
 
-1 warning · 0 info · 0 unknown · 0 stale · 0 passed — 0 network requests made
+0 warning · 0 info · 1 unknown · 0 stale · 0 passed — 0 network requests made
 No numeric score is produced — read findings individually.

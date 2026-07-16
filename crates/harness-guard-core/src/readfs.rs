@@ -2,11 +2,18 @@
 //! opened-handle validation, regular files only, 1 MiB cap, UTF-8 only.
 //! Refusal is a value, not an error — callers map it to `unknown` findings.
 use crate::discovery::DiscoveryRoot;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Component, Path};
 
 pub const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PathProbe {
+    Missing,
+    Present,
+    Refused,
+}
 
 #[derive(Debug)]
 pub enum ConfigReadOutcome {
@@ -30,7 +37,7 @@ impl RefusalReason {
     /// Structural, value-free text used in unknown_reason and diagnostics.
     pub fn describe(&self) -> &'static str {
         match self {
-            Self::Symlink => "config file is a symlink — not followed",
+            Self::Symlink => "config path contains a symlink or reparse point — not followed",
             Self::NotRegularFile => "config path is not a regular file",
             Self::Oversized => "config file exceeds the 1 MiB parse bound",
             Self::PermissionDenied => "config file is not readable (permission denied)",
@@ -78,6 +85,29 @@ pub fn read_config(root: &DiscoveryRoot) -> ConfigReadOutcome {
     }
 }
 
+/// Probe a directory without following any component. A refusal still counts
+/// as discovery evidence, but callers must not treat it as safely readable.
+pub fn probe_directory(path: &Path) -> PathProbe {
+    match open_directory_no_follow(path) {
+        Ok(_) => PathProbe::Present,
+        Err(BoundedReadError::NotFound) => PathProbe::Missing,
+        Err(_) => PathProbe::Refused,
+    }
+}
+
+/// Probe a regular file through the same component-by-component traversal used
+/// for bounded reads, without reading its contents.
+pub fn probe_regular_file(path: &Path) -> PathProbe {
+    match open_read_only_no_follow_nonblocking(path, || {}) {
+        Ok(file) => match file.metadata() {
+            Ok(metadata) if metadata.file_type().is_file() => PathProbe::Present,
+            Ok(_) | Err(_) => PathProbe::Refused,
+        },
+        Err(BoundedReadError::NotFound) => PathProbe::Missing,
+        Err(_) => PathProbe::Refused,
+    }
+}
+
 /// Read through one hardened handle. Type, size, and content decisions all
 /// come from that handle, so path replacement after open cannot redirect the
 /// read to replacement content.
@@ -93,8 +123,16 @@ pub(crate) fn read_bounded_regular_with_hook(
     max_bytes: u64,
     after_open: impl FnOnce(),
 ) -> Result<Vec<u8>, BoundedReadError> {
-    let file = open_read_only_no_follow_nonblocking(path)
-        .map_err(|error| classify_open_error(path, error))?;
+    read_bounded_regular_with_hooks(path, max_bytes, || {}, after_open)
+}
+
+fn read_bounded_regular_with_hooks(
+    path: &Path,
+    max_bytes: u64,
+    before_final_open: impl FnOnce(),
+    after_open: impl FnOnce(),
+) -> Result<Vec<u8>, BoundedReadError> {
+    let file = open_read_only_no_follow_nonblocking(path, before_final_open)?;
     let opened = file.metadata().map_err(classify_io_error)?;
     if opened.file_type().is_symlink() {
         return Err(BoundedReadError::Symlink);
@@ -118,17 +156,6 @@ pub(crate) fn read_bounded_regular_with_hook(
     Ok(bytes)
 }
 
-fn classify_open_error(path: &Path, error: std::io::Error) -> BoundedReadError {
-    // O_NOFOLLOW reports a platform-specific error kind. Inspecting the path
-    // here is only for a value-free refusal label; an open error always stays
-    // a refusal regardless of any subsequent path race.
-    if std::fs::symlink_metadata(path).is_ok_and(|metadata| metadata.file_type().is_symlink()) {
-        BoundedReadError::Symlink
-    } else {
-        classify_io_error(error)
-    }
-}
-
 fn classify_io_error(error: std::io::Error) -> BoundedReadError {
     match error.kind() {
         std::io::ErrorKind::NotFound => BoundedReadError::NotFound,
@@ -137,68 +164,87 @@ fn classify_io_error(error: std::io::Error) -> BoundedReadError {
     }
 }
 
-fn open_read_only_no_follow_nonblocking(path: &Path) -> std::io::Result<File> {
-    let mut options = OpenOptions::new();
-    options.read(true);
-    configure_hardened_open(&mut options);
-    options.open(path)
+#[cfg(unix)]
+fn open_read_only_no_follow_nonblocking(
+    path: &Path,
+    before_final_open: impl FnOnce(),
+) -> Result<File, BoundedReadError> {
+    use rustix::fs::{AtFlags, FileType, Mode, OFlags, open, openat, statat};
+
+    let directory_flags =
+        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC;
+    let file_flags = OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC;
+    let start = if path.is_absolute() { "/" } else { "." };
+    let mut directory = open(start, directory_flags, Mode::empty())
+        .map_err(|error| classify_io_error(error.into()))?;
+    let mut components = path
+        .components()
+        .filter(|component| !matches!(component, Component::RootDir | Component::CurDir))
+        .peekable();
+    let mut before_final_open = Some(before_final_open);
+
+    while let Some(component) = components.next() {
+        let name = component.as_os_str();
+        if statat(&directory, name, AtFlags::SYMLINK_NOFOLLOW)
+            .is_ok_and(|metadata| FileType::from_raw_mode(metadata.st_mode).is_symlink())
+        {
+            return Err(BoundedReadError::Symlink);
+        }
+
+        if components.peek().is_none() {
+            before_final_open
+                .take()
+                .expect("final-open hook runs exactly once")();
+            return openat(&directory, name, file_flags, Mode::empty())
+                .map(File::from)
+                .map_err(|error| classify_unix_open_error(&directory, name, error));
+        }
+
+        directory = openat(&directory, name, directory_flags, Mode::empty())
+            .map_err(|error| classify_unix_open_error(&directory, name, error))?;
+    }
+
+    Err(BoundedReadError::Io)
 }
 
-#[cfg(any(target_os = "linux", target_os = "android"))]
-fn configure_hardened_open(options: &mut OpenOptions) {
-    use std::os::unix::fs::OpenOptionsExt;
-    const O_NONBLOCK: i32 = 0x800;
-    const O_NOFOLLOW: i32 = 0x20_000;
-    options.custom_flags(O_NONBLOCK | O_NOFOLLOW);
+#[cfg(unix)]
+fn open_directory_no_follow(path: &Path) -> Result<File, BoundedReadError> {
+    use rustix::fs::{Mode, OFlags, open, openat};
+
+    let directory_flags =
+        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC;
+    let start = if path.is_absolute() { "/" } else { "." };
+    let mut directory = open(start, directory_flags, Mode::empty())
+        .map_err(|error| classify_io_error(error.into()))?;
+
+    for component in path
+        .components()
+        .filter(|component| !matches!(component, Component::RootDir | Component::CurDir))
+    {
+        let name = component.as_os_str();
+        directory = openat(&directory, name, directory_flags, Mode::empty())
+            .map_err(|error| classify_unix_open_error(&directory, name, error))?;
+    }
+
+    Ok(File::from(directory))
 }
 
-#[cfg(any(
-    target_vendor = "apple",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-    target_os = "dragonfly"
-))]
-fn configure_hardened_open(options: &mut OpenOptions) {
-    use std::os::unix::fs::OpenOptionsExt;
-    const O_NONBLOCK: i32 = 0x4;
-    const O_NOFOLLOW: i32 = 0x100;
-    options.custom_flags(O_NONBLOCK | O_NOFOLLOW);
-}
+#[cfg(unix)]
+fn classify_unix_open_error(
+    directory: &impl std::os::fd::AsFd,
+    name: &std::ffi::OsStr,
+    error: rustix::io::Errno,
+) -> BoundedReadError {
+    use rustix::fs::{AtFlags, FileType, statat};
 
-#[cfg(any(target_os = "solaris", target_os = "illumos"))]
-fn configure_hardened_open(options: &mut OpenOptions) {
-    use std::os::unix::fs::OpenOptionsExt;
-    const O_NONBLOCK: i32 = 0x80;
-    const O_NOFOLLOW: i32 = 0x20_000;
-    options.custom_flags(O_NONBLOCK | O_NOFOLLOW);
+    if statat(directory, name, AtFlags::SYMLINK_NOFOLLOW)
+        .is_ok_and(|metadata| FileType::from_raw_mode(metadata.st_mode).is_symlink())
+    {
+        BoundedReadError::Symlink
+    } else {
+        classify_io_error(error.into())
+    }
 }
-
-#[cfg(windows)]
-fn configure_hardened_open(options: &mut OpenOptions) {
-    use std::os::windows::fs::OpenOptionsExt;
-    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
-    const FILE_SHARE_READ: u32 = 0x1;
-    const FILE_SHARE_WRITE: u32 = 0x2;
-    const FILE_SHARE_DELETE: u32 = 0x4;
-    options
-        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
-        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
-}
-
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "android",
-    target_vendor = "apple",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-    target_os = "dragonfly",
-    target_os = "solaris",
-    target_os = "illumos",
-    windows
-)))]
-fn configure_hardened_open(_options: &mut OpenOptions) {}
 
 #[cfg(test)]
 mod tests {
@@ -208,7 +254,7 @@ mod tests {
 
     fn root_with(config: Option<&[u8]>) -> (tempfile::TempDir, DiscoveryRoot) {
         let dir = tempfile::tempdir().unwrap();
-        let home = dir.path().join("codex-home");
+        let home = dir.path().canonicalize().unwrap().join("codex-home");
         std::fs::create_dir_all(&home).unwrap();
         if let Some(bytes) = config {
             std::fs::File::create(home.join("config.toml"))
@@ -227,7 +273,7 @@ mod tests {
     fn missing_home_is_no_config() {
         let dir = tempfile::tempdir().unwrap();
         let root = DiscoveryRoot {
-            codex_home: dir.path().join("nope"),
+            codex_home: dir.path().canonicalize().unwrap().join("nope"),
             path_dirs: vec![],
         };
         assert!(matches!(read_config(&root), ConfigReadOutcome::NoConfig));
@@ -237,6 +283,17 @@ mod tests {
     fn missing_file_is_no_config() {
         let (_d, root) = root_with(None);
         assert!(matches!(read_config(&root), ConfigReadOutcome::NoConfig));
+    }
+
+    #[test]
+    fn safe_probes_distinguish_present_and_missing_paths() {
+        let (_dir, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
+        assert_eq!(probe_directory(&root.codex_home), PathProbe::Present);
+        assert_eq!(probe_regular_file(&root.config_path()), PathProbe::Present);
+        assert_eq!(
+            probe_regular_file(&root.codex_home.join("missing.toml")),
+            PathProbe::Missing
+        );
     }
 
     #[test]
@@ -255,6 +312,58 @@ mod tests {
         let target = root.codex_home.join("real.toml");
         std::fs::write(&target, "[history]\npersistence = \"none\"\n").unwrap();
         std::os::unix::fs::symlink(&target, root.codex_home.join("config.toml")).unwrap();
+        assert!(matches!(
+            read_config(&root),
+            ConfigReadOutcome::Refused(RefusalReason::Symlink)
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlinked_codex_home_is_refused_not_followed() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let real_home = base.join("real-codex-home");
+        std::fs::create_dir(&real_home).unwrap();
+        std::fs::write(
+            real_home.join("config.toml"),
+            "[history]\npersistence = \"none\"\n",
+        )
+        .unwrap();
+        let linked_home = base.join("codex-home");
+        std::os::unix::fs::symlink(&real_home, &linked_home).unwrap();
+        let root = DiscoveryRoot {
+            codex_home: linked_home,
+            path_dirs: vec![],
+        };
+
+        assert!(matches!(
+            read_config(&root),
+            ConfigReadOutcome::Refused(RefusalReason::Symlink)
+        ));
+        assert_eq!(probe_directory(&root.codex_home), PathProbe::Refused);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlinked_codex_home_ancestor_is_refused_not_followed() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let real_parent = base.join("real-parent");
+        let real_home = real_parent.join("codex-home");
+        std::fs::create_dir_all(&real_home).unwrap();
+        std::fs::write(
+            real_home.join("config.toml"),
+            "[history]\npersistence = \"none\"\n",
+        )
+        .unwrap();
+        let linked_parent = base.join("linked-parent");
+        std::os::unix::fs::symlink(&real_parent, &linked_parent).unwrap();
+        let root = DiscoveryRoot {
+            codex_home: linked_parent.join("codex-home"),
+            path_dirs: vec![],
+        };
+
         assert!(matches!(
             read_config(&root),
             ConfigReadOutcome::Refused(RefusalReason::Symlink)
@@ -283,6 +392,35 @@ mod tests {
         assert!(!text.contains("replacement-must-not-be-read"));
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn ancestor_replacement_before_final_open_cannot_redirect_read() {
+        let (_dir, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
+        let config = root.config_path();
+        let displaced_home = root.codex_home.with_file_name("original-codex-home");
+        let external_home = root.codex_home.with_file_name("external-codex-home");
+        std::fs::create_dir(&external_home).unwrap();
+        std::fs::write(
+            external_home.join("config.toml"),
+            "[history]\npersistence = \"redirected-must-not-be-read\"\n",
+        )
+        .unwrap();
+
+        let outcome = read_bounded_regular_with_hooks(
+            &config,
+            MAX_CONFIG_BYTES,
+            || {
+                std::fs::rename(&root.codex_home, &displaced_home).unwrap();
+                std::os::unix::fs::symlink(&external_home, &root.codex_home).unwrap();
+            },
+            || {},
+        );
+
+        let text = String::from_utf8(outcome.unwrap()).unwrap();
+        assert!(text.contains("persistence = \"none\""));
+        assert!(!text.contains("redirected-must-not-be-read"));
+    }
+
     #[test]
     fn oversized_config_is_refused() {
         let big = vec![b'#'; MAX_CONFIG_BYTES as usize + 1];
@@ -300,6 +438,26 @@ mod tests {
             read_config(&root),
             ConfigReadOutcome::Refused(RefusalReason::NotUtf8)
         ));
+    }
+
+    #[test]
+    fn directory_at_config_path_is_refused_as_non_regular() {
+        let (_dir, root) = root_with(None);
+        std::fs::create_dir(root.config_path()).unwrap();
+        assert!(matches!(
+            read_config(&root),
+            ConfigReadOutcome::Refused(RefusalReason::NotRegularFile)
+        ));
+        assert_eq!(probe_regular_file(&root.config_path()), PathProbe::Refused);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn socket_at_config_path_is_refused_without_blocking() {
+        let (_dir, root) = root_with(None);
+        let _listener = std::os::unix::net::UnixListener::bind(root.config_path()).unwrap();
+        assert!(matches!(read_config(&root), ConfigReadOutcome::Refused(_)));
+        assert_eq!(probe_regular_file(&root.config_path()), PathProbe::Refused);
     }
 
     #[cfg(unix)]

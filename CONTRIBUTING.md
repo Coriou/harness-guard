@@ -56,7 +56,7 @@ scripts/no-egress/run-macos.sh
 ```
 
 If a workflow changed, run `actionlint`. CI repeats formatting, Clippy,
-dependency policy, tests on macOS/Linux/Windows, and macOS/Linux no-egress checks.
+dependency policy, tests on macOS/Linux, and macOS/Linux no-egress checks.
 
 ## Rules and evidence
 

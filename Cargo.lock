@@ -461,6 +461,7 @@ name = "harness-guard-core"
 version = "0.1.0"
 dependencies = [
  "harness-guard-rules",
+ "rustix 1.1.4",
  "serde_json",
  "tempfile",
  "toml",

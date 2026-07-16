@@ -7,13 +7,13 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": { "const": "1.0" },
-    "url": { "type": "string", "minLength": 1, "pattern": "^https://" },
+    "url": { "type": "string", "minLength": 1, "pattern": "^https://[^\\s/?#]+" },
     "publisher": { "type": "string", "minLength": 1 },
     "title": { "type": "string", "minLength": 1 },
     "evidence_class": { "enum": ["local-observation", "official-documentation", "official-policy", "independent-reproduction", "inference"] },
     "retrieved": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
     "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
-    "archived_url": { "type": ["string", "null"] },
+    "archived_url": { "type": ["string", "null"], "pattern": "^https://[^\\s/?#]+" },
     "notes": { "type": ["string", "null"] }
   }
 }

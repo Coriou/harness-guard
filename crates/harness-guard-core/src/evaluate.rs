@@ -10,7 +10,8 @@ use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub enum ConfigState {
-    /// Tool detected but no config file — documented defaults apply.
+    /// Tool detected but no user config file. Other layers may still supply
+    /// the effective value, so this remains unknown.
     Missing,
     Unreadable(RefusalReason),
     Unparseable(ParseFailure),
@@ -104,6 +105,13 @@ pub fn evaluate_rule(
                 .and_then(|outcome| outcome.remediation.clone()),
             ..base
         }),
+        IndicativeKind::Unset => unknown_with_observation(
+            base,
+            "history.persistence is unset in the user-level config; uninspected system, profile, trusted-project, or CLI layers may determine the effective value."
+                .to_string(),
+            observation,
+            rule,
+        ),
         IndicativeKind::Unrecognized => unknown(
             base,
             "history.persistence is set to an unrecognized value — raw values are never displayed"
@@ -116,6 +124,7 @@ pub fn evaluate_rule(
 enum IndicativeKind {
     Pass,
     Finding,
+    Unset,
     Unrecognized,
 }
 
@@ -158,12 +167,17 @@ fn observe(rule: &ValidatedRule, config: &ConfigState) -> (Option<String>, Indic
             },
         ),
         ExtractedValue::Unset => (
-            Some(format!(
-                "{key} unset (documented default \"save-all\" applies)"
-            )),
+            Some(format!("{key} unset in user config")),
             Indicative {
-                kind: IndicativeKind::Finding,
-                message: outcome_message("finding"),
+                kind: IndicativeKind::Unset,
+                message: raw
+                    .outcomes
+                    .iter()
+                    .find(|outcome| {
+                        outcome.status == "unknown" && outcome.when.contains("is unset")
+                    })
+                    .map(|outcome| outcome.message.clone())
+                    .unwrap_or_default(),
             },
         ),
         ExtractedValue::Str(_) | ExtractedValue::NonString => (
@@ -203,6 +217,15 @@ fn base_record(rule: &ValidatedRule) -> FindingRecord {
 }
 
 fn unknown(base: FindingRecord, reason: String, rule: &ValidatedRule) -> FindingRecord {
+    unknown_with_observation(base, reason, None, rule)
+}
+
+fn unknown_with_observation(
+    base: FindingRecord,
+    reason: String,
+    observation: Option<String>,
+    rule: &ValidatedRule,
+) -> FindingRecord {
     let verify_url = rule
         .raw()
         .outcomes
@@ -215,7 +238,7 @@ fn unknown(base: FindingRecord, reason: String, rule: &ValidatedRule) -> Finding
         confidence: None,
         evidence_class: None,
         message: format!("Cannot determine history persistence posture: {reason}"),
-        observation: None,
+        observation,
         remediation: None,
         source: None,
         unknown_reason: Some(reason),
@@ -236,7 +259,7 @@ mod tests {
     use super::*;
     use crate::parse::ExtractedValue;
     use harness_guard_rules::loader::load_rules;
-    use harness_guard_rules::report::{Severity, Status};
+    use harness_guard_rules::report::Status;
     use std::collections::BTreeMap;
 
     fn rule() -> harness_guard_rules::loader::ValidatedRule {
@@ -257,7 +280,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("none".into()))),
-            Some("0.144.4"),
+            Some("0.144.5"),
         );
         assert_eq!(finding.status, Status::Pass);
         assert!(finding.source.is_some(), "pass requires a citation (§5.4)");
@@ -265,20 +288,26 @@ mod tests {
             finding.observation.as_deref(),
             Some("history.persistence = \"none\"")
         );
-        assert_eq!(finding.valid_until.as_deref(), Some("0.144.4"));
+        assert_eq!(finding.valid_until.as_deref(), Some("0.144.5"));
     }
 
     #[test]
-    fn unset_in_range_is_warning_finding() {
-        let finding = evaluate_rule(&rule(), &parsed(None), Some("0.144.4"));
-        assert_eq!(finding.status, Status::Finding);
-        assert_eq!(finding.severity, Some(Severity::Warning));
+    fn unset_in_range_is_unknown_because_other_layers_are_uninspected() {
+        let finding = evaluate_rule(&rule(), &parsed(None), Some("0.144.5"));
+        assert_eq!(finding.status, Status::Unknown);
+        assert_eq!(finding.severity, None);
         assert_eq!(
             finding.observation.as_deref(),
-            Some("history.persistence unset (documented default \"save-all\" applies)")
+            Some("history.persistence unset in user config")
         );
-        assert!(finding.remediation.is_some());
-        assert!(finding.source.is_some());
+        assert!(finding.remediation.is_none());
+        assert!(finding.source.is_none());
+        assert!(
+            finding
+                .unknown_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("uninspected system"))
+        );
     }
 
     #[test]
@@ -286,7 +315,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("save-all".into()))),
-            Some("0.144.4"),
+            Some("0.144.5"),
         );
         assert_eq!(finding.status, Status::Finding);
         assert_eq!(
@@ -300,7 +329,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("archive".into()))),
-            Some("0.144.4"),
+            Some("0.144.5"),
         );
         assert_eq!(finding.status, Status::Unknown);
         assert!(finding.severity.is_none() && finding.confidence.is_none());
@@ -318,15 +347,15 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::NonString)),
-            Some("0.144.4"),
+            Some("0.144.5"),
         );
         assert_eq!(finding.status, Status::Unknown);
     }
 
     #[test]
-    fn missing_config_with_tool_detected_is_unset_finding() {
-        let finding = evaluate_rule(&rule(), &ConfigState::Missing, Some("0.144.4"));
-        assert_eq!(finding.status, Status::Finding);
+    fn missing_config_with_tool_detected_is_unknown() {
+        let finding = evaluate_rule(&rule(), &ConfigState::Missing, Some("0.144.5"));
+        assert_eq!(finding.status, Status::Unknown);
     }
 
     #[test]
@@ -334,7 +363,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &ConfigState::Unreadable(crate::readfs::RefusalReason::PermissionDenied),
-            Some("0.144.4"),
+            Some("0.144.5"),
         );
         assert_eq!(finding.status, Status::Unknown);
         assert!(

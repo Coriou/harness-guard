@@ -17,7 +17,7 @@ session transcripts, shell history, `.env` files, or secrets.
 
 ## Quick start
 
-Prerequisites: Git and Rust 1.85 or newer.
+Prerequisites: macOS or Linux, Git, and Rust 1.85 or newer.
 
 ```bash
 git clone https://github.com/Coriou/harness-guard.git
@@ -32,14 +32,14 @@ result looks like this:
 
 ```text
 detected tools
-  ● codex 0.144.4 · config ~/.codex/config.toml · confidence high
+  ● codex 0.144.5 · config ~/.codex/config.toml · confidence high
 
-!! WARNING: Codex CLI persists local session transcripts to history.jsonl under CODEX_HOME.
-   observed: history.persistence unset (documented default "save-all" applies)
+!! WARNING: The inspected user-level config explicitly enables local history persistence (history.persistence = "save-all").
+   observed: history.persistence = "save-all"
    fix: Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):
         [history]
         persistence = "none"
-   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-15)
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-16)
 ```
 
 No numeric score is produced. Read findings individually; `unknown` and
@@ -111,8 +111,8 @@ To inspect a synthetic warning end to end:
 ```bash
 cargo build -p harness-guard-cli
 
-CODEX_HOME="$PWD/fixtures/codex/risky-unset/files/codex-home" \
-PATH="$PWD/fixtures/codex/risky-unset/files/path:$PATH" \
+CODEX_HOME="$PWD/fixtures/codex/risky-explicit/files/codex-home" \
+PATH="$PWD/fixtures/codex/risky-explicit/files/path:$PATH" \
 ./target/debug/harness-guard scan --color never
 ```
 
@@ -143,12 +143,14 @@ scripts/no-egress/run-macos.sh
 | --- | --- | --- |
 | Codex CLI | Local session-history persistence | Implemented |
 
-- Only the user-level Codex config is inspected; project config is not yet.
+- Only the user-level Codex config is inspected. System config, selected
+  profiles, trusted-project config, and CLI overrides are not inspected, so an
+  unset user-level value is reported as `unknown`.
 - Auth method and server-side policy are never inferred from local files.
 - An unknown or untested Codex version produces an unverified result, never a
   pass.
-- Windows npm shims may not expose a readable version marker yet; the result
-  degrades conservatively to `stale-ruleset`.
+- Windows is not supported in this release because its filesystem traversal has
+  not yet met the same race-resistant path-refusal invariant as macOS/Linux.
 - Rules carry source URLs, retrieval dates, semantic hashes, archive links,
   explicit tested-version ranges, limitations, and unknown conditions.
 - No public rule-verification cadence is claimed.

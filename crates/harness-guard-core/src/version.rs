@@ -145,42 +145,43 @@ mod tests {
 
     #[test]
     fn parse_strict_triples_only() {
-        assert_eq!(parse_version("0.144.4"), Some((0, 144, 4)));
-        assert_eq!(parse_version("0.144.4-darwin-arm64"), None);
-        assert_eq!(parse_version("v0.144.4"), None);
+        assert_eq!(parse_version("0.144.5"), Some((0, 144, 5)));
+        assert_eq!(parse_version("0.144.5-darwin-arm64"), None);
+        assert_eq!(parse_version("v0.144.5"), None);
         assert_eq!(parse_version(""), None);
     }
 
     #[test]
     fn le_prefixed_min_is_unbounded_below() {
-        let ranges = [tv("<=0.144.4", "0.144.4")];
+        let ranges = [tv("<=0.144.5", "0.144.5")];
         assert!(version_in_range("0.1.0", &ranges));
-        assert!(version_in_range("0.144.4", &ranges));
-        assert!(!version_in_range("0.144.5", &ranges));
+        assert!(version_in_range("0.144.5", &ranges));
+        assert!(!version_in_range("0.144.6", &ranges));
         assert!(!version_in_range("9.9.9", &ranges));
     }
 
     #[test]
     fn plain_min_is_a_real_lower_bound() {
-        let ranges = [tv("0.100.0", "0.144.4")];
+        let ranges = [tv("0.100.0", "0.144.5")];
         assert!(!version_in_range("0.99.9", &ranges));
         assert!(version_in_range("0.100.0", &ranges));
     }
 
     #[test]
     fn unparseable_detected_version_never_matches() {
-        let ranges = [tv("<=0.144.4", "0.144.4")];
-        assert!(!version_in_range("0.144.4-darwin-arm64", &ranges));
+        let ranges = [tv("<=0.144.5", "0.144.5")];
+        assert!(!version_in_range("0.144.5-darwin-arm64", &ranges));
     }
 
     fn npm_layout(version_json: &str) -> (tempfile::TempDir, DiscoveryRoot) {
         let dir = tempfile::tempdir().unwrap();
-        let package = dir.path().join("node_modules/@openai/codex");
+        let base = dir.path().canonicalize().unwrap();
+        let package = base.join("node_modules/@openai/codex");
         std::fs::create_dir_all(package.join("bin")).unwrap();
         std::fs::write(package.join("bin/codex"), "#!/usr/bin/env node\n").unwrap();
         std::fs::write(package.join("package.json"), version_json).unwrap();
         let root = DiscoveryRoot {
-            codex_home: dir.path().join("codex-home"),
+            codex_home: base.join("codex-home"),
             path_dirs: vec![package.join("bin")],
         };
         (dir, root)
@@ -188,20 +189,20 @@ mod tests {
 
     #[test]
     fn npm_layout_detects_clean_version() {
-        let (_dir, root) = npm_layout(r#"{"name": "@openai/codex", "version": "0.144.4"}"#);
-        assert_eq!(detect_codex_version(&root), Some("0.144.4".to_string()));
+        let (_dir, root) = npm_layout(r#"{"name": "@openai/codex", "version": "0.144.5"}"#);
+        assert_eq!(detect_codex_version(&root), Some("0.144.5".to_string()));
     }
 
     #[test]
     fn wrong_package_name_is_ignored() {
-        let (_dir, root) = npm_layout(r#"{"name": "something-else", "version": "0.144.4"}"#);
+        let (_dir, root) = npm_layout(r#"{"name": "something-else", "version": "0.144.5"}"#);
         assert_eq!(detect_codex_version(&root), None);
     }
 
     #[test]
     fn suffixed_version_is_rejected() {
         let (_dir, root) =
-            npm_layout(r#"{"name": "@openai/codex", "version": "0.144.4-darwin-arm64"}"#);
+            npm_layout(r#"{"name": "@openai/codex", "version": "0.144.5-darwin-arm64"}"#);
         assert_eq!(detect_codex_version(&root), None);
     }
 
@@ -222,7 +223,7 @@ mod tests {
     fn oversized_package_json_is_refused() {
         let padding = "x".repeat(MAX_PACKAGE_JSON_BYTES as usize);
         let package =
-            format!(r#"{{"name":"@openai/codex","version":"0.144.4","padding":"{padding}"}}"#);
+            format!(r#"{{"name":"@openai/codex","version":"0.144.5","padding":"{padding}"}}"#);
         let (_dir, root) = npm_layout(&package);
         assert_eq!(detect_codex_version(&root), None);
     }
@@ -234,7 +235,7 @@ mod tests {
         std::fs::create_dir_all(bin.join("codex")).unwrap();
         std::fs::write(
             bin.join("package.json"),
-            r#"{"name":"@openai/codex","version":"0.144.4"}"#,
+            r#"{"name":"@openai/codex","version":"0.144.5"}"#,
         )
         .unwrap();
         let root = DiscoveryRoot {
@@ -247,7 +248,7 @@ mod tests {
 
     #[test]
     fn regular_package_replacement_after_open_uses_stable_original_handle() {
-        let (_dir, root) = npm_layout(r#"{"name":"@openai/codex","version":"0.144.4"}"#);
+        let (_dir, root) = npm_layout(r#"{"name":"@openai/codex","version":"0.144.5"}"#);
         let package_json = root.path_dirs[0].parent().unwrap().join("package.json");
         let displaced = package_json.with_file_name("original.json");
         let replacement = package_json.with_file_name("replacement.json");
@@ -262,7 +263,7 @@ mod tests {
             std::fs::rename(&replacement, &package_json).unwrap();
         });
 
-        assert_eq!(detected, Some("0.144.4".to_string()));
+        assert_eq!(detected, Some("0.144.5".to_string()));
         assert_ne!(detected, Some("9.9.9".to_string()));
     }
 
@@ -270,22 +271,23 @@ mod tests {
     #[test]
     fn symlink_chain_is_resolved_with_bounded_hops() {
         let dir = tempfile::tempdir().unwrap();
-        let package = dir.path().join("lib/node_modules/@openai/codex");
+        let base = dir.path().canonicalize().unwrap();
+        let package = base.join("lib/node_modules/@openai/codex");
         std::fs::create_dir_all(package.join("bin")).unwrap();
         std::fs::write(package.join("bin/codex"), "shim").unwrap();
         std::fs::write(
             package.join("package.json"),
-            r#"{"name": "@openai/codex", "version": "0.144.4"}"#,
+            r#"{"name": "@openai/codex", "version": "0.144.5"}"#,
         )
         .unwrap();
-        let bin = dir.path().join("bin");
+        let bin = base.join("bin");
         std::fs::create_dir_all(&bin).unwrap();
         std::os::unix::fs::symlink(package.join("bin/codex"), bin.join("codex")).unwrap();
         let root = DiscoveryRoot {
-            codex_home: dir.path().join("x"),
+            codex_home: base.join("x"),
             path_dirs: vec![bin],
         };
-        assert_eq!(detect_codex_version(&root), Some("0.144.4".to_string()));
+        assert_eq!(detect_codex_version(&root), Some("0.144.5".to_string()));
     }
 
     #[cfg(unix)]

@@ -9,6 +9,7 @@ fn temp_copy(case: &str) -> (tempfile::TempDir, PathBuf) {
     let temp = tempfile::tempdir().unwrap();
     let destination = temp.path().join("files");
     copy_dir(&fixture(case), &destination);
+    let destination = destination.canonicalize().unwrap();
     (temp, destination)
 }
 
@@ -100,6 +101,72 @@ fn symlink_config_is_not_followed() {
         .as_str()
         .unwrap();
     assert!(reason.contains("symlink"));
+}
+
+#[cfg(unix)]
+#[test]
+fn symlinked_codex_home_is_not_followed() {
+    let (_temp, files) = temp_copy("symlink-config");
+    let linked_home = files.join("codex-home");
+    std::fs::rename(
+        linked_home.join("real-config.toml"),
+        linked_home.join("config.toml"),
+    )
+    .unwrap();
+    let real_home = files.join("real-codex-home");
+    std::fs::rename(&linked_home, &real_home).unwrap();
+    std::os::unix::fs::symlink(&real_home, &linked_home).unwrap();
+
+    let output = run_with_roots(
+        &linked_home,
+        &files.join("path"),
+        &files,
+        &["scan", "--json"],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "symlinked-codex-home");
+    assert_eq!(report["tools"][0]["findings"][0]["status"], "unknown");
+    assert!(
+        report["tools"][0]["findings"][0]["unknown_reason"]
+            .as_str()
+            .unwrap()
+            .contains("symlink")
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn symlinked_codex_home_ancestor_is_not_followed() {
+    let (_temp, files) = temp_copy("symlink-config");
+    let original_home = files.join("codex-home");
+    std::fs::rename(
+        original_home.join("real-config.toml"),
+        original_home.join("config.toml"),
+    )
+    .unwrap();
+    let real_parent = files.join("real-parent");
+    std::fs::create_dir(&real_parent).unwrap();
+    let real_home = real_parent.join("codex-home");
+    std::fs::rename(&original_home, &real_home).unwrap();
+    let linked_parent = files.join("linked-parent");
+    std::os::unix::fs::symlink(&real_parent, &linked_parent).unwrap();
+    let linked_home = linked_parent.join("codex-home");
+
+    let output = run_with_roots(
+        &linked_home,
+        &files.join("path"),
+        &files,
+        &["scan", "--json"],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "symlinked-codex-home-ancestor");
+    assert_eq!(report["tools"][0]["findings"][0]["status"], "unknown");
+    assert!(
+        report["tools"][0]["findings"][0]["unknown_reason"]
+            .as_str()
+            .unwrap()
+            .contains("symlink")
+    );
 }
 
 #[test]

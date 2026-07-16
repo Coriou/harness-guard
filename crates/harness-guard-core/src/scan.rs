@@ -4,7 +4,7 @@
 use crate::discovery::DiscoveryRoot;
 use crate::evaluate::{ConfigState, evaluate_rule};
 use crate::parse::{ParseFailure, extract_key, parse_config};
-use crate::readfs::{ConfigReadOutcome, read_config};
+use crate::readfs::{ConfigReadOutcome, PathProbe, probe_directory, read_config};
 use crate::version::{binary_on_path, detect_codex_version};
 use harness_guard_rules::loader::ValidatedRule;
 use harness_guard_rules::report::{Confidence, ToolReport};
@@ -20,8 +20,11 @@ pub struct ScanResult {
 
 /// Confidence in tool detection, shared by scan reports and detection-only
 /// surfaces so the same evidence always receives the same label.
-pub fn detection_confidence(detected_version: Option<&str>, codex_home_exists: bool) -> Confidence {
-    match (detected_version, codex_home_exists) {
+pub fn detection_confidence(
+    detected_version: Option<&str>,
+    codex_home_detected: bool,
+) -> Confidence {
+    match (detected_version, codex_home_detected) {
         (Some(_), true) => Confidence::High,
         (Some(_), false) | (None, true) => Confidence::Medium,
         (None, false) => Confidence::Low,
@@ -31,9 +34,9 @@ pub fn detection_confidence(detected_version: Option<&str>, codex_home_exists: b
 /// Returns `None` iff neither the injected Codex home nor a regular Codex
 /// entry in the injected path directories is present.
 pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanResult> {
-    let home_exists = root.codex_home_exists();
+    let home_detected = probe_directory(&root.codex_home) != PathProbe::Missing;
     let on_path = binary_on_path(root);
-    if !home_exists && !on_path {
+    if !home_detected && !on_path {
         return None;
     }
 
@@ -96,7 +99,7 @@ pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanR
         })
         .unwrap_or((None, None));
 
-    let detection_confidence = detection_confidence(detected_version.as_deref(), home_exists);
+    let detection_confidence = detection_confidence(detected_version.as_deref(), home_detected);
 
     Some(ScanResult {
         tool_report: ToolReport {
@@ -123,11 +126,11 @@ mod tests {
     #[test]
     fn detection_confidence_matrix_is_explicit() {
         assert_eq!(
-            detection_confidence(Some("0.144.4"), true),
+            detection_confidence(Some("0.144.5"), true),
             Confidence::High
         );
         assert_eq!(
-            detection_confidence(Some("0.144.4"), false),
+            detection_confidence(Some("0.144.5"), false),
             Confidence::Medium
         );
         assert_eq!(detection_confidence(None, true), Confidence::Medium);
@@ -137,8 +140,9 @@ mod tests {
     #[test]
     fn undetected_tool_returns_none() {
         let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
         let root = DiscoveryRoot {
-            codex_home: dir.path().join("absent"),
+            codex_home: base.join("absent"),
             path_dirs: vec![],
         };
         assert!(scan_codex(&root, &load_rules()).is_none());
@@ -147,7 +151,7 @@ mod tests {
     #[test]
     fn malformed_config_degrades_with_unknown_findings() {
         let dir = tempfile::tempdir().unwrap();
-        let home = dir.path().join("codex-home");
+        let home = dir.path().canonicalize().unwrap().join("codex-home");
         std::fs::create_dir_all(&home).unwrap();
         std::fs::write(home.join("config.toml"), "[history\n").unwrap();
         let root = DiscoveryRoot {
@@ -169,7 +173,7 @@ mod tests {
     #[test]
     fn findings_are_sorted_by_rule_id() {
         let dir = tempfile::tempdir().unwrap();
-        let home = dir.path().join("codex-home");
+        let home = dir.path().canonicalize().unwrap().join("codex-home");
         std::fs::create_dir_all(&home).unwrap();
         std::fs::write(home.join("config.toml"), "").unwrap();
         let root = DiscoveryRoot {

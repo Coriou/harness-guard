@@ -14,9 +14,4 @@ impl DiscoveryRoot {
     pub fn config_path(&self) -> PathBuf {
         self.codex_home.join("config.toml")
     }
-
-    /// Tool detection: the Codex home exists, or a Codex entry sits on PATH.
-    pub fn codex_home_exists(&self) -> bool {
-        self.codex_home.is_dir()
-    }
 }

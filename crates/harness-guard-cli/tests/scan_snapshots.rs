@@ -11,8 +11,7 @@ fn snap(case: &str, args: &[&str], name: &str) {
         (r"\d{4}-\d{2}-\d{2}T[0-9:.+\-Z]+", "[TIMESTAMP]"),
         // Fixture paths under the synthetic test home vary per checkout.
         (r"~[^\s]*codex-home[^\s]*", "[CONFIG_PATH]"),
-        // Windows resolves HOME through the system profile API, so an explicit
-        // synthetic CODEX_HOME is rendered with its safe symbolic token.
+        // An explicit synthetic CODEX_HOME may render with its safe symbolic token.
         (r"\$CODEX_HOME/[^\s]*", "[CONFIG_PATH]"),
     ]}, {
         insta::assert_snapshot!(name, text);
@@ -80,7 +79,7 @@ fn min_severity_never_hides_unknown_or_stale() {
 
 #[test]
 fn citations_appear_in_default_output() {
-    let out = run_case("risky-unset", &["scan"]);
+    let out = run_case("risky-explicit", &["scan"]);
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(
         text.contains("= source: https://"),
@@ -122,7 +121,7 @@ fn color_never_emits_no_escape_sequences_without_no_color_environment() {
 #[test]
 fn color_always_styles_only_prescribed_lines() {
     assert_color_lines(
-        "risky-unset",
+        "risky-explicit",
         &["scan", "--color", "always"],
         &["!! WARNING:", "passed"],
         &["!! WARNING:"],

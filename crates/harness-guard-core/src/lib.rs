@@ -3,6 +3,9 @@
 //! no process spawning (clippy + cargo-deny enforced).
 #![forbid(unsafe_code)]
 
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+compile_error!("harness-guard supports only macOS and Linux");
+
 pub mod discovery;
 pub mod evaluate;
 pub mod parse;

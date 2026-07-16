@@ -8,10 +8,10 @@
     "tools": [
       {
         "tool": "codex",
-        "detected_version": "0.144.4",
+        "detected_version": "0.144.5",
         "detection_confidence": "high",
-        "rules_last_verified_version": "0.144.4",
-        "rules_verified_date": "2026-07-15",
+        "rules_last_verified_version": "0.144.5",
+        "rules_verified_date": "2026-07-16",
         "version_in_range": true,
         "findings": [
           {
@@ -20,13 +20,13 @@
             "severity": null,
             "confidence": null,
             "evidence_class": null,
-            "message": "Cannot determine history persistence posture: config file is a symlink — not followed",
+            "message": "Cannot determine history persistence posture: config path contains a symlink or reparse point — not followed",
             "observation": null,
             "remediation": null,
             "source": null,
-            "valid_from": "<=0.144.4",
-            "valid_until": "0.144.4",
-            "unknown_reason": "config file is a symlink — not followed",
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": "config path contains a symlink or reparse point — not followed",
             "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference",
             "stale_reason": null
           }

@@ -7,14 +7,14 @@ harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network r
 detected tools
   ● codex version not detected · config [CONFIG_PATH] · confidence medium
 
-codex version not detected — rules verified ≤0.144.4 · 2026-07-15
-rules verified ≤0.144.4 — version not detected, showing last-known rules as unverified
+codex version not detected — rules verified ≤0.144.5 · 2026-07-16
+rules verified ≤0.144.5 — version not detected, showing last-known rules as unverified
 0 warning · 0 info · 0 unknown · 1 stale · 0 passed
 
 ~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates the configured value cannot be interpreted safely. Observed: unrecognized value (raw value withheld).
    reason: tool version not detected — no version marker found on PATH
    rule codex-history-persist-01 · official-documentation
-   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-15)
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-16)
    = harness-guard explain codex-history-persist-01
 
 0 warning · 0 info · 0 unknown · 1 stale · 0 passed — 0 network requests made

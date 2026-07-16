@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+compile_error!("harness-guard supports only macOS and Linux");
+
 mod diagnostics;
 mod explain;
 mod redact;
@@ -224,24 +227,25 @@ fn cmd_list() -> ExitCode {
     let mut table = comfy_table::Table::new();
     table.set_header(["tool", "version", "config", "confidence"]);
 
-    let home_exists = root.codex_home_exists();
+    let home_detected = harness_guard_core::readfs::probe_directory(&root.codex_home)
+        != harness_guard_core::readfs::PathProbe::Missing;
     let on_path = harness_guard_core::version::binary_on_path(&root);
-    if home_exists || on_path {
+    if home_detected || on_path {
         let version = harness_guard_core::version::detect_codex_version(&root)
             .unwrap_or_else(|| "version not detected".to_string());
         let config_path = root.config_path();
-        let config = if std::fs::symlink_metadata(&config_path).is_ok() {
-            redact::redact_config_path(
+        let config = match harness_guard_core::readfs::probe_regular_file(&config_path) {
+            harness_guard_core::readfs::PathProbe::Present => redact::redact_config_path(
                 &config_path.to_string_lossy(),
                 home.as_deref(),
                 &root.codex_home,
-            )
-        } else {
-            "no config file".to_string()
+            ),
+            harness_guard_core::readfs::PathProbe::Missing => "no config file".to_string(),
+            harness_guard_core::readfs::PathProbe::Refused => "config path refused".to_string(),
         };
         let confidence = match harness_guard_core::scan::detection_confidence(
             (version != "version not detected").then_some(version.as_str()),
-            home_exists,
+            home_detected,
         ) {
             harness_guard_rules::report::Confidence::Low => "low",
             harness_guard_rules::report::Confidence::Medium => "medium",
@@ -316,13 +320,12 @@ fn build_report(results: &[ScanResult], home: Option<&Path>, codex_home: &Path) 
     }
 }
 
+#[cfg(target_os = "macos")]
 fn current_os() -> String {
-    if cfg!(target_os = "macos") {
-        "macos"
-    } else if cfg!(target_os = "windows") {
-        "windows"
-    } else {
-        "linux"
-    }
-    .to_string()
+    "macos".to_string()
+}
+
+#[cfg(target_os = "linux")]
+fn current_os() -> String {
+    "linux".to_string()
 }

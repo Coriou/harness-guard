@@ -7,15 +7,15 @@ harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network r
 detected tools
   ● codex 9.9.9 · config [CONFIG_PATH] · confidence high
 
-codex 9.9.9 — rules verified ≤0.144.4 · 2026-07-15
-rules verified ≤0.144.4 — you have 9.9.9, showing last-known rules as unverified
+codex 9.9.9 — rules verified ≤0.144.5 · 2026-07-16
+rules verified ≤0.144.5 — you have 9.9.9, showing last-known rules as unverified
 0 warning · 0 info · 0 unknown · 1 stale · 0 passed
 
-~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates: Session history persistence is disabled (history.persistence = "none"). Observed: history.persistence = "none".
-   reason: detected version 9.9.9 is outside every tested range (max tested 0.144.4)
+~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates: The inspected user-level config sets history.persistence = "none". Observed: history.persistence = "none".
+   reason: detected version 9.9.9 is outside every tested range (max tested 0.144.5)
    rule codex-history-persist-01 · official-documentation
    observed: history.persistence = "none"
-   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-15)
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-16)
    = harness-guard explain codex-history-persist-01
 
 0 warning · 0 info · 0 unknown · 1 stale · 0 passed — 0 network requests made

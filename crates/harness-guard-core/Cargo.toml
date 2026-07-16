@@ -10,6 +10,11 @@ harness-guard-rules = { path = "../harness-guard-rules" }
 serde_json.workspace = true # package.json version reads only
 toml.workspace = true
 
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+# Directory-relative opens keep every path component anchored to an already
+# opened directory handle, so a symlink or path swap cannot redirect a read.
+rustix = { version = "1.1.4", features = ["fs"] }
+
 [dev-dependencies]
 tempfile = "3"
 

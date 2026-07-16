@@ -136,7 +136,7 @@ run_case() {
 # scan attempted egress, even if the process caught the resulting error.
 SCAN_LOG_START=$(/bin/date '+%Y-%m-%d %H:%M:%S')
 run_case hardened 0 passed
-run_case risky-unset 1 warning
+run_case risky-explicit 1 warning
 run_case malformed-toml 2 unknown
 run_case unknown-version 0 stale
 

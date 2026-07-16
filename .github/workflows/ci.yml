@@ -44,7 +44,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -71,10 +71,10 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y strace
-          case_dir="fixtures/codex/risky-unset/files"
+          case_dir="fixtures/codex/risky-explicit/files"
           set +e
           # PATH includes the fixture path dir so version detection sees the
-          # synthetic npm marker (in range => warning finding => exit 1).
+          # synthetic npm marker and explicit save-all value (warning => exit 1).
           /usr/bin/env -i \
             HOME="$PWD/$case_dir" \
             CODEX_HOME="$PWD/$case_dir/codex-home" \

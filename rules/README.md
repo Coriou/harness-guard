@@ -1,7 +1,8 @@
 # Harness Guard rules — standalone data package
 
 Machine-readable, source-cited audit rules for the privacy/retention/telemetry
-posture of AI coding tool configurations. Consumed by
+posture of Codex CLI configuration. Codex CLI is the only currently represented
+harness. This package is consumed by
 [Harness Guard](../README.md), a local, execution-free, per-finding-cited
 config auditor for privacy/retention/telemetry posture — but this directory is
 an **independently usable, forkable, permissively licensed data package from

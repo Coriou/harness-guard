@@ -95,7 +95,7 @@ fn every_expected_json_validates_against_fixture_schema() {
 }
 
 #[test]
-fn fixture_version_markers_are_synthetic_and_exact() {
+fn in_range_fixture_version_markers_are_synthetic_and_exact_latest() {
     let codex_root = fixtures_root().join("codex");
     for case in IN_RANGE_VERSION_CASES {
         let path = codex_root.join(case).join("files/path");
@@ -107,7 +107,7 @@ fn fixture_version_markers_are_synthetic_and_exact() {
             serde_json::from_str(&std::fs::read_to_string(path.join("package.json")).unwrap())
                 .unwrap();
         assert_eq!(package["name"], "@openai/codex");
-        assert_eq!(package["version"], "0.144.4");
+        assert_eq!(package["version"], "0.144.5");
     }
 
     let unknown_path = codex_root.join("unknown-version/files/path");
@@ -194,7 +194,10 @@ fn fixture_inputs_never_model_sensitive_data_stores() {
 #[test]
 fn hostile_runtime_bases_pin_structural_refusal_reasons() {
     for (case, reason) in [
-        ("symlink-config", "config file is a symlink — not followed"),
+        (
+            "symlink-config",
+            "config path contains a symlink or reparse point — not followed",
+        ),
         ("oversized", "config file exceeds the 1 MiB parse bound"),
         (
             "permission-denied",

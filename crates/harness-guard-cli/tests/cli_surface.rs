@@ -8,7 +8,7 @@ fn list_shows_detection_only() {
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.contains("codex"));
-    assert!(text.contains("0.144.4"));
+    assert!(text.contains("0.144.5"));
     assert!(
         !text.contains("codex-history-persist-01"),
         "list must never evaluate rules"
@@ -47,38 +47,40 @@ fn list_symbolically_redacts_explicit_codex_home() {
 #[test]
 fn list_path_only_version_detection_has_medium_confidence() {
     let synthetic = tempfile::tempdir().unwrap();
-    let path = synthetic.path().join("path");
+    let base = synthetic.path().canonicalize().unwrap();
+    let path = base.join("path");
     std::fs::create_dir_all(&path).unwrap();
     std::fs::write(path.join("codex"), "synthetic marker; never executed").unwrap();
     std::fs::write(
         path.join("package.json"),
-        r#"{"name":"@openai/codex","version":"0.144.4"}"#,
+        r#"{"name":"@openai/codex","version":"0.144.5"}"#,
     )
     .unwrap();
 
     let output = run_with_roots(
-        &synthetic.path().join("absent-codex-home"),
+        &base.join("absent-codex-home"),
         &path,
-        &synthetic.path().join("home"),
+        &base.join("home"),
         &["list"],
     );
     let text = String::from_utf8_lossy(&output.stdout);
     assert_eq!(output.status.code(), Some(0));
-    assert!(text.contains("0.144.4"));
+    assert!(text.contains("0.144.5"));
     assert!(text.contains("medium"));
 }
 
 #[test]
 fn list_path_marker_without_version_or_home_has_low_confidence() {
     let synthetic = tempfile::tempdir().unwrap();
-    let path = synthetic.path().join("path");
+    let base = synthetic.path().canonicalize().unwrap();
+    let path = base.join("path");
     std::fs::create_dir_all(&path).unwrap();
     std::fs::write(path.join("codex"), "synthetic marker; never executed").unwrap();
 
     let output = run_with_roots(
-        &synthetic.path().join("absent-codex-home"),
+        &base.join("absent-codex-home"),
         &path,
-        &synthetic.path().join("home"),
+        &base.join("home"),
         &["list"],
     );
     let text = String::from_utf8_lossy(&output.stdout);
@@ -101,7 +103,7 @@ fn explain_shows_full_evidence_record() {
         "archived",
         "web.archive.org",
         "tested versions",
-        "<=0.144.4",
+        "<=0.144.5",
         "verified",
         "limitations",
         "unknown conditions",
@@ -115,7 +117,7 @@ fn explain_shows_full_evidence_record() {
     }
     assert_eq!(
         text.matches("confidence:").count(),
-        3,
+        4,
         "each outcome must state its confidence explicitly"
     );
 }
