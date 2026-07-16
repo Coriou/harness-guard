@@ -1,6 +1,6 @@
 //! Compile-time embedded rules (§4: rules ship inside the binary for now)
 //! + the type-level citation guarantee (§5.2 point 1).
-use crate::schema::{RawRule, Source};
+use crate::schema::{MatchSpec, MatchValue, Observation, RawRule, Source};
 
 const RULESET_JSON: &str = include_str!("../../../rules/ruleset.json");
 const RULE_HISTORY_PERSIST: &str = include_str!("../../../rules/codex/history-persist-01.json");
@@ -124,6 +124,7 @@ fn validate_rule(raw: &RawRule) -> Result<(), RuleValidationError> {
     for outcome in &raw.outcomes {
         validate_outcome(raw, outcome)?;
     }
+    validate_match_semantics(raw)?;
     if raw.sources.is_empty() {
         return invalid(raw, "at least one validated source is required");
     }
@@ -319,6 +320,279 @@ fn parse_version_part(part: &str) -> Option<u64> {
         .flatten()
 }
 
+/// §6.3: proves totality of a rule's declarative `match` outcomes so the
+/// engine (Task 6) can assume every extracted value maps to exactly one
+/// outcome, deterministically, with no fallthrough.
+fn validate_match_semantics(raw: &RawRule) -> Result<(), RuleValidationError> {
+    let observation = &raw.observation;
+    let value_type = observation.value_type.as_str();
+
+    // Integer observations render from the parsed i64, never a string
+    // allowlist (§5.7); pin allowed_render to exactly ["unset"].
+    if value_type == "integer" {
+        if observation.integer_bounds.is_none() {
+            return invalid(raw, "integer observations require integer_bounds");
+        }
+        if observation.allowed_render != ["unset".to_string()] {
+            return invalid(
+                raw,
+                "integer observations must set allowed_render to [\"unset\"]",
+            );
+        }
+        let bounds = observation.integer_bounds.expect("checked above");
+        if bounds.min > bounds.max {
+            return invalid(raw, "integer_bounds min must be <= max");
+        }
+    } else {
+        if observation.integer_bounds.is_some() {
+            return invalid(raw, "integer_bounds is only valid for integer observations");
+        }
+        if !observation.allowed_render.iter().any(|r| r == "unset") {
+            return invalid(
+                raw,
+                "allowed_render must include the \"unset\" rendering token",
+            );
+        }
+        if value_type == "bool" {
+            let mut expected: Vec<&str> = vec!["true", "false", "unset"];
+            expected.sort_unstable();
+            let mut actual: Vec<&str> = observation
+                .allowed_render
+                .iter()
+                .map(String::as_str)
+                .collect();
+            actual.sort_unstable();
+            if actual != expected {
+                return invalid(
+                    raw,
+                    "bool observations must set allowed_render to [\"true\", \"false\", \"unset\"]",
+                );
+            }
+        }
+    }
+
+    // §6.3.3 cardinality + §6.3.6 status legality.
+    let mut unset_count = 0usize;
+    let mut unrecognized_count = 0usize;
+    for outcome in &raw.outcomes {
+        match &outcome.match_spec {
+            MatchSpec::Unset(flag) => {
+                unset_count += 1;
+                if !flag || outcome.status != "unknown" {
+                    return invalid(
+                        raw,
+                        "unset outcomes must be `\"unset\": true` with status unknown",
+                    );
+                }
+            }
+            MatchSpec::Unrecognized(flag) => {
+                unrecognized_count += 1;
+                if !flag || outcome.status != "unknown" {
+                    return invalid(
+                        raw,
+                        "unrecognized outcomes must be `\"unrecognized\": true` with status unknown",
+                    );
+                }
+            }
+            MatchSpec::Equals { value } => {
+                if !matches!(outcome.status.as_str(), "pass" | "finding") {
+                    return invalid(raw, "equals outcomes allow only pass or finding status");
+                }
+                validate_match_value(raw, observation, value)?;
+            }
+            MatchSpec::AnyOf { values } => {
+                if !matches!(outcome.status.as_str(), "pass" | "finding") {
+                    return invalid(raw, "any_of outcomes allow only pass or finding status");
+                }
+                if values.is_empty() {
+                    return invalid(raw, "any_of must list at least one value");
+                }
+                for value in values {
+                    validate_match_value(raw, observation, value)?;
+                }
+            }
+            MatchSpec::IntRange { min, max } => {
+                if !matches!(outcome.status.as_str(), "pass" | "finding") {
+                    return invalid(raw, "int_range outcomes allow only pass or finding status");
+                }
+                if value_type != "integer" {
+                    return invalid(raw, "int_range applies only to integer observations");
+                }
+                let bounds = observation.integer_bounds.expect("validated above");
+                let low = min.unwrap_or(bounds.min);
+                let high = max.unwrap_or(bounds.max);
+                if low > high {
+                    return invalid(raw, "int_range min must be <= max");
+                }
+                if low < bounds.min || high > bounds.max {
+                    return invalid(raw, "int_range must lie within integer_bounds");
+                }
+            }
+        }
+    }
+    if unset_count != 1 || unrecognized_count != 1 {
+        return invalid(
+            raw,
+            "exactly one unset and exactly one unrecognized outcome are required",
+        );
+    }
+
+    // §6.3.4 exhaustiveness + §6.3.5 overlap freedom.
+    match value_type {
+        "enum" => validate_enum_partition(raw),
+        "bool" => validate_bool_partition(raw),
+        _ => validate_integer_partition(raw),
+    }
+}
+
+fn validate_match_value(
+    raw: &RawRule,
+    observation: &Observation,
+    value: &MatchValue,
+) -> Result<(), RuleValidationError> {
+    match (observation.value_type.as_str(), value) {
+        ("enum", MatchValue::Str(text)) => {
+            let in_domain = text != "unset" && observation.allowed_render.iter().any(|r| r == text);
+            if !in_domain {
+                return invalid(
+                    raw,
+                    "match string values must be in allowed_render (excluding \"unset\")",
+                );
+            }
+        }
+        ("bool", MatchValue::Bool(_)) => {}
+        ("integer", MatchValue::Int(number)) => {
+            let bounds = observation.integer_bounds.expect("validated above");
+            if *number < bounds.min || *number > bounds.max {
+                return invalid(raw, "match integer values must lie within integer_bounds");
+            }
+        }
+        _ => return invalid(raw, "match value type must agree with observation.type"),
+    }
+    Ok(())
+}
+
+fn value_sets(raw: &RawRule) -> Vec<Vec<MatchValue>> {
+    raw.outcomes
+        .iter()
+        .filter_map(|outcome| match &outcome.match_spec {
+            MatchSpec::Equals { value } => Some(vec![value.clone()]),
+            MatchSpec::AnyOf { values } => Some(values.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+fn validate_enum_partition(raw: &RawRule) -> Result<(), RuleValidationError> {
+    let domain: Vec<&str> = raw
+        .observation
+        .allowed_render
+        .iter()
+        .map(String::as_str)
+        .filter(|render| *render != "unset")
+        .collect();
+    let sets = value_sets(raw);
+    let mut seen: Vec<&str> = Vec::new();
+    for set in &sets {
+        for value in set {
+            let MatchValue::Str(text) = value else {
+                return invalid(raw, "enum match values must be strings");
+            };
+            if seen.contains(&text.as_str()) {
+                return invalid(
+                    raw,
+                    "value-match outcomes overlap; evaluation must be order-independent",
+                );
+            }
+            seen.push(text);
+        }
+    }
+    for value in &domain {
+        if !seen.contains(value) {
+            return invalid(
+                raw,
+                "value-match outcomes are not exhaustive over the enum domain",
+            );
+        }
+    }
+    Ok(())
+}
+
+fn validate_bool_partition(raw: &RawRule) -> Result<(), RuleValidationError> {
+    let sets = value_sets(raw);
+    let mut seen: Vec<bool> = Vec::new();
+    for set in &sets {
+        for value in set {
+            let MatchValue::Bool(flag) = value else {
+                return invalid(raw, "bool match values must be booleans");
+            };
+            if seen.contains(flag) {
+                return invalid(
+                    raw,
+                    "value-match outcomes overlap; evaluation must be order-independent",
+                );
+            }
+            seen.push(*flag);
+        }
+    }
+    if !(seen.contains(&true) && seen.contains(&false)) {
+        return invalid(raw, "bool outcomes must be exhaustive over true and false");
+    }
+    Ok(())
+}
+
+fn validate_integer_partition(raw: &RawRule) -> Result<(), RuleValidationError> {
+    let bounds = raw.observation.integer_bounds.expect("validated above");
+    // Every value-matching outcome becomes one or more closed intervals.
+    let mut intervals: Vec<(i64, i64)> = Vec::new();
+    for outcome in &raw.outcomes {
+        match &outcome.match_spec {
+            MatchSpec::Equals {
+                value: MatchValue::Int(number),
+            } => {
+                intervals.push((*number, *number));
+            }
+            MatchSpec::AnyOf { values } => {
+                for value in values {
+                    let MatchValue::Int(number) = value else {
+                        return invalid(raw, "integer match values must be integers");
+                    };
+                    intervals.push((*number, *number));
+                }
+            }
+            MatchSpec::IntRange { min, max } => {
+                intervals.push((min.unwrap_or(bounds.min), max.unwrap_or(bounds.max)));
+            }
+            _ => {}
+        }
+    }
+    intervals.sort_unstable();
+    let mut expected_next = bounds.min;
+    for (low, high) in &intervals {
+        if *low < expected_next {
+            return invalid(
+                raw,
+                "integer outcomes overlap; evaluation must be order-independent",
+            );
+        }
+        if *low > expected_next {
+            return invalid(
+                raw,
+                "integer outcomes do not cover integer_bounds exhaustively",
+            );
+        }
+        // i64 overflow-safe advance: high == i64::MAX only when bounds.max is.
+        expected_next = high.saturating_add(1);
+    }
+    if intervals.is_empty() || expected_next <= bounds.max {
+        return invalid(
+            raw,
+            "integer outcomes do not cover integer_bounds exhaustively",
+        );
+    }
+    Ok(())
+}
+
 fn invalid<T>(raw: &RawRule, message: &str) -> Result<T, RuleValidationError> {
     Err(RuleValidationError(format!("rule {} {message}", raw.id)))
 }
@@ -341,4 +615,218 @@ pub fn ruleset_version() -> String {
         .as_str()
         .expect("ruleset_version present")
         .to_string()
+}
+
+#[cfg(test)]
+mod validation_tests {
+    use super::*;
+
+    fn raw_rule() -> RawRule {
+        serde_json::from_str(RULE_HISTORY_PERSIST).unwrap()
+    }
+
+    fn raw_with(mutate: impl FnOnce(&mut serde_json::Value)) -> RawRule {
+        let mut json: serde_json::Value = serde_json::from_str(RULE_HISTORY_PERSIST).unwrap();
+        mutate(&mut json);
+        serde_json::from_value(json).expect("corpus mutation still deserializes")
+    }
+
+    /// A synthetic integer-observation rule derived from the bundled enum
+    /// rule: same shape (2 value outcomes + unset + unrecognized), retyped
+    /// to `integer` with bounds `[0, 90]` split as `[0,29]` / `[30,90]`.
+    fn integer_raw_with(mutate: impl FnOnce(&mut serde_json::Value)) -> RawRule {
+        let mut json: serde_json::Value = serde_json::from_str(RULE_HISTORY_PERSIST).unwrap();
+        json["observation"]["type"] = serde_json::json!("integer");
+        json["observation"]["allowed_render"] = serde_json::json!(["unset"]);
+        json["observation"]["integer_bounds"] = serde_json::json!({"min": 0, "max": 90});
+        json["outcomes"][0]["match"] = serde_json::json!({"int_range": {"min": 0, "max": 29}});
+        json["outcomes"][1]["match"] = serde_json::json!({"int_range": {"min": 30, "max": 90}});
+        mutate(&mut json);
+        serde_json::from_value(json).expect("integer corpus mutation still deserializes")
+    }
+
+    fn assert_rejected(rule: RawRule, needle: &str) {
+        let error = ValidatedRule::try_from_raw(rule).expect_err("must be rejected");
+        assert!(
+            error.0.contains(needle),
+            "error {:?} should mention {needle:?}",
+            error.0
+        );
+    }
+
+    #[test]
+    fn bundled_rule_passes_validation() {
+        assert!(ValidatedRule::try_from_raw(raw_rule()).is_ok());
+    }
+
+    // §6.3.1 type agreement
+    #[test]
+    fn equals_bool_on_enum_observation_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][0]["match"] = serde_json::json!({"equals": {"value": true}})
+            }),
+            "match value type",
+        );
+    }
+    #[test]
+    fn int_range_on_enum_observation_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][0]["match"] = serde_json::json!({"int_range": {"min": 0, "max": 1}})
+            }),
+            "int_range",
+        );
+    }
+
+    // §6.3.2 domain membership
+    #[test]
+    fn equals_value_outside_allowed_render_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][0]["match"] = serde_json::json!({"equals": {"value": "archive"}})
+            }),
+            "allowed_render",
+        );
+    }
+    #[test]
+    fn equals_value_unset_string_is_rejected() {
+        // "unset" is the unset-rendering token, not a matchable domain value.
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][0]["match"] = serde_json::json!({"equals": {"value": "unset"}})
+            }),
+            "allowed_render",
+        );
+    }
+
+    // §6.3.3 cardinality
+    #[test]
+    fn missing_unrecognized_catch_all_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                let outcomes = j["outcomes"].as_array_mut().unwrap();
+                outcomes.retain(|o| o["match"].get("unrecognized").is_none());
+            }),
+            "unrecognized",
+        );
+    }
+    #[test]
+    fn duplicate_unset_outcome_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                let unset = j["outcomes"][2].clone();
+                j["outcomes"].as_array_mut().unwrap().push(unset);
+            }),
+            "exactly one",
+        );
+    }
+
+    // §6.3.4 exhaustiveness
+    #[test]
+    fn uncovered_enum_domain_value_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                // Domain becomes {save-all, none, keep-latest} but no outcome
+                // matches keep-latest.
+                j["observation"]["allowed_render"] =
+                    serde_json::json!(["save-all", "none", "keep-latest", "unset"]);
+            }),
+            "exhaustive",
+        );
+    }
+
+    // §6.3.5 overlap freedom
+    #[test]
+    fn overlapping_value_outcomes_are_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][1]["match"] =
+                    serde_json::json!({"any_of": {"values": ["save-all", "none"]}})
+            }),
+            "overlap",
+        );
+    }
+
+    // §6.3.6 status legality
+    #[test]
+    fn unset_with_pass_status_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][2]["status"] = serde_json::json!("pass");
+                j["outcomes"][2]["unknown_reason"] = serde_json::Value::Null;
+                j["outcomes"][2]["verify_url"] = serde_json::Value::Null;
+                j["outcomes"][2]["confidence"] = serde_json::json!("high");
+            }),
+            "unset",
+        );
+    }
+    #[test]
+    fn value_match_with_unknown_status_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["outcomes"][0]["status"] = serde_json::json!("unknown");
+                j["outcomes"][0]["confidence"] = serde_json::Value::Null;
+                j["outcomes"][0]["unknown_reason"] = serde_json::json!("x");
+            }),
+            "equals",
+        );
+    }
+
+    // Integer-rule corpus (§6.3.1, §6.3.4, §6.3.5 for the integer domain).
+    #[test]
+    fn full_integer_coverage_is_accepted() {
+        assert!(ValidatedRule::try_from_raw(integer_raw_with(|_| {})).is_ok());
+    }
+    #[test]
+    fn int_range_escaping_integer_bounds_is_rejected() {
+        assert_rejected(
+            integer_raw_with(|j| {
+                j["outcomes"][0]["match"] =
+                    serde_json::json!({"int_range": {"min": -5, "max": 10}});
+            }),
+            "integer_bounds",
+        );
+    }
+    #[test]
+    fn inverted_int_range_is_rejected() {
+        assert_rejected(
+            integer_raw_with(|j| {
+                j["outcomes"][0]["match"] =
+                    serde_json::json!({"int_range": {"min": 50, "max": 10}});
+            }),
+            "min must be <= max",
+        );
+    }
+    #[test]
+    fn gap_in_integer_coverage_is_rejected() {
+        assert_rejected(
+            integer_raw_with(|j| {
+                j["outcomes"][0]["match"] = serde_json::json!({"int_range": {"min": 0, "max": 29}});
+                j["outcomes"][1]["match"] =
+                    serde_json::json!({"int_range": {"min": 40, "max": 90}});
+            }),
+            "cover",
+        );
+    }
+    #[test]
+    fn overlapping_integer_ranges_are_rejected() {
+        assert_rejected(
+            integer_raw_with(|j| {
+                j["outcomes"][0]["match"] = serde_json::json!({"int_range": {"min": 0, "max": 40}});
+                j["outcomes"][1]["match"] =
+                    serde_json::json!({"int_range": {"min": 30, "max": 90}});
+            }),
+            "overlap",
+        );
+    }
+    #[test]
+    fn non_unset_allowed_render_for_integer_observation_is_rejected() {
+        assert_rejected(
+            integer_raw_with(|j| {
+                j["observation"]["allowed_render"] = serde_json::json!(["unset", "extra"]);
+            }),
+            "allowed_render",
+        );
+    }
 }
