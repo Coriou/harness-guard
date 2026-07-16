@@ -11,6 +11,7 @@ mod render_term;
 
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum};
 use harness_guard_core::discovery::DiscoveryRoot;
+use harness_guard_core::harness::HarnessId;
 use harness_guard_core::scan::{ScanResult, scan_codex};
 use harness_guard_rules::loader::{load_rules, ruleset_version};
 use harness_guard_rules::report::{Platform, Report, Severity, Status, Summary};
@@ -148,6 +149,16 @@ fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
         .map(PathBuf::from)
         .or_else(|| home.as_ref().map(|home| home.join(".codex")))
         .unwrap_or_else(|| PathBuf::from(".codex"));
+    // Temporary fallback only — full home-override resolution (and non-codex
+    // scan dispatch) lands in Task 15. Scan behavior stays codex-only here.
+    let claude_home = home
+        .as_ref()
+        .map(|home| home.join(".claude"))
+        .unwrap_or_else(|| PathBuf::from(".claude"));
+    let grok_home = home
+        .as_ref()
+        .map(|home| home.join(".grok"))
+        .unwrap_or_else(|| PathBuf::from(".grok"));
     let path_dirs = std::env::var_os("PATH")
         .map(|path| std::env::split_paths(&path).collect())
         .unwrap_or_default();
@@ -155,6 +166,8 @@ fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
     (
         DiscoveryRoot {
             codex_home,
+            claude_home,
+            grok_home,
             path_dirs,
         },
         home,
@@ -233,7 +246,7 @@ fn cmd_list() -> ExitCode {
     if home_detected || on_path {
         let version = harness_guard_core::version::detect_codex_version(&root)
             .unwrap_or_else(|| "version not detected".to_string());
-        let config_path = root.config_path();
+        let config_path = root.config_path(HarnessId::Codex);
         let config = match harness_guard_core::readfs::probe_regular_file(&config_path) {
             harness_guard_core::readfs::PathProbe::Present => redact::redact_config_path(
                 &config_path.to_string_lossy(),

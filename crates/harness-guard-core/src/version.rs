@@ -182,6 +182,8 @@ mod tests {
         std::fs::write(package.join("package.json"), version_json).unwrap();
         let root = DiscoveryRoot {
             codex_home: base.join("codex-home"),
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![package.join("bin")],
         };
         (dir, root)
@@ -214,6 +216,8 @@ mod tests {
         std::fs::write(bin.join("codex"), "binary").unwrap();
         let root = DiscoveryRoot {
             codex_home: dir.path().join("x"),
+            claude_home: dir.path().join("absent-claude-home"),
+            grok_home: dir.path().join("absent-grok-home"),
             path_dirs: vec![bin],
         };
         assert_eq!(detect_codex_version(&root), None);
@@ -240,6 +244,8 @@ mod tests {
         .unwrap();
         let root = DiscoveryRoot {
             codex_home: dir.path().join("x"),
+            claude_home: dir.path().join("absent-claude-home"),
+            grok_home: dir.path().join("absent-grok-home"),
             path_dirs: vec![bin],
         };
         assert!(!binary_on_path(&root));
@@ -285,6 +291,8 @@ mod tests {
         std::os::unix::fs::symlink(package.join("bin/codex"), bin.join("codex")).unwrap();
         let root = DiscoveryRoot {
             codex_home: base.join("x"),
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![bin],
         };
         assert_eq!(detect_codex_version(&root), Some("0.144.5".to_string()));
@@ -300,6 +308,8 @@ mod tests {
         std::os::unix::fs::symlink(bin.join("codex"), bin.join("b")).unwrap();
         let root = DiscoveryRoot {
             codex_home: dir.path().join("x"),
+            claude_home: dir.path().join("absent-claude-home"),
+            grok_home: dir.path().join("absent-grok-home"),
             path_dirs: vec![bin],
         };
         assert_eq!(detect_codex_version(&root), None);

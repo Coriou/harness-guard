@@ -3,6 +3,7 @@
 //! document are dropped before this function returns.
 use crate::discovery::DiscoveryRoot;
 use crate::engine::{ConfigState, evaluate_rule};
+use crate::harness::HarnessId;
 use crate::parse::{ParseFailure, extract_key, parse_config};
 use crate::readfs::{ConfigReadOutcome, PathProbe, probe_directory, read_config};
 use crate::version::{binary_on_path, detect_codex_version};
@@ -44,14 +45,22 @@ pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanR
     let mut parse_failure = None;
     let mut config_paths = Vec::new();
 
-    let config_state = match read_config(root) {
+    let config_state = match read_config(root, HarnessId::Codex) {
         ConfigReadOutcome::NoConfig => ConfigState::Missing,
         ConfigReadOutcome::Refused(reason) => {
-            config_paths.push(root.config_path().to_string_lossy().into_owned());
+            config_paths.push(
+                root.config_path(HarnessId::Codex)
+                    .to_string_lossy()
+                    .into_owned(),
+            );
             ConfigState::Unreadable(reason)
         }
         ConfigReadOutcome::Ok(text) => {
-            config_paths.push(root.config_path().to_string_lossy().into_owned());
+            config_paths.push(
+                root.config_path(HarnessId::Codex)
+                    .to_string_lossy()
+                    .into_owned(),
+            );
             match parse_config(&text) {
                 Err(failure) => {
                     parse_failure = Some(failure.clone());
@@ -143,6 +152,8 @@ mod tests {
         let base = dir.path().canonicalize().unwrap();
         let root = DiscoveryRoot {
             codex_home: base.join("absent"),
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
         assert!(scan_codex(&root, &load_rules()).is_none());
@@ -151,11 +162,14 @@ mod tests {
     #[test]
     fn malformed_config_degrades_with_unknown_findings() {
         let dir = tempfile::tempdir().unwrap();
-        let home = dir.path().canonicalize().unwrap().join("codex-home");
+        let base = dir.path().canonicalize().unwrap();
+        let home = base.join("codex-home");
         std::fs::create_dir_all(&home).unwrap();
         std::fs::write(home.join("config.toml"), "[history\n").unwrap();
         let root = DiscoveryRoot {
             codex_home: home,
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
         let result = scan_codex(&root, &load_rules()).unwrap();
@@ -173,11 +187,14 @@ mod tests {
     #[test]
     fn findings_are_sorted_by_rule_id() {
         let dir = tempfile::tempdir().unwrap();
-        let home = dir.path().canonicalize().unwrap().join("codex-home");
+        let base = dir.path().canonicalize().unwrap();
+        let home = base.join("codex-home");
         std::fs::create_dir_all(&home).unwrap();
         std::fs::write(home.join("config.toml"), "").unwrap();
         let root = DiscoveryRoot {
             codex_home: home,
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
         let result = scan_codex(&root, &load_rules()).unwrap();

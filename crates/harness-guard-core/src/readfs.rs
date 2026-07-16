@@ -2,6 +2,7 @@
 //! opened-handle validation, regular files only, 1 MiB cap, UTF-8 only.
 //! Refusal is a value, not an error — callers map it to `unknown` findings.
 use crate::discovery::DiscoveryRoot;
+use crate::harness::HarnessId;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Component, Path};
@@ -57,8 +58,8 @@ pub(crate) enum BoundedReadError {
     Io,
 }
 
-pub fn read_config(root: &DiscoveryRoot) -> ConfigReadOutcome {
-    let path = root.config_path();
+pub fn read_config(root: &DiscoveryRoot, harness: HarnessId) -> ConfigReadOutcome {
+    let path = root.config_path(harness);
     let bytes = match read_bounded_regular(&path, MAX_CONFIG_BYTES) {
         Ok(bytes) => bytes,
         Err(BoundedReadError::NotFound) => return ConfigReadOutcome::NoConfig,
@@ -250,11 +251,13 @@ fn classify_unix_open_error(
 mod tests {
     use super::*;
     use crate::discovery::DiscoveryRoot;
+    use crate::harness::HarnessId;
     use std::io::Write;
 
     fn root_with(config: Option<&[u8]>) -> (tempfile::TempDir, DiscoveryRoot) {
         let dir = tempfile::tempdir().unwrap();
-        let home = dir.path().canonicalize().unwrap().join("codex-home");
+        let base = dir.path().canonicalize().unwrap();
+        let home = base.join("codex-home");
         std::fs::create_dir_all(&home).unwrap();
         if let Some(bytes) = config {
             std::fs::File::create(home.join("config.toml"))
@@ -264,6 +267,8 @@ mod tests {
         }
         let root = DiscoveryRoot {
             codex_home: home,
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
         (dir, root)
@@ -272,24 +277,36 @@ mod tests {
     #[test]
     fn missing_home_is_no_config() {
         let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
         let root = DiscoveryRoot {
-            codex_home: dir.path().canonicalize().unwrap().join("nope"),
+            codex_home: base.join("nope"),
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
-        assert!(matches!(read_config(&root), ConfigReadOutcome::NoConfig));
+        assert!(matches!(
+            read_config(&root, HarnessId::Codex),
+            ConfigReadOutcome::NoConfig
+        ));
     }
 
     #[test]
     fn missing_file_is_no_config() {
         let (_d, root) = root_with(None);
-        assert!(matches!(read_config(&root), ConfigReadOutcome::NoConfig));
+        assert!(matches!(
+            read_config(&root, HarnessId::Codex),
+            ConfigReadOutcome::NoConfig
+        ));
     }
 
     #[test]
     fn safe_probes_distinguish_present_and_missing_paths() {
         let (_dir, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
         assert_eq!(probe_directory(&root.codex_home), PathProbe::Present);
-        assert_eq!(probe_regular_file(&root.config_path()), PathProbe::Present);
+        assert_eq!(
+            probe_regular_file(&root.config_path(HarnessId::Codex)),
+            PathProbe::Present
+        );
         assert_eq!(
             probe_regular_file(&root.codex_home.join("missing.toml")),
             PathProbe::Missing
@@ -299,7 +316,7 @@ mod tests {
     #[test]
     fn regular_file_within_bounds_reads_ok() {
         let (_d, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
-        match read_config(&root) {
+        match read_config(&root, HarnessId::Codex) {
             ConfigReadOutcome::Ok(s) => assert!(s.contains("persistence")),
             other => panic!("expected Ok, got {other:?}"),
         }
@@ -313,7 +330,7 @@ mod tests {
         std::fs::write(&target, "[history]\npersistence = \"none\"\n").unwrap();
         std::os::unix::fs::symlink(&target, root.codex_home.join("config.toml")).unwrap();
         assert!(matches!(
-            read_config(&root),
+            read_config(&root, HarnessId::Codex),
             ConfigReadOutcome::Refused(RefusalReason::Symlink)
         ));
     }
@@ -334,11 +351,13 @@ mod tests {
         std::os::unix::fs::symlink(&real_home, &linked_home).unwrap();
         let root = DiscoveryRoot {
             codex_home: linked_home,
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
 
         assert!(matches!(
-            read_config(&root),
+            read_config(&root, HarnessId::Codex),
             ConfigReadOutcome::Refused(RefusalReason::Symlink)
         ));
         assert_eq!(probe_directory(&root.codex_home), PathProbe::Refused);
@@ -361,11 +380,13 @@ mod tests {
         std::os::unix::fs::symlink(&real_parent, &linked_parent).unwrap();
         let root = DiscoveryRoot {
             codex_home: linked_parent.join("codex-home"),
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
 
         assert!(matches!(
-            read_config(&root),
+            read_config(&root, HarnessId::Codex),
             ConfigReadOutcome::Refused(RefusalReason::Symlink)
         ));
     }
@@ -373,7 +394,7 @@ mod tests {
     #[test]
     fn regular_config_replacement_after_open_reads_stable_original_handle() {
         let (_dir, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
-        let config = root.config_path();
+        let config = root.config_path(HarnessId::Codex);
         let displaced = root.codex_home.join("original.toml");
         let replacement = root.codex_home.join("replacement.toml");
         std::fs::write(
@@ -396,7 +417,7 @@ mod tests {
     #[test]
     fn ancestor_replacement_before_final_open_cannot_redirect_read() {
         let (_dir, root) = root_with(Some(b"[history]\npersistence = \"none\"\n"));
-        let config = root.config_path();
+        let config = root.config_path(HarnessId::Codex);
         let displaced_home = root.codex_home.with_file_name("original-codex-home");
         let external_home = root.codex_home.with_file_name("external-codex-home");
         std::fs::create_dir(&external_home).unwrap();
@@ -426,7 +447,7 @@ mod tests {
         let big = vec![b'#'; MAX_CONFIG_BYTES as usize + 1];
         let (_d, root) = root_with(Some(&big));
         assert!(matches!(
-            read_config(&root),
+            read_config(&root, HarnessId::Codex),
             ConfigReadOutcome::Refused(RefusalReason::Oversized)
         ));
     }
@@ -435,7 +456,7 @@ mod tests {
     fn non_utf8_is_refused() {
         let (_d, root) = root_with(Some(&[0xff, 0xfe, 0x00, 0x41]));
         assert!(matches!(
-            read_config(&root),
+            read_config(&root, HarnessId::Codex),
             ConfigReadOutcome::Refused(RefusalReason::NotUtf8)
         ));
     }
@@ -443,21 +464,31 @@ mod tests {
     #[test]
     fn directory_at_config_path_is_refused_as_non_regular() {
         let (_dir, root) = root_with(None);
-        std::fs::create_dir(root.config_path()).unwrap();
+        std::fs::create_dir(root.config_path(HarnessId::Codex)).unwrap();
         assert!(matches!(
-            read_config(&root),
+            read_config(&root, HarnessId::Codex),
             ConfigReadOutcome::Refused(RefusalReason::NotRegularFile)
         ));
-        assert_eq!(probe_regular_file(&root.config_path()), PathProbe::Refused);
+        assert_eq!(
+            probe_regular_file(&root.config_path(HarnessId::Codex)),
+            PathProbe::Refused
+        );
     }
 
     #[cfg(unix)]
     #[test]
     fn socket_at_config_path_is_refused_without_blocking() {
         let (_dir, root) = root_with(None);
-        let _listener = std::os::unix::net::UnixListener::bind(root.config_path()).unwrap();
-        assert!(matches!(read_config(&root), ConfigReadOutcome::Refused(_)));
-        assert_eq!(probe_regular_file(&root.config_path()), PathProbe::Refused);
+        let _listener =
+            std::os::unix::net::UnixListener::bind(root.config_path(HarnessId::Codex)).unwrap();
+        assert!(matches!(
+            read_config(&root, HarnessId::Codex),
+            ConfigReadOutcome::Refused(_)
+        ));
+        assert_eq!(
+            probe_regular_file(&root.config_path(HarnessId::Codex)),
+            PathProbe::Refused
+        );
     }
 
     #[cfg(unix)]
@@ -467,7 +498,7 @@ mod tests {
         let (_d, root) = root_with(Some(b"x = 1\n"));
         let p = root.codex_home.join("config.toml");
         std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o000)).unwrap();
-        let out = read_config(&root);
+        let out = read_config(&root, HarnessId::Codex);
         std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o644)).unwrap();
         assert!(matches!(
             out,
