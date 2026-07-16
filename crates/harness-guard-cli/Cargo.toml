@@ -17,7 +17,8 @@ clap_complete = "4"
 anstream = "0.6"
 owo-colors = "4"
 colorchoice-clap = "1"
-comfy-table = "7"
+# 7.2.x uses language features newer than the workspace's Rust 1.85 MSRV.
+comfy-table = "=7.1.4"
 directories = "6"
 miette = { version = "7", features = ["fancy-no-backtrace"] }
 serde.workspace = true

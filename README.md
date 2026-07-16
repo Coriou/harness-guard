@@ -45,6 +45,22 @@ detected tools
 No numeric score is produced. Read findings individually; `unknown` and
 `stale-ruleset` results are deliberately not presented as passes.
 
+### Use it with an agent
+
+The JSON report is the safest handoff: it contains normalized observations and
+citations, never raw config. Give your coding agent this prompt from the cloned
+repository:
+
+```text
+Install Harness Guard with `cargo install --path crates/harness-guard-cli --locked`,
+then run `harness-guard scan --json`. Preserve and inspect the JSON even when the
+command exits 1. Summarize every finding, unknown, and stale-ruleset result with
+its cited source. Do not read my config directly and do not change anything
+without asking me first.
+```
+
+Exit `2` means the scan degraded; the JSON report still explains why.
+
 ## Commands
 
 ```bash
