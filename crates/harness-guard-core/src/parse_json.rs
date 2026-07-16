@@ -6,6 +6,10 @@
 //! serde_json error text can embed source fragments. Duplicate keys resolve
 //! last-value-wins — matching the harness's own parser (test-pinned). Raw
 //! text and the parsed Value are dropped inside the scan, as for TOML.
+//!
+//! NEVER enable serde_json's `unbounded_depth` feature: it removes the
+//! 128-deep recursion guard this module relies on as its overflow backstop
+//! during parsing, before the 32-depth walk below ever runs.
 use crate::parse::{ExtractedValue, MAX_NESTING_DEPTH, ParseFailure};
 
 pub fn parse_config_json(text: &str) -> Result<serde_json::Value, ParseFailure> {
@@ -187,5 +191,17 @@ mod tests {
         // serde_json's default recursion limit (128) is the backstop.
         let hostile = "[".repeat(20_000);
         assert!(parse_config_json(&hostile).is_err());
+    }
+
+    #[test]
+    fn wide_fan_out_at_moderate_depth_never_panics_and_computes_correct_depth() {
+        // A 1000-wide leaf array wrapped in 63 more single-element arrays:
+        // nesting depth 64 (over the 32 bound), regardless of the 1000-wide
+        // fan-out at the leaf. Pins that value_depth's map/max over a wide
+        // array neither panics nor mis-derives depth from breadth.
+        let leaf = format!("[{}]", vec!["1"; 1000].join(","));
+        let nested = format!("{}{leaf}{}", "[".repeat(63), "]".repeat(63));
+        let failure = parse_config_json(&nested).unwrap_err();
+        assert!(failure.message.contains("nesting depth 64"));
     }
 }

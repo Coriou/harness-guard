@@ -15,6 +15,9 @@ license = "Apache-2.0"
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# NEVER enable the `unbounded_depth` feature: it removes serde_json's 128-deep
+# recursion guard, our overflow backstop for hostile JSON nesting before
+# parse_json.rs's own 32-depth walk runs.
 # Pinned 1.1.2 (verified on crates.io 2026-07-14; MSRV 1.85 = our rust-version).
 # The 0.22.x series belongs to toml_edit, NOT toml — toml has no 0.22.x release.
 # NEVER enable the `unbounded` feature: it compiles out the parser's recursion
