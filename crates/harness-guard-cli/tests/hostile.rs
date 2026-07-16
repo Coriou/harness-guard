@@ -181,8 +181,8 @@ fn malformed_toml_diagnostic_has_line_col_but_never_content_or_absolute_path() {
         "absolute fixture path leaked into diagnostic: {stderr}"
     );
     assert!(
-        stderr.contains("~/codex-home/config.toml"),
-        "diagnostic should name only the redacted config path: {stderr}"
+        stderr.contains("~/codex-home/config.toml") || stderr.contains("$CODEX_HOME/config.toml"),
+        "diagnostic should name only a symbolic config path: {stderr}"
     );
     assert!(
         !output.stdout.is_empty(),
