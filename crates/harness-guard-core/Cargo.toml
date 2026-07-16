@@ -7,7 +7,7 @@ license.workspace = true
 
 [dependencies]
 harness-guard-rules = { path = "../harness-guard-rules" }
-serde_json.workspace = true # package.json version reads only
+serde_json.workspace = true # package.json version reads + JSON config parsing (parse_json.rs)
 toml.workspace = true
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]

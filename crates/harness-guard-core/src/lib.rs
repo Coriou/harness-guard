@@ -10,6 +10,7 @@ pub mod discovery;
 pub mod engine;
 pub mod harness;
 pub mod parse;
+pub mod parse_json;
 pub mod readfs;
 pub mod scan;
 pub mod version;
