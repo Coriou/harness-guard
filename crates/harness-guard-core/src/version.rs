@@ -1,30 +1,36 @@
-//! Execution-free Codex version detection (§9).
-//! NEVER runs the tool. npm layouts yield a version; standalone/Homebrew
-//! layouts legitimately yield None → stale-ruleset ("version not detected").
+//! Execution-free version detection, parameterized per harness (§5.3, §9).
+//! NEVER runs any harness binary. npm layouts yield a version; standalone/
+//! Homebrew layouts, and harnesses without an established marker, legitimately
+//! yield None → stale-ruleset ("version not detected").
 use crate::discovery::DiscoveryRoot;
+use crate::harness::{HarnessId, descriptor};
 use crate::readfs::{BoundedReadError, read_bounded_regular_with_hook};
 use harness_guard_rules::schema::TestedVersion;
 use std::path::{Path, PathBuf};
 
 const MAX_SYMLINK_HOPS: usize = 5;
 const MAX_PARENT_WALK: usize = 5;
-const EXPECTED_PACKAGE: &str = "@openai/codex";
 const MAX_PACKAGE_JSON_BYTES: u64 = 64 * 1024;
 
-pub fn detect_codex_version(root: &DiscoveryRoot) -> Option<String> {
-    detect_codex_version_with_hook(root, || {})
+pub fn detect_version(root: &DiscoveryRoot, harness: HarnessId) -> Option<String> {
+    detect_version_with_hook(root, harness, || {})
 }
 
-fn detect_codex_version_with_hook(
+fn detect_version_with_hook(
     root: &DiscoveryRoot,
+    harness: HarnessId,
     after_package_open: impl FnOnce(),
 ) -> Option<String> {
-    let binary = find_codex_entry(root)?;
+    let facts = descriptor(harness);
+    // §5.3: no established, evidence-backed marker ⇒ None ⇒ stale-ruleset.
+    let binary_name = facts.path_binary?;
+    let expected_package = facts.npm_package?;
+    let binary = find_path_entry(root, binary_name)?;
     let resolved = resolve_bounded(&binary)?;
     let bytes = read_nearest_package_json_with_hook(&resolved, after_package_open)?;
     let text = String::from_utf8(bytes).ok()?;
     let package: serde_json::Value = serde_json::from_str(&text).ok()?;
-    if package.get("name").and_then(|name| name.as_str()) != Some(EXPECTED_PACKAGE) {
+    if package.get("name").and_then(|name| name.as_str()) != Some(expected_package) {
         return None;
     }
     let version = package.get("version")?.as_str()?;
@@ -33,15 +39,17 @@ fn detect_codex_version_with_hook(
 }
 
 /// Tool-on-PATH check used for detection confidence and the `list` command.
-pub fn binary_on_path(root: &DiscoveryRoot) -> bool {
-    find_codex_entry(root)
+pub fn binary_on_path(root: &DiscoveryRoot, harness: HarnessId) -> bool {
+    descriptor(harness)
+        .path_binary
+        .and_then(|name| find_path_entry(root, name))
         .and_then(|entry| resolve_bounded(&entry))
         .is_some()
 }
 
-fn find_codex_entry(root: &DiscoveryRoot) -> Option<PathBuf> {
+fn find_path_entry(root: &DiscoveryRoot, binary_name: &str) -> Option<PathBuf> {
     root.path_dirs.iter().find_map(|directory| {
-        let candidate = directory.join("codex");
+        let candidate = directory.join(binary_name);
         std::fs::symlink_metadata(&candidate)
             .is_ok()
             .then_some(candidate)
@@ -133,6 +141,7 @@ pub fn version_in_range(detected: &str, ranges: &[TestedVersion]) -> bool {
 mod tests {
     use super::*;
     use crate::discovery::DiscoveryRoot;
+    use crate::harness::HarnessId;
     use harness_guard_rules::schema::TestedVersion;
 
     fn tv(min: &str, max: &str) -> TestedVersion {
@@ -192,20 +201,23 @@ mod tests {
     #[test]
     fn npm_layout_detects_clean_version() {
         let (_dir, root) = npm_layout(r#"{"name": "@openai/codex", "version": "0.144.5"}"#);
-        assert_eq!(detect_codex_version(&root), Some("0.144.5".to_string()));
+        assert_eq!(
+            detect_version(&root, HarnessId::Codex),
+            Some("0.144.5".to_string())
+        );
     }
 
     #[test]
     fn wrong_package_name_is_ignored() {
         let (_dir, root) = npm_layout(r#"{"name": "something-else", "version": "0.144.5"}"#);
-        assert_eq!(detect_codex_version(&root), None);
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
     #[test]
     fn suffixed_version_is_rejected() {
         let (_dir, root) =
             npm_layout(r#"{"name": "@openai/codex", "version": "0.144.5-darwin-arm64"}"#);
-        assert_eq!(detect_codex_version(&root), None);
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
     #[test]
@@ -220,7 +232,7 @@ mod tests {
             grok_home: dir.path().join("absent-grok-home"),
             path_dirs: vec![bin],
         };
-        assert_eq!(detect_codex_version(&root), None);
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
     #[test]
@@ -229,7 +241,7 @@ mod tests {
         let package =
             format!(r#"{{"name":"@openai/codex","version":"0.144.5","padding":"{padding}"}}"#);
         let (_dir, root) = npm_layout(&package);
-        assert_eq!(detect_codex_version(&root), None);
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
     #[test]
@@ -248,8 +260,8 @@ mod tests {
             grok_home: dir.path().join("absent-grok-home"),
             path_dirs: vec![bin],
         };
-        assert!(!binary_on_path(&root));
-        assert_eq!(detect_codex_version(&root), None);
+        assert!(!binary_on_path(&root, HarnessId::Codex));
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
     #[test]
@@ -264,7 +276,7 @@ mod tests {
         )
         .unwrap();
 
-        let detected = detect_codex_version_with_hook(&root, || {
+        let detected = detect_version_with_hook(&root, HarnessId::Codex, || {
             std::fs::rename(&package_json, &displaced).unwrap();
             std::fs::rename(&replacement, &package_json).unwrap();
         });
@@ -295,7 +307,10 @@ mod tests {
             grok_home: base.join("absent-grok-home"),
             path_dirs: vec![bin],
         };
-        assert_eq!(detect_codex_version(&root), Some("0.144.5".to_string()));
+        assert_eq!(
+            detect_version(&root, HarnessId::Codex),
+            Some("0.144.5".to_string())
+        );
     }
 
     #[cfg(unix)]
@@ -312,6 +327,46 @@ mod tests {
             grok_home: dir.path().join("absent-grok-home"),
             path_dirs: vec![bin],
         };
-        assert_eq!(detect_codex_version(&root), None);
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
+    }
+
+    #[test]
+    fn claude_npm_layout_detects_version_with_the_shared_walk() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let package = base.join("node_modules/@anthropic-ai/claude-code");
+        std::fs::create_dir_all(package.join("bin")).unwrap();
+        std::fs::write(package.join("bin/claude"), "#!/usr/bin/env node\n").unwrap();
+        std::fs::write(
+            package.join("package.json"),
+            r#"{"name": "@anthropic-ai/claude-code", "version": "2.1.202"}"#,
+        )
+        .unwrap();
+        let root = DiscoveryRoot {
+            codex_home: base.join("absent-codex"),
+            claude_home: base.join("absent-claude"),
+            grok_home: base.join("absent-grok"),
+            path_dirs: vec![package.join("bin")],
+        };
+        assert_eq!(
+            detect_version(&root, HarnessId::ClaudeCode),
+            Some("2.1.202".to_string())
+        );
+        // The same layout must NOT satisfy codex detection (wrong package name).
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
+    }
+
+    #[test]
+    fn grok_detection_is_none_until_evidence_establishes_a_marker() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let root = DiscoveryRoot {
+            codex_home: base.join("a"),
+            claude_home: base.join("b"),
+            grok_home: base.join("c"),
+            path_dirs: vec![base.clone()],
+        };
+        assert_eq!(detect_version(&root, HarnessId::GrokBuild), None);
+        assert!(!binary_on_path(&root, HarnessId::GrokBuild));
     }
 }

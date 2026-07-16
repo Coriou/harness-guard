@@ -242,9 +242,9 @@ fn cmd_list() -> ExitCode {
 
     let home_detected = harness_guard_core::readfs::probe_directory(&root.codex_home)
         != harness_guard_core::readfs::PathProbe::Missing;
-    let on_path = harness_guard_core::version::binary_on_path(&root);
+    let on_path = harness_guard_core::version::binary_on_path(&root, HarnessId::Codex);
     if home_detected || on_path {
-        let version = harness_guard_core::version::detect_codex_version(&root)
+        let version = harness_guard_core::version::detect_version(&root, HarnessId::Codex)
             .unwrap_or_else(|| "version not detected".to_string());
         let config_path = root.config_path(HarnessId::Codex);
         let config = match harness_guard_core::readfs::probe_regular_file(&config_path) {

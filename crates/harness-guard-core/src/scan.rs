@@ -6,7 +6,7 @@ use crate::engine::{ConfigState, evaluate_rule};
 use crate::harness::HarnessId;
 use crate::parse::{ParseFailure, extract_key, parse_config};
 use crate::readfs::{ConfigReadOutcome, PathProbe, probe_directory, read_config};
-use crate::version::{binary_on_path, detect_codex_version};
+use crate::version::{binary_on_path, detect_version};
 use harness_guard_rules::loader::ValidatedRule;
 use harness_guard_rules::report::{Confidence, ToolReport};
 use std::collections::BTreeMap;
@@ -36,12 +36,12 @@ pub fn detection_confidence(
 /// entry in the injected path directories is present.
 pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanResult> {
     let home_detected = probe_directory(&root.codex_home) != PathProbe::Missing;
-    let on_path = binary_on_path(root);
+    let on_path = binary_on_path(root, HarnessId::Codex);
     if !home_detected && !on_path {
         return None;
     }
 
-    let detected_version = detect_codex_version(root);
+    let detected_version = detect_version(root, HarnessId::Codex);
     let mut parse_failure = None;
     let mut config_paths = Vec::new();
 
