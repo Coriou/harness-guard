@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.1",
+  "id": "claude-code-telemetry-opt-out-01",
+  "tool": "claude-code",
+  "category": "telemetry",
+  "title": "Usage-metrics telemetry opt-out",
+  "why_it_matters": "Claude Code sends anonymous usage metrics (latency, reliability, and usage patterns) to Anthropic and third-party logging infrastructure by default for direct Claude API usage — off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled. Anthropic's documentation states metrics never include code, prompts, or file paths, and that setting the environment variable DISABLE_TELEMETRY=1 opts out. Anthropic's settings reference documents no dedicated boolean settings.json key for this control; DISABLE_TELEMETRY is documented only as an environment variable. The same settings reference states that 'All environment variables can be checked into settings.json' via its documented, user-scope env object, so this rule observes DISABLE_TELEMETRY only as embedded at that path (env.DISABLE_TELEMETRY) inside the inspected user-level settings.json. It cannot observe an ambient shell- or process-level DISABLE_TELEMETRY set outside this file, and it does not evaluate the separate DISABLE_ERROR_REPORTING, DISABLE_FEEDBACK_COMMAND, CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC controls.",
+  "unknown_subject": "usage-metrics telemetry opt-out posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "settings.json",
+    "key": "env.DISABLE_TELEMETRY",
+    "type": "enum",
+    "allowed_render": ["1", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "env.DISABLE_TELEMETRY is explicitly \"1\"",
+      "status": "pass",
+      "match": { "equals": { "value": "1" } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level settings.json sets env.DISABLE_TELEMETRY = \"1\", opting out of Claude Code's usage-metrics telemetry.",
+      "remediation": null
+    },
+    {
+      "when": "env.DISABLE_TELEMETRY is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective usage-metrics telemetry posture cannot be determined from an unset user-level value because uninspected configuration layers and the ambient process environment may supply or override it.",
+      "unknown_reason": "env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+      "verify_url": "https://code.claude.com/docs/en/data-usage"
+    },
+    {
+      "when": "env.DISABLE_TELEMETRY is set to a value other than the documented opt-out token \"1\"",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "env.DISABLE_TELEMETRY is set to a value other than the documented opt-out token \"1\" — raw values are never displayed.",
+      "unknown_reason": "env.DISABLE_TELEMETRY is set to a value other than the documented opt-out token \"1\" — raw values are never displayed",
+      "verify_url": "https://code.claude.com/docs/en/data-usage"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=2.1.204", "max": "2.1.204", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/data-usage",
+      "publisher": "Anthropic",
+      "title": "Data usage",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc",
+      "archived_url": "https://web.archive.org/web/20260716225036/https://code.claude.com/docs/en/data-usage",
+      "notes": "Under 'Telemetry services': 'Claude Code sends two kinds of operational telemetry: usage metrics and error reports... Metrics: latency, reliability, and usage patterns, sent to Anthropic and to third-party logging infrastructure over TLS. Metrics never include your code, prompts, or file paths. Set DISABLE_TELEMETRY=1 to opt out.' The 'Default behaviors by API provider' table documents metrics as default-on for direct Claude API usage and default-off for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry absent their own opt-in variables, and separately: 'All environment variables can be checked into settings.json (see settings reference).'"
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/settings",
+      "publisher": "Anthropic",
+      "title": "Claude Code settings",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:2e09d4e56f86027f7b7ceaa7be4cc87ef3724cbb432e8988f419a8efa3d731e1",
+      "archived_url": "https://web.archive.org/web/20260716225057/https://code.claude.com/docs/en/settings",
+      "notes": "Documents the top-level env settings.json key: 'Environment variables applied to every session,' example {\"FOO\": \"bar\"}, and documents no dedicated boolean telemetry key. Also documents the user scope resolving to ~/.claude/settings.json (lowest precedence) — the only scope this rule inspects."
+    }
+  ],
+  "limitations": [
+    "Only the user-level ~/.claude/settings.json env object is inspected; managed, project, local, and CLI-flag scopes are not inspected and can supply or override the effective value, and this rule cannot observe DISABLE_TELEMETRY set directly in the shell or process environment outside settings.json.",
+    "Default telemetry posture is provider-dependent (on by default for direct Anthropic API/Console usage; off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled); this rule does not determine which provider is active and never infers the effective default from account or environment state.",
+    "This rule observes only the usage-metrics opt-out; error reporting (DISABLE_ERROR_REPORTING), the /feedback command (DISABLE_FEEDBACK_COMMAND), session quality surveys (CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY), and the broader CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC switch are separate documented controls this rule does not evaluate.",
+    "Metrics content is described by Anthropic's documentation as excluding code, prompts, and file paths; this rule does not independently verify that claim — no local file can.",
+    "No settings.json key named env.DISABLE_TELEMETRY appears as a worked example in either retrieved page; this rule relies on the documented, general statement that any environment variable, including DISABLE_TELEMETRY, may be checked into settings.json's env object. Any value other than the documented \"1\" opt-out token has no confirmed documented effect and is treated as unrecognized rather than assumed to enable or disable telemetry."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "env.DISABLE_TELEMETRY is unset in the user-level config or the user-level config is absent; other configuration layers and the ambient process environment are not inspected.",
+    "env.DISABLE_TELEMETRY set to a value other than \"1\" (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

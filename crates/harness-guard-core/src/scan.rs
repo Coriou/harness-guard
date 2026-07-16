@@ -138,9 +138,9 @@ pub fn scan_harness(
         .collect();
     findings.sort_by(|left, right| left.rule_id.cmp(&right.rule_id));
 
-    // A harness can be detected with zero bundled rules (claude-code and
-    // grok-build until their rule work packages land): `harness_rules.iter().all(..)`
-    // over an empty iterator is vacuously true, which would otherwise report
+    // A harness can be detected with zero bundled rules (grok-build until its
+    // rule work package lands, §7.3): `harness_rules.iter().all(..)` over an
+    // empty iterator is vacuously true, which would otherwise report
     // version_in_range: true — and, combined with the empty `findings` below,
     // read as a verified clean audit for a tool nothing was actually
     // evaluated against. Require at least one rule before claiming range.
@@ -209,11 +209,17 @@ mod tests {
 
     #[test]
     fn zero_rule_harness_never_reports_version_in_range_or_synthesized_findings() {
-        // claude-code has no bundled rules yet (Tasks 17-19 land them). A
-        // detected claude-code install with a real version must never look
-        // like a verified clean audit: version_in_range must not default to
-        // a vacuous true, and findings must stay empty rather than a
-        // synthesized pass.
+        // Task 18 gave claude-code its first bundled rules, so it can no
+        // longer stand in for "a harness with zero bundled rules" the way it
+        // did before (grok-build remains ruleless until Task 19, but its
+        // version detection is also disabled by descriptor design, §5.3, so
+        // it cannot exercise "detected version + zero rules" either). Force
+        // the zero-rule condition directly by passing an empty rules slice
+        // for a harness (claude-code) whose version detection genuinely
+        // works, so the invariant this test protects — a detected version
+        // must never look like a verified clean audit when zero rules were
+        // actually evaluated — stays testable regardless of future ruleset
+        // content.
         let dir = tempfile::tempdir().unwrap();
         let base = dir.path().canonicalize().unwrap();
         let claude_home = base.join("claude-home");
@@ -233,7 +239,7 @@ mod tests {
             path_dirs: vec![package.join("bin")],
         };
 
-        let result = scan_harness(&root, HarnessId::ClaudeCode, &load_rules()).unwrap();
+        let result = scan_harness(&root, HarnessId::ClaudeCode, &[]).unwrap();
         assert_eq!(
             result.tool_report.detected_version.as_deref(),
             Some("2.1.202")
@@ -275,8 +281,17 @@ mod tests {
         // Two synthetic rules: greatest maxes 0.144.5 (verified 2026-07-16) and
         // 0.150.0 (verified 2026-07-10). Weakest guarantee: min of maxes =
         // 0.144.5; earliest date = 2026-07-10.
+        //
+        // Task 18 added claude-code rules that sort before every codex rule
+        // (alphabetical by id), so "first loaded rule" is no longer reliably
+        // codex-analytics-01 — the same drift Task 17 already hit in
+        // engine.rs. Select the base rule by id rather than by position.
         let rules = load_rules();
-        let mut newer = rules[0].raw().clone();
+        let base = rules
+            .iter()
+            .find(|rule| rule.raw().id == "codex-analytics-01")
+            .expect("codex-analytics-01 must remain embedded");
+        let mut newer = base.raw().clone();
         newer.id = "codex-synthetic-02".to_string();
         newer.tested_versions = vec![harness_guard_rules::schema::TestedVersion {
             min: "<=0.150.0".to_string(),
@@ -284,7 +299,7 @@ mod tests {
             verified_on: "2026-07-10".to_string(),
         }];
         let newer = harness_guard_rules::loader::ValidatedRule::try_from_raw(newer).unwrap();
-        let pair = [&rules[0], &newer];
+        let pair = [base, &newer];
         let (version, date) = conservative_aggregates(&pair);
         assert_eq!(version.as_deref(), Some("0.144.5"));
         assert_eq!(date.as_deref(), Some("2026-07-10"));

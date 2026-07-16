@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.1",
+  "id": "claude-code-cleanup-period-01",
+  "tool": "claude-code",
+  "category": "retention",
+  "title": "Local session transcript retention window",
+  "why_it_matters": "Claude Code stores local session transcripts in plaintext under ~/.claude/projects/ and, at startup, deletes session files and other application data older than cleanupPeriodDays (documented default 30 days, documented minimum 1 — the settings reference states that setting 0 fails with a validation error, and documents no maximum). A larger configured value keeps plaintext session transcripts, including code and prompts, on local disk for longer. This rule observes only the value present in the inspected user-level settings.json; it does not determine Anthropic's separate server-side data-retention period (documented as 30 days standard for commercial users and consumer users who opt out of training, 5 years for consumer users who opt in, or Zero Data Retention for qualifying Enterprise configurations), which depends on account type and plan and is never inferred here.",
+  "unknown_subject": "local session transcript retention window",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "settings.json",
+    "key": "cleanupPeriodDays",
+    "type": "integer",
+    "allowed_render": ["unset"],
+    "integer_bounds": { "min": 1, "max": 3650 }
+  },
+  "outcomes": [
+    {
+      "when": "cleanupPeriodDays is explicitly set to 30 days or fewer",
+      "status": "pass",
+      "match": { "int_range": { "min": 1, "max": 30 } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level config keeps the local session transcript retention window at or under Claude Code's documented 30-day default.",
+      "remediation": null
+    },
+    {
+      "when": "cleanupPeriodDays is explicitly set to more than 30 days",
+      "status": "finding",
+      "match": { "int_range": { "min": 31, "max": 3650 } },
+      "severity": "warning",
+      "confidence": "high",
+      "message": "The inspected user-level config extends the local session transcript retention window beyond Claude Code's documented 30-day default, keeping plaintext session transcripts under ~/.claude/projects/ on local disk for longer.",
+      "remediation": {
+        "summary": "Restore the local session transcript retention window to the documented 30-day default or shorter.",
+        "command": "Add to ~/.claude/settings.json:\n{\n  \"cleanupPeriodDays\": 30\n}"
+      }
+    },
+    {
+      "when": "cleanupPeriodDays is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective local session transcript retention window cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
+      "unknown_reason": "cleanupPeriodDays is unset in the user-level config; Claude Code's documented 30-day default applies absent an override, but uninspected managed, project, local, or CLI-flag layers may supply a different effective value.",
+      "verify_url": "https://code.claude.com/docs/en/settings"
+    },
+    {
+      "when": "cleanupPeriodDays is set to a value outside the supported integer range",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "cleanupPeriodDays is set to a value outside the supported integer range — raw values are never displayed.",
+      "unknown_reason": "cleanupPeriodDays is set to a value outside the supported integer range — raw values are never displayed",
+      "verify_url": "https://code.claude.com/docs/en/settings"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=2.1.204", "max": "2.1.204", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/settings",
+      "publisher": "Anthropic",
+      "title": "Claude Code settings",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:2e09d4e56f86027f7b7ceaa7be4cc87ef3724cbb432e8988f419a8efa3d731e1",
+      "archived_url": "https://web.archive.org/web/20260716225057/https://code.claude.com/docs/en/settings",
+      "notes": "Documents cleanupPeriodDays in the settings.json schema table: default 30 days, minimum 1, 'Claude Code deletes session files and other application data older than this period at startup... Setting 0 fails with a validation error,' with no documented maximum. Also documents the five settings scopes (managed, command line, local, project, user) and their precedence, with the user scope resolving to ~/.claude/settings.json (lowest precedence) — the only scope this rule inspects."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/data-usage",
+      "publisher": "Anthropic",
+      "title": "Data usage",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc",
+      "archived_url": "https://web.archive.org/web/20260716225036/https://code.claude.com/docs/en/data-usage",
+      "notes": "States, under Data retention / Local caching: 'Claude Code clients store session transcripts locally in plaintext under ~/.claude/projects/ for 30 days by default to enable session resumption. Adjust the period with cleanupPeriodDays.' Also documents the separate consumer (30-day opt-out / 5-year opt-in) and commercial (30-day standard, Zero Data Retention for qualifying Enterprise configurations) server-side retention terms this rule treats only as a limitation, never an inference."
+    }
+  ],
+  "limitations": [
+    "Only the user-level ~/.claude/settings.json is inspected; managed, project, local, and CLI-flag scopes are not inspected and can supply or override the effective cleanupPeriodDays value.",
+    "An explicit user-level value describes that layer only and does not prove the effective retention window under a managed policy, a specific project, or every invocation.",
+    "This rule observes only the local plaintext transcript cache under ~/.claude/projects/; it does not determine Anthropic's separate server-side data-retention period (30 days standard, 5 years for consumer users who opt into training, or Zero Data Retention for qualifying Enterprise configurations), which depends on account type and plan and is never inferred here.",
+    "The upper bound of integer_bounds (3650 days) is a conservative operator-chosen cap, not a documented maximum — Anthropic's settings reference documents a minimum of 1 with no stated maximum. A configured value above the cap renders as unrecognized rather than as a numeric finding.",
+    "This rule does not evaluate the separate CLAUDE_CODE_SKIP_PROMPT_HISTORY environment variable (disables transcript writes entirely) or the --no-session-persistence / persistSession non-interactive and SDK controls, which are documented alongside cleanupPeriodDays but are not settings.json keys."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "cleanupPeriodDays is unset in the user-level config or the user-level config is absent; other configuration layers are not inspected.",
+    "cleanupPeriodDays set to a value outside the supported integer range (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

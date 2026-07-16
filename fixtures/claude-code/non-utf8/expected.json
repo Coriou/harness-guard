@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "case": "non-utf8",
+  "description": "A runtime-written settings.json containing invalid UTF-8 bytes is refused, producing an unknown result for every claude-code rule. The committed base carries no settings.json (a .gitkeep placeholder only); hostile.rs writes the invalid bytes at runtime.",
+  "expected_report": {
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "claude-code",
+        "detected_version": "2.1.204",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "2.1.204",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "claude-code-cleanup-period-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine local session transcript retention window: config file is not valid UTF-8",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config file is not valid UTF-8",
+            "verify_url": "https://code.claude.com/docs/en/settings",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-telemetry-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine usage-metrics telemetry opt-out posture: config file is not valid UTF-8",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config file is not valid UTF-8",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 2,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}

@@ -16,6 +16,26 @@ const CASES: &[(&str, i32)] = &[
     ("version-out-of-range", 0),
 ];
 
+/// claude-code fixture matrix (Task 18). Runtime-mutated hostile cases
+/// (oversized, permission-denied, symlink-config, non-utf8) are exercised
+/// separately in hostile.rs, mirroring the codex CASES/hostile.rs split above.
+const CLAUDE_CASES: &[(&str, i32)] = &[
+    ("missing", 0),
+    ("minimal", 0),
+    ("hardened", 0),
+    ("risky-unset", 0),
+    ("risky-explicit", 1),
+    ("malformed-json", 2),
+    ("unrecognized-value", 0),
+    ("deep-nesting", 2),
+    ("unknown-version", 0),
+    ("version-out-of-range", 0),
+    ("duplicate-keys", 1),
+    ("float-where-integer", 0),
+    ("huge-number", 0),
+    ("secret-shaped", 2),
+];
+
 #[test]
 fn fixture_exit_codes_and_json_goldens() {
     for (case, expected_exit) in CASES {
@@ -39,6 +59,68 @@ fn fixture_exit_codes_and_json_goldens() {
         .expect("fixture golden is JSON");
         assert_json_subset(&expected["expected_report"], &report, case);
     }
+}
+
+#[test]
+fn claude_code_fixture_exit_codes_and_json_goldens() {
+    for (case, expected_exit) in CLAUDE_CASES {
+        let output = run_harness_case("claude-code", case, &["scan", "--json"]);
+        assert_eq!(
+            output.status.code(),
+            Some(*expected_exit),
+            "exit code for claude-code/{case}"
+        );
+        let report: serde_json::Value =
+            serde_json::from_slice(&output.stdout).unwrap_or_else(|error| {
+                panic!("claude-code/{case}: --json must emit valid JSON: {error}")
+            });
+        let expected: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(
+                repo_root()
+                    .join("fixtures/claude-code")
+                    .join(case)
+                    .join("expected.json"),
+            )
+            .expect("fixture golden is readable"),
+        )
+        .expect("fixture golden is JSON");
+        assert_json_subset(
+            &expected["expected_report"],
+            &report,
+            &format!("claude-code/{case}"),
+        );
+    }
+}
+
+#[test]
+fn mixed_codex_pass_claude_degraded_exit_code_and_json_golden() {
+    let output = run_mixed_case("codex-pass-claude-degraded", &["scan", "--json"]);
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "claude-code degraded ⇒ exit 2 even though codex alone would pass"
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).unwrap_or_else(|error| {
+            panic!("mixed/codex-pass-claude-degraded: --json must emit valid JSON: {error}")
+        });
+    let expected: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(
+            repo_root()
+                .join("fixtures/mixed/codex-pass-claude-degraded")
+                .join("expected.json"),
+        )
+        .expect("mixed fixture golden is readable"),
+    )
+    .expect("mixed fixture golden is JSON");
+    assert_json_subset(
+        &expected["expected_report"],
+        &report,
+        "mixed/codex-pass-claude-degraded",
+    );
+    assert_eq!(report["tools"].as_array().unwrap().len(), 2);
+    assert_eq!(report["tools"][0]["tool"], "claude-code");
+    assert_eq!(report["tools"][1]["tool"], "codex");
 }
 
 #[test]
@@ -142,6 +224,34 @@ fn raw_values_never_echo_anywhere() {
 }
 
 #[test]
+fn secret_shaped_hostile_token_never_echoes_in_any_output_mode() {
+    // The claude-code secret-shaped fixture's committed settings.json embeds
+    // a secret-looking bareword token that makes the file invalid JSON
+    // syntax; the categorical parse diagnostic and every finding must never
+    // surface the token itself, only the structural error category.
+    for args in [
+        vec!["scan"],
+        vec!["scan", "--json"],
+        vec!["scan", "--verbose"],
+    ] {
+        let output = run_harness_case("claude-code", "secret-shaped", &args);
+        let all = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            !all.contains("xk-hostile"),
+            "secret-shaped token leaked via {args:?}"
+        );
+        assert!(
+            !all.contains("1234567890abcdef"),
+            "secret-shaped token fragment leaked via {args:?}"
+        );
+    }
+}
+
+#[test]
 fn output_paths_are_redacted() {
     let files_root = fixture("risky-unset");
     let output = run_in(&files_root, &["scan", "--json"]);
@@ -216,9 +326,7 @@ fn no_absolute_path_escapes_the_fixture_tree_for_any_harness() {
     //
     // This run only covers the codex `hardened` fixture — claude-code and
     // grok-build are not detected in it, so their config-path redaction is
-    // not yet exercised here. Task 18 extends this test to also run over
-    // `fixtures/mixed/codex-pass-claude-degraded` once that two-store
-    // fixture lands, covering claude-code's redaction in the same test.
+    // not yet exercised here.
     let files_root = fixture("hardened");
     let output = run_in(&files_root, &["scan", "--json", "--verbose"]);
     let all = format!(
@@ -241,6 +349,44 @@ fn no_absolute_path_escapes_the_fixture_tree_for_any_harness() {
             assert!(
                 rendered.starts_with('~') || rendered.starts_with('$'),
                 "config path {rendered:?} must have a symbolic root"
+            );
+        }
+    }
+
+    // Task 18: extend the same protection over `fixtures/mixed/codex-pass-
+    // claude-degraded`, the one fixture whose synthetic home contains BOTH a
+    // .codex store and a .claude store, so claude-code's config-path
+    // redaction is exercised here for the first time.
+    let mixed_output = run_mixed_case(
+        "codex-pass-claude-degraded",
+        &["scan", "--json", "--verbose"],
+    );
+    let mixed_all = format!(
+        "{}{}",
+        String::from_utf8_lossy(&mixed_output.stdout),
+        String::from_utf8_lossy(&mixed_output.stderr)
+    );
+    assert!(
+        !mixed_all.contains("/Users/"),
+        "home-anchored absolute path leaked (mixed fixture)"
+    );
+    let mixed_files_root = repo_root()
+        .join("fixtures/mixed/codex-pass-claude-degraded/files")
+        .to_string_lossy()
+        .into_owned();
+    assert!(
+        !mixed_all.contains(&mixed_files_root),
+        "fixture path leaked (mixed fixture)"
+    );
+    let mixed_report: serde_json::Value = serde_json::from_slice(&mixed_output.stdout).unwrap();
+    let mixed_tools = mixed_report["tools"].as_array().unwrap();
+    assert_eq!(mixed_tools.len(), 2, "mixed fixture must detect both tools");
+    for tool in mixed_tools {
+        for path in tool["config_paths"].as_array().unwrap() {
+            let rendered = path.as_str().unwrap();
+            assert!(
+                rendered.starts_with('~') || rendered.starts_with('$'),
+                "config path {rendered:?} must have a symbolic root (mixed fixture)"
             );
         }
     }

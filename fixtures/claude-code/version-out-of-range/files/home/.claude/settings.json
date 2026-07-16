@@ -1,0 +1,6 @@
+{
+  "cleanupPeriodDays": 20,
+  "env": {
+    "DISABLE_TELEMETRY": "1"
+  }
+}

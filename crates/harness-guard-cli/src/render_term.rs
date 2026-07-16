@@ -91,8 +91,8 @@ pub fn render(report: &Report, opts: &TermOpts) -> String {
 
 fn render_tool(output: &mut String, tool: &ToolReport, opts: &TermOpts) {
     if tool.findings.is_empty() {
-        // A harness can be detected yet carry zero bundled rules (claude-code
-        // and grok-build until their rule work packages land, §7.2/§7.3).
+        // A harness can be detected yet carry zero bundled rules (grok-build
+        // until its rule work package lands, §7.3).
         // Falling through to the normal summary line below would print
         // "0 warning · 0 info · 0 unknown · 0 stale · 0 passed", which reads
         // as a clean, verified audit — it is not: nothing was evaluated.

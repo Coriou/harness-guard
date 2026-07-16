@@ -1,0 +1,11 @@
+[analytics]
+enabled = false
+
+[feedback]
+enabled = false
+
+[history]
+persistence = "none"
+
+[otel]
+log_user_prompt = false

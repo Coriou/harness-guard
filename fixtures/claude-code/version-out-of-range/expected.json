@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "case": "version-out-of-range",
+  "description": "Safe-looking values with a synthetic version beyond the tested range conservatively produce a stale-ruleset result for every claude-code rule.",
+  "expected_report": {
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "claude-code",
+        "detected_version": "9.9.9",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "2.1.204",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": false,
+        "findings": [
+          {
+            "rule_id": "claude-code-cleanup-period-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: The inspected user-level config keeps the local session transcript retention window at or under Claude Code's documented 30-day default. Observed: cleanupPeriodDays = 20.",
+            "observation": "cleanupPeriodDays = 20",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/settings",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+          },
+          {
+            "rule_id": "claude-code-telemetry-opt-out-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: The inspected user-level settings.json sets env.DISABLE_TELEMETRY = \"1\", opting out of Claude Code's usage-metrics telemetry. Observed: env.DISABLE_TELEMETRY = \"1\".",
+            "observation": "env.DISABLE_TELEMETRY = \"1\"",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 0,
+      "stale": 2,
+      "passed": 0
+    }
+  }
+}

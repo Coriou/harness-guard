@@ -78,7 +78,7 @@ pub fn harness_fixture(tool: &str, case: &str) -> PathBuf {
 /// fixture's path dir, and CODEX_HOME at an absent dir so codex stays
 /// undetected. env_clear() plus these roots make the developer's real
 /// ~/.codex, ~/.claude, and ~/.grok unreachable by construction.
-#[allow(dead_code)]
+#[allow(dead_code)] // Used by scan_fixtures, cli_surface, and scan_snapshots; hostile.rs runs against temp-copied (mutated) roots instead, via its own run_harness_files. Integration tests compile this module separately.
 pub fn run_harness_case(tool: &str, case: &str, args: &[&str]) -> Output {
     let files_root = harness_fixture(tool, case);
     let home = files_root.join("home");
@@ -96,7 +96,7 @@ pub fn run_harness_case(tool: &str, case: &str, args: &[&str]) -> Output {
 /// detects two harnesses. Same env_clear() containment: the developer's real
 /// ~/.codex, ~/.claude, and ~/.grok stay unreachable by construction.
 /// Consumed by Task 18 step 5.
-#[allow(dead_code)]
+#[allow(dead_code)] // Used by scan_fixtures only; cli_surface and hostile.rs have no mixed-fixture case. Integration tests compile this module separately.
 pub fn run_mixed_case(case: &str, args: &[&str]) -> Output {
     let files_root = repo_root()
         .join("fixtures")

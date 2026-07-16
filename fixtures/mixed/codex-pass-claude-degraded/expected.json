@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.0",
+  "case": "codex-pass-claude-degraded",
+  "description": "Two-store aggregation (spec §11.2): one synthetic home contains both a hardened .codex (every codex rule passes) and a malformed .claude/settings.json (every claude-code rule degrades to unknown). claude-code is detected via its home directory alone (no claude PATH marker is present); §6.4.1 precedence makes the unparseable config yield unknown findings regardless of the undetected version. degraded is true because ANY scanned harness degraded, so the scan exits 2 even though the codex side alone would exit 0 — the mixed one-degraded-one-passing case. tools[] holds exactly two entries in alphabetical order (claude-code, then codex), and summary is the merged sum across both tool entries — the only golden where two tools contribute to summary.",
+  "expected_report": {
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "claude-code",
+        "detected_version": null,
+        "detection_confidence": "medium",
+        "rules_last_verified_version": "2.1.204",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": false,
+        "findings": [
+          {
+            "rule_id": "claude-code-cleanup-period-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine local session transcript retention window: config not safely parseable: unexpected end of JSON input",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config not safely parseable: unexpected end of JSON input",
+            "verify_url": "https://code.claude.com/docs/en/settings",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-telemetry-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine usage-metrics telemetry opt-out posture: config not safely parseable: unexpected end of JSON input",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config not safely parseable: unexpected end of JSON input",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          }
+        ]
+      },
+      {
+        "tool": "codex",
+        "detected_version": "0.144.5",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "0.144.5",
+        "rules_verified_date": "2026-07-16",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "codex-analytics-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config disables anonymous usage and health metrics collection (analytics.enabled = false).",
+            "observation": "analytics.enabled = false",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "codex-feedback-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config disables the /feedback submission channel (feedback.enabled = false).",
+            "observation": "feedback.enabled = false",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "codex-history-persist-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config sets history.persistence = \"none\".",
+            "observation": "history.persistence = \"none\"",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-16"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "codex-otel-prompt-log-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config keeps raw user prompts redacted from OpenTelemetry logs (otel.log_user_prompt = false).",
+            "observation": "otel.log_user_prompt = false",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 2,
+      "warning": 0,
+      "info": 0,
+      "unknown": 2,
+      "stale": 0,
+      "passed": 4
+    }
+  }
+}

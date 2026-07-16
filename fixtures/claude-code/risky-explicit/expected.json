@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "case": "risky-explicit",
+  "description": "cleanupPeriodDays is explicitly configured beyond the documented 30-day default and produces a warning finding; env.DISABLE_TELEMETRY has no documented explicit 'risky' value (only the opt-out token '1' is documented), so it is absent here and stays unknown rather than a fabricated finding.",
+  "expected_report": {
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "claude-code",
+        "detected_version": "2.1.204",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "2.1.204",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "claude-code-cleanup-period-01",
+            "status": "finding",
+            "severity": "warning",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config extends the local session transcript retention window beyond Claude Code's documented 30-day default, keeping plaintext session transcripts under ~/.claude/projects/ on local disk for longer.",
+            "observation": "cleanupPeriodDays = 365",
+            "remediation": {
+              "summary": "Restore the local session transcript retention window to the documented 30-day default or shorter.",
+              "command": "Add to ~/.claude/settings.json:\n{\n  \"cleanupPeriodDays\": 30\n}"
+            },
+            "source": {
+              "url": "https://code.claude.com/docs/en/settings",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-telemetry-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine usage-metrics telemetry opt-out posture: env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+            "observation": "env.DISABLE_TELEMETRY unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 1,
+      "info": 0,
+      "unknown": 1,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}

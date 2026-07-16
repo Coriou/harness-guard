@@ -1,0 +1,26 @@
+---
+source: crates/harness-guard-cli/tests/scan_snapshots.rs
+expression: text
+---
+harness-guard 0.1.0 · ruleset 2026.07.17 · scanned [TIMESTAMP] · no network requests made
+
+detected tools
+  ● claude-code 2.1.204 · config [CONFIG_PATH] · confidence high
+  ○ codex — not detected
+  ○ grok-build — not detected
+
+claude-code 2.1.204 — rules verified ≤2.1.204 · 2026-07-17
+0 warning · 0 info · 2 unknown · 0 stale · 0 passed
+
+?? UNKNOWN: Cannot determine local session transcript retention window: cleanupPeriodDays is unset in the user-level config; Claude Code's documented 30-day default applies absent an override, but uninspected managed, project, local, or CLI-flag layers may supply a different effective value.
+   reason: cleanupPeriodDays is unset in the user-level config; Claude Code's documented 30-day default applies absent an override, but uninspected managed, project, local, or CLI-flag layers may supply a different effective value.
+   verify: https://code.claude.com/docs/en/settings
+   = harness-guard explain claude-code-cleanup-period-01
+
+?? UNKNOWN: Cannot determine usage-metrics telemetry opt-out posture: env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.
+   reason: env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.
+   verify: https://code.claude.com/docs/en/data-usage
+   = harness-guard explain claude-code-telemetry-opt-out-01
+
+0 warning · 0 info · 2 unknown · 0 stale · 0 passed — 0 network requests made
+No numeric score is produced — read findings individually.

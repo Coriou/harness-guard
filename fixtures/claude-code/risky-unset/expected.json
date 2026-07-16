@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "case": "risky-unset",
+  "description": "The user config exists but both claude-code rules' keys are absent, so their effective posture remains unknown because other configuration layers are not inspected.",
+  "expected_report": {
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "claude-code",
+        "detected_version": "2.1.204",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "2.1.204",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "claude-code-cleanup-period-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine local session transcript retention window: cleanupPeriodDays is unset in the user-level config; Claude Code's documented 30-day default applies absent an override, but uninspected managed, project, local, or CLI-flag layers may supply a different effective value.",
+            "observation": "cleanupPeriodDays unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "cleanupPeriodDays is unset in the user-level config; Claude Code's documented 30-day default applies absent an override, but uninspected managed, project, local, or CLI-flag layers may supply a different effective value.",
+            "verify_url": "https://code.claude.com/docs/en/settings",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-telemetry-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine usage-metrics telemetry opt-out posture: env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+            "observation": "env.DISABLE_TELEMETRY unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 2,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}

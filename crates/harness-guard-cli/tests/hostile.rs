@@ -13,6 +13,30 @@ fn temp_copy(case: &str) -> (tempfile::TempDir, PathBuf) {
     (temp, destination)
 }
 
+/// Same as `temp_copy` but rooted at `fixtures/<tool>/<case>/files` (Task 18),
+/// reusing the same copy_dir safety guarantees (no symlinks copied) for the
+/// new-harness fixture layout.
+fn temp_copy_harness(tool: &str, case: &str) -> (tempfile::TempDir, PathBuf) {
+    let temp = tempfile::tempdir().unwrap();
+    let destination = temp.path().join("files");
+    copy_dir(&harness_fixture(tool, case), &destination);
+    let destination = destination.canonicalize().unwrap();
+    (temp, destination)
+}
+
+/// Run against a temp-copied new-harness `files` tree (home/, path/), mirroring
+/// `run_harness_case`'s root construction: CODEX_HOME stays absent so codex
+/// never interferes.
+fn run_harness_files(files: &Path, args: &[&str]) -> std::process::Output {
+    let home = files.join("home");
+    run_with_roots(
+        &home.join("absent-codex-home"),
+        &files.join("path"),
+        &home,
+        args,
+    )
+}
+
 fn copy_dir(source: &Path, destination: &Path) {
     std::fs::create_dir_all(destination).unwrap();
     for entry in std::fs::read_dir(source).unwrap() {
@@ -63,6 +87,21 @@ fn expected_report(case: &str) -> serde_json::Value {
         &std::fs::read_to_string(
             repo_root()
                 .join("fixtures/codex")
+                .join(case)
+                .join("expected.json"),
+        )
+        .expect("hostile fixture golden is readable"),
+    )
+    .expect("hostile fixture golden is JSON");
+    expected["expected_report"].clone()
+}
+
+fn expected_report_for(tool: &str, case: &str) -> serde_json::Value {
+    let expected: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(
+            repo_root()
+                .join("fixtures")
+                .join(tool)
                 .join(case)
                 .join("expected.json"),
         )
@@ -255,4 +294,108 @@ fn malformed_toml_diagnostic_has_line_col_but_never_content_or_absolute_path() {
         !output.stdout.is_empty(),
         "degraded scan must still render a report"
     );
+}
+
+// --- Task 18: claude-code hostile runtime mutations, mirroring the codex
+// cases above via the same temp_copy/RestorePermissions machinery, now
+// pointed at the claude-code fixture tree. ---
+
+#[test]
+fn claude_code_oversized_config_is_refused() {
+    let (_temp, files) = temp_copy_harness("claude-code", "oversized");
+    let config = files.join("home/.claude/settings.json");
+    let mut oversized = String::with_capacity(1_100_000);
+    while oversized.len() <= 1024 * 1024 {
+        oversized.push_str("// synthetic padding line\n");
+    }
+    std::fs::write(config, oversized).unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "claude-code/oversized");
+    assert_json_subset(
+        &expected_report_for("claude-code", "oversized"),
+        &report,
+        "claude-code/oversized",
+    );
+    assert_eq!(report["tools"][0]["findings"][0]["status"], "unknown");
+}
+
+#[cfg(unix)]
+#[test]
+fn claude_code_permission_denied_degrades_to_unknown() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (_temp, files) = temp_copy_harness("claude-code", "permission-denied");
+    let config = files.join("home/.claude/settings.json");
+    let restore = RestorePermissions {
+        path: config.clone(),
+        permissions: std::fs::metadata(&config).unwrap().permissions(),
+    };
+    std::fs::set_permissions(&config, std::fs::Permissions::from_mode(0o000)).unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    drop(restore);
+
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "claude-code/permission-denied");
+    assert_json_subset(
+        &expected_report_for("claude-code", "permission-denied"),
+        &report,
+        "claude-code/permission-denied",
+    );
+    let reason = report["tools"][0]["findings"][0]["unknown_reason"]
+        .as_str()
+        .unwrap();
+    assert!(reason.contains("permission"));
+}
+
+#[cfg(unix)]
+#[test]
+fn claude_code_symlink_config_is_not_followed() {
+    let (_temp, files) = temp_copy_harness("claude-code", "symlink-config");
+    let claude_home = files.join("home/.claude");
+    std::os::unix::fs::symlink(
+        claude_home.join("real-settings.json"),
+        claude_home.join("settings.json"),
+    )
+    .unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "refused read degrades the scan"
+    );
+    let report = json_report(&output, "claude-code/symlink-config");
+    assert_json_subset(
+        &expected_report_for("claude-code", "symlink-config"),
+        &report,
+        "claude-code/symlink-config",
+    );
+    assert_eq!(report["tools"][0]["findings"][0]["status"], "unknown");
+    let reason = report["tools"][0]["findings"][0]["unknown_reason"]
+        .as_str()
+        .unwrap();
+    assert!(reason.contains("symlink"));
+}
+
+#[test]
+fn claude_code_non_utf8_config_degrades_to_unknown() {
+    let (_temp, files) = temp_copy_harness("claude-code", "non-utf8");
+    let config = files.join("home/.claude/settings.json");
+    std::fs::write(&config, [0xff, 0xfe, 0x00, 0x41]).unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "claude-code/non-utf8");
+    assert_json_subset(
+        &expected_report_for("claude-code", "non-utf8"),
+        &report,
+        "claude-code/non-utf8",
+    );
+    let reason = report["tools"][0]["findings"][0]["unknown_reason"]
+        .as_str()
+        .unwrap();
+    assert!(reason.contains("UTF-8"));
 }

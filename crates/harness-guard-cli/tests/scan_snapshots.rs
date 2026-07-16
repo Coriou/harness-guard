@@ -23,6 +23,27 @@ fn term_risky_unset() {
     snap("risky-unset", &["scan"], "risky_unset");
 }
 
+fn snap_harness(tool: &str, case: &str, args: &[&str], name: &str) {
+    let out = run_harness_case(tool, case, args);
+    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    insta::with_settings!({filters => vec![
+        (r"\d{4}-\d{2}-\d{2}T[0-9:.+\-Z]+", "[TIMESTAMP]"),
+        (r"~[^\s]*\.claude[^\s]*", "[CONFIG_PATH]"),
+    ]}, {
+        insta::assert_snapshot!(name, text);
+    });
+}
+
+#[test]
+fn term_claude_risky_unset() {
+    snap_harness(
+        "claude-code",
+        "risky-unset",
+        &["scan"],
+        "claude_risky_unset",
+    );
+}
+
 #[test]
 fn term_hardened_verbose() {
     snap("hardened", &["scan", "--verbose"], "hardened_verbose");

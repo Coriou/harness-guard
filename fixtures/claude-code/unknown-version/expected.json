@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "case": "unknown-version",
+  "description": "An absent version marker conservatively produces a non-disclosing stale-ruleset result for every claude-code rule; the unrecognized env.DISABLE_TELEMETRY value uses the non-disclosing fallback while cleanupPeriodDays's unset rendering is quoted verbatim (its unset rendering discloses no configured content).",
+  "expected_report": {
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "claude-code",
+        "detected_version": null,
+        "detection_confidence": "medium",
+        "rules_last_verified_version": "2.1.204",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": false,
+        "findings": [
+          {
+            "rule_id": "claude-code-cleanup-period-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective local session transcript retention window cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: cleanupPeriodDays unset in user config.",
+            "observation": "cleanupPeriodDays unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/settings",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected — no version marker found on PATH"
+          },
+          {
+            "rule_id": "claude-code-telemetry-opt-out-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates the configured value cannot be interpreted safely. Observed: unrecognized value (raw value withheld).",
+            "observation": null,
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected — no version marker found on PATH"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 0,
+      "stale": 2,
+      "passed": 0
+    }
+  }
+}

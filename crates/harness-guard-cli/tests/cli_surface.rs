@@ -136,6 +136,41 @@ fn explain_shows_full_evidence_record() {
 }
 
 #[test]
+fn explain_shows_full_evidence_record_for_a_claude_code_rule() {
+    // `explain` works offline from the embedded ruleset regardless of which
+    // fixture roots are active; run it against a claude-code fixture so the
+    // harness under test matches the rule being explained.
+    let output = run_harness_case(
+        "claude-code",
+        "hardened",
+        &["explain", "claude-code-cleanup-period-01"],
+    );
+    assert_eq!(output.status.code(), Some(0));
+    let text = String::from_utf8_lossy(&output.stdout);
+    for needle in [
+        "claude-code-cleanup-period-01",
+        "official-documentation",
+        "content_hash",
+        "sha256:",
+        "retrieved",
+        "archived",
+        "web.archive.org",
+        "tested versions",
+        "<=2.1.204",
+        "verified",
+        "limitations",
+        "unknown conditions",
+        "why it matters",
+        "confidence: high",
+    ] {
+        assert!(
+            text.to_lowercase().contains(&needle.to_lowercase()),
+            "explain output missing {needle:?}"
+        );
+    }
+}
+
+#[test]
 fn explain_unknown_rule_suggests_nearest_and_exits_2() {
     let output = run_case("hardened", &["explain", "codex-history-persist-02"]);
     assert_eq!(output.status.code(), Some(2));
