@@ -68,29 +68,39 @@ pub fn line_col(source: &str, byte: usize) -> (usize, usize) {
     (line, col)
 }
 
-/// Rule-relevant key extraction. Only the requested dotted key is retained.
+/// Rule-relevant key extraction, typed (§5.2). Only the requested dotted key
+/// is retained; Str is held only until the engine checks the rule's domain.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExtractedValue {
     Unset,
-    /// Held only until evaluation checks the rule's rendering allowlist.
+    /// Held only until the engine checks the rule's rendering domain.
     Str(String),
-    /// Present but not a string — never rendered.
-    NonString,
+    Bool(bool),
+    /// Floats and out-of-i64 numbers become Other, never Int.
+    Int(i64),
+    /// Present but not representable — never rendered.
+    Other,
 }
 
 pub fn extract_key(document: &toml::Value, dotted_key: &str) -> ExtractedValue {
     let mut current = document;
     for part in dotted_key.split('.') {
-        match current.get(part) {
-            Some(next) => current = next,
-            None => return ExtractedValue::Unset,
+        match current {
+            toml::Value::Table(table) => match table.get(part) {
+                Some(next) => current = next,
+                None => return ExtractedValue::Unset,
+            },
+            // Tables-only traversal: a path hitting an array or scalar is
+            // present-but-not-representable (§5.2).
+            _ => return ExtractedValue::Other,
         }
     }
-
-    current
-        .as_str()
-        .map(|value| ExtractedValue::Str(value.to_string()))
-        .unwrap_or(ExtractedValue::NonString)
+    match current {
+        toml::Value::String(text) => ExtractedValue::Str(text.clone()),
+        toml::Value::Boolean(flag) => ExtractedValue::Bool(*flag),
+        toml::Value::Integer(number) => ExtractedValue::Int(*number),
+        _ => ExtractedValue::Other,
+    }
 }
 
 #[cfg(test)]
@@ -98,11 +108,40 @@ mod tests {
     use super::*;
 
     #[test]
-    fn valid_toml_parses_and_extracts() {
-        let doc = parse_config("[history]\npersistence = \"none\"\n").unwrap();
+    fn typed_values_are_extracted() {
+        let doc = parse_config(
+            "[history]\npersistence = \"none\"\nenabled = true\ndays = 30\nratio = 1.5\n",
+        )
+        .unwrap();
+        assert!(
+            matches!(extract_key(&doc, "history.persistence"), ExtractedValue::Str(ref s) if s == "none")
+        );
+        assert!(matches!(
+            extract_key(&doc, "history.enabled"),
+            ExtractedValue::Bool(true)
+        ));
+        assert!(matches!(
+            extract_key(&doc, "history.days"),
+            ExtractedValue::Int(30)
+        ));
+        assert!(matches!(
+            extract_key(&doc, "history.ratio"),
+            ExtractedValue::Other
+        ));
+    }
+
+    #[test]
+    fn key_path_through_an_array_or_scalar_is_other_not_unset() {
+        // §5.2: traversal is tables-only; array indexing is unsupported in 0.0.1.
+        let doc = parse_config("history = [1, 2]\n").unwrap();
         assert!(matches!(
             extract_key(&doc, "history.persistence"),
-            ExtractedValue::Str(ref s) if s == "none"
+            ExtractedValue::Other
+        ));
+        let doc = parse_config("history = \"flat\"\n").unwrap();
+        assert!(matches!(
+            extract_key(&doc, "history.persistence"),
+            ExtractedValue::Other
         ));
     }
 
@@ -112,15 +151,6 @@ mod tests {
         assert!(matches!(
             extract_key(&doc, "history.persistence"),
             ExtractedValue::Unset
-        ));
-    }
-
-    #[test]
-    fn non_string_value_is_nonstring_and_never_carried() {
-        let doc = parse_config("[history]\npersistence = 3\n").unwrap();
-        assert!(matches!(
-            extract_key(&doc, "history.persistence"),
-            ExtractedValue::NonString
         ));
     }
 

@@ -180,7 +180,10 @@ fn observe(rule: &ValidatedRule, config: &ConfigState) -> (Option<String>, Indic
                     .unwrap_or_default(),
             },
         ),
-        ExtractedValue::Str(_) | ExtractedValue::NonString => (
+        ExtractedValue::Str(_)
+        | ExtractedValue::Bool(_)
+        | ExtractedValue::Int(_)
+        | ExtractedValue::Other => (
             None,
             Indicative {
                 kind: IndicativeKind::Unrecognized,
@@ -346,7 +349,7 @@ mod tests {
     fn non_string_value_is_unknown() {
         let finding = evaluate_rule(
             &rule(),
-            &parsed(Some(ExtractedValue::NonString)),
+            &parsed(Some(ExtractedValue::Other)),
             Some("0.144.5"),
         );
         assert_eq!(finding.status, Status::Unknown);
