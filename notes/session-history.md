@@ -71,3 +71,33 @@ terminal + JSON views from shared structs; sandbox-exec no-egress proof run
 locally (strace job authored in CI); freshness workflows + runbook authored,
 NOT enabled. Slice is now at the human review gate — no second rule or tool
 until review.
+
+## 2026-07-16 — Codex 0.144.5 certification and public-release preparation
+
+- Enumerated runtime and bundled-rule support: Codex CLI remains the only
+  implemented harness. Claude Code, Copilot CLI, Grok, and other researched
+  tools remain unsupported future scope.
+- Human-certified `codex-history-persist-01` through Codex CLI 0.144.5 using
+  freshly retrieved official documentation, npm/release/tag evidence, semantic
+  hashes, and tagged-source reproduction. Ruleset `2026.07.16` now carries the
+  certified evidence and coverage.
+- Narrowed the user-file claim: explicit `none` and `save-all` describe only
+  the inspected user layer; an unset value is `unknown` because system,
+  profile, trusted-project, or CLI layers may determine the effective value.
+- Added exact-latest synthetic coverage while preserving a future out-of-range
+  fixture, tightened rule/report schema invariants, and kept freshness
+  workflows authored but disabled.
+- Hardened macOS/Linux reads with handle-relative, component-by-component
+  no-follow traversal and race tests. Windows is deferred until it can meet the
+  same path-refusal invariant.
+- Completed formatting, Clippy, dependency policy, 136 workspace tests, Rust
+  1.85 locked checks, actionlint, macOS no-egress proof, clean release install,
+  installed hostile-input matrix, isolated terminal/JSON first runs, and
+  Bash/Zsh completion checks.
+- Added the Codex-only research dossier and preliminary technical article
+  draft under `docs/blog/`. Independent agents reproduced all official hashes,
+  validated every material claim, and exercised tutorial commands in isolated
+  Bash and Zsh roots.
+- Secret scans of reachable history and the current worktree found no leaks.
+  The pre-public provenance cleanup is limited to the already-approved absolute
+  checkout path and author email normalization.
