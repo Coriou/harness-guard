@@ -7,6 +7,7 @@
 compile_error!("harness-guard supports only macOS and Linux");
 
 pub mod discovery;
+pub mod engine;
 pub mod evaluate;
 pub mod parse;
 pub mod readfs;
