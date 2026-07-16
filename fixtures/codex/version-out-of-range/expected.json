@@ -3,7 +3,7 @@
   "case": "version-out-of-range",
   "description": "A safe-looking value with a synthetic version beyond the tested range conservatively produces a stale-ruleset result.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {

@@ -3,7 +3,7 @@
   "case": "permission-denied",
   "description": "The committed base is mutated in a temporary directory so config.toml cannot be read.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {

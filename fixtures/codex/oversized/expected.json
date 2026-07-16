@@ -3,7 +3,7 @@
   "case": "oversized",
   "description": "The committed base is mutated in a temporary directory with a config larger than the one MiB safety bound.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {

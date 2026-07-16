@@ -147,6 +147,9 @@ fn explicit_codex_home_outside_home_is_symbolic() {
     let rendered_path = report["tools"][0]["config_paths"][0]
         .as_str()
         .expect("config path is rendered as a string");
+    let remediation = report["tools"][0]["findings"][0]["remediation"]["command"]
+        .as_str()
+        .expect("finding has remediation text");
     assert!(
         rendered_path == "$CODEX_HOME/config.toml" || rendered_path.starts_with("~/"),
         "config path must use a safe symbolic root, got {rendered_path:?}"
@@ -160,5 +163,9 @@ fn explicit_codex_home_outside_home_is_symbolic() {
     assert!(
         !text.contains(&synthetic_home.path().to_string_lossy().into_owned()),
         "absolute HOME leaked"
+    );
+    assert!(
+        remediation.contains("CODEX_HOME/config.toml"),
+        "remediation must remain correct for a custom CODEX_HOME: {remediation:?}"
     );
 }

@@ -3,7 +3,7 @@
   "case": "minimal",
   "description": "An empty synthetic config uses the documented save-all default and produces a warning finding.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {
@@ -24,7 +24,7 @@
             "observation": "history.persistence unset (documented default \"save-all\" applies)",
             "remediation": {
               "summary": "Disable local session history persistence.",
-              "command": "Add to ~/.codex/config.toml:\n[history]\npersistence = \"none\""
+              "command": "Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):\n[history]\npersistence = \"none\""
             },
             "source": {
               "url": "https://learn.chatgpt.com/docs/config-file/config-reference",

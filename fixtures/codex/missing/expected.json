@@ -3,7 +3,7 @@
   "case": "missing",
   "description": "Neither a synthetic Codex home nor a Codex PATH marker exists, so the tool is not detected.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [],
     "summary": {

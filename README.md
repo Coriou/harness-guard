@@ -36,7 +36,7 @@ detected tools
 
 !! WARNING: Codex CLI persists local session transcripts to history.jsonl under CODEX_HOME.
    observed: history.persistence unset (documented default "save-all" applies)
-   fix: Add to ~/.codex/config.toml:
+   fix: Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):
         [history]
         persistence = "none"
    = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-15)

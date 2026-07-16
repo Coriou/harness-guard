@@ -3,7 +3,7 @@
   "case": "unrecognized-value",
   "description": "An in-range but unrecognized persistence value produces an unknown result without disclosing the raw value.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {

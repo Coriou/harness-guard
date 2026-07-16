@@ -31,7 +31,7 @@
       "message": "Codex CLI persists local session transcripts to history.jsonl under CODEX_HOME.",
       "remediation": {
         "summary": "Disable local session history persistence.",
-        "command": "Add to ~/.codex/config.toml:\n[history]\npersistence = \"none\""
+        "command": "Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):\n[history]\npersistence = \"none\""
       }
     },
     {

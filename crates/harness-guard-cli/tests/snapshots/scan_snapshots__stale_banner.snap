@@ -2,7 +2,7 @@
 source: crates/harness-guard-cli/tests/scan_snapshots.rs
 expression: text
 ---
-harness-guard 0.1.0 · ruleset 2026.07.15 · scanned [TIMESTAMP] · no network requests made
+harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
   ● codex version not detected · config [CONFIG_PATH] · confidence medium

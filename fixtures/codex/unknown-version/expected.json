@@ -3,7 +3,7 @@
   "case": "unknown-version",
   "description": "An absent version marker and an unrecognized persistence value conservatively produce a non-disclosing stale-ruleset result.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {

@@ -3,7 +3,7 @@
   "case": "malformed-toml",
   "description": "Malformed synthetic TOML is rejected without retaining source text and produces an unknown result.",
   "expected_report": {
-    "ruleset_version": "2026.07.15",
+    "ruleset_version": "2026.07.16",
     "network_requests_made": 0,
     "tools": [
       {
