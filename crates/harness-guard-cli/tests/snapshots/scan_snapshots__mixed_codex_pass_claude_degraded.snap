@@ -1,0 +1,46 @@
+---
+source: crates/harness-guard-cli/tests/scan_snapshots.rs
+assertion_line: 55
+expression: text
+---
+harness-guard 0.1.0 · ruleset 2026.07.17 · scanned [TIMESTAMP] · no network requests made
+
+detected tools
+  ● claude-code version not detected · config [CONFIG_PATH] · confidence medium
+  ● codex 0.144.5 · config [CONFIG_PATH] · confidence high
+  ○ grok-build — not detected
+
+claude-code version not detected — rules verified ≤2.1.204 · 2026-07-17
+rules verified ≤2.1.204 — version not detected, showing last-known rules as unverified
+0 warning · 0 info · 5 unknown · 0 stale · 0 passed
+
+?? UNKNOWN: Cannot determine local session transcript retention window: config not safely parseable: unexpected end of JSON input
+   reason: config not safely parseable: unexpected end of JSON input
+   verify: https://code.claude.com/docs/en/settings
+   = harness-guard explain claude-code-cleanup-period-01
+
+?? UNKNOWN: Cannot determine error-reporting opt-out posture: config not safely parseable: unexpected end of JSON input
+   reason: config not safely parseable: unexpected end of JSON input
+   verify: https://code.claude.com/docs/en/data-usage
+   = harness-guard explain claude-code-error-reporting-opt-out-01
+
+?? UNKNOWN: Cannot determine /feedback command opt-out posture: config not safely parseable: unexpected end of JSON input
+   reason: config not safely parseable: unexpected end of JSON input
+   verify: https://code.claude.com/docs/en/data-usage
+   = harness-guard explain claude-code-feedback-command-opt-out-01
+
+?? UNKNOWN: Cannot determine session quality survey opt-out posture: config not safely parseable: unexpected end of JSON input
+   reason: config not safely parseable: unexpected end of JSON input
+   verify: https://code.claude.com/docs/en/data-usage
+   = harness-guard explain claude-code-feedback-survey-opt-out-01
+
+?? UNKNOWN: Cannot determine usage-metrics telemetry opt-out posture: config not safely parseable: unexpected end of JSON input
+   reason: config not safely parseable: unexpected end of JSON input
+   verify: https://code.claude.com/docs/en/data-usage
+   = harness-guard explain claude-code-telemetry-opt-out-01
+
+codex 0.144.5 — rules verified ≤0.144.5 · 2026-07-16
+0 warning · 0 info · 0 unknown · 0 stale · 4 passed
+
+0 warning · 0 info · 5 unknown · 0 stale · 4 passed — 0 network requests made
+No numeric score is produced — read findings individually.

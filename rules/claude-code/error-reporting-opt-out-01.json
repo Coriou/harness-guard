@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.1",
+  "id": "claude-code-error-reporting-opt-out-01",
+  "tool": "claude-code",
+  "category": "telemetry",
+  "title": "Error-reporting opt-out",
+  "why_it_matters": "Claude Code sends error reports to Anthropic only when every one of these holds: the user signs in with a Claude Pro or Max subscription, is running Claude Code v2.1.198 or later, is connecting directly to the Claude API, and the organization has no zero-data-retention or HIPAA agreement — error reporting is off in every other case, including every alternative model-provider integration (Google Cloud's Agent Platform, Amazon Bedrock, Microsoft Foundry, and Claude Platform on AWS, each gated behind its own opt-in environment variable). Anthropic's documentation states known patterns of secrets, file paths, email addresses, and other personal information are redacted before anything leaves the machine. Setting the environment variable DISABLE_ERROR_REPORTING=1 opts out regardless of the conditions above. Anthropic's settings reference documents no dedicated boolean settings.json key for this control; DISABLE_ERROR_REPORTING is documented only as an environment variable, and the same reference states that any environment variable may be checked into settings.json's user-scope env object — so this rule observes DISABLE_ERROR_REPORTING only as embedded at that path (env.DISABLE_ERROR_REPORTING) inside the inspected user-level settings.json. It cannot observe an ambient shell- or process-level DISABLE_ERROR_REPORTING set outside this file, and it does not evaluate the separate DISABLE_TELEMETRY, DISABLE_FEEDBACK_COMMAND, CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC controls.",
+  "unknown_subject": "error-reporting opt-out posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "settings.json",
+    "key": "env.DISABLE_ERROR_REPORTING",
+    "type": "enum",
+    "allowed_render": ["1", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "env.DISABLE_ERROR_REPORTING is explicitly \"1\"",
+      "status": "pass",
+      "match": { "equals": { "value": "1" } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level settings.json sets env.DISABLE_ERROR_REPORTING = \"1\", opting out of Claude Code's error reporting.",
+      "remediation": null
+    },
+    {
+      "when": "env.DISABLE_ERROR_REPORTING is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective error-reporting posture cannot be determined from an unset user-level value because uninspected configuration layers and the ambient process environment may supply or override it.",
+      "unknown_reason": "env.DISABLE_ERROR_REPORTING is unset in the user-level config; error reporting is on only when the inspected install signs in with a Claude Pro or Max subscription, runs Claude Code v2.1.198 or later, connects directly to the Claude API, and the organization has no zero-data-retention or HIPAA agreement — this rule does not determine account, version, or provider state, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_ERROR_REPORTING outside this file.",
+      "verify_url": "https://code.claude.com/docs/en/data-usage"
+    },
+    {
+      "when": "env.DISABLE_ERROR_REPORTING is set to a value other than the documented opt-out token \"1\"",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "env.DISABLE_ERROR_REPORTING is set to a value other than the documented opt-out token \"1\" — raw values are never displayed.",
+      "unknown_reason": "env.DISABLE_ERROR_REPORTING is set to a value other than the documented opt-out token \"1\" — raw values are never displayed",
+      "verify_url": "https://code.claude.com/docs/en/data-usage"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=2.1.204", "max": "2.1.204", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/data-usage",
+      "publisher": "Anthropic",
+      "title": "Data usage",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc",
+      "archived_url": "https://web.archive.org/web/20260716225036/https://code.claude.com/docs/en/data-usage",
+      "notes": "States: 'Claude Code redacts known patterns of secrets, file paths, email addresses, and other personal information before anything leaves your machine. Set DISABLE_ERROR_REPORTING=1 to opt out. Error reporting is on only when all of these apply: you sign in with a Claude Pro or Max subscription, you're running Claude Code v2.1.198 or later, you're connecting directly to the Claude API, your organization doesn't have a zero data retention or HIPAA agreement.' The 'Default behaviors by API provider' table documents error reports as: Claude API — on for Pro/Max sign-ins on v2.1.198+, otherwise off, DISABLE_ERROR_REPORTING=1 to disable; Google Cloud's Agent Platform / Amazon Bedrock / Microsoft Foundry / Claude Platform on AWS — each default off, gated behind its own CLAUDE_CODE_USE_* opt-in variable. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/settings",
+      "publisher": "Anthropic",
+      "title": "Claude Code settings",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:2e09d4e56f86027f7b7ceaa7be4cc87ef3724cbb432e8988f419a8efa3d731e1",
+      "archived_url": "https://web.archive.org/web/20260716225057/https://code.claude.com/docs/en/settings",
+      "notes": "Documents the top-level env settings.json key: 'Environment variables applied to every session,' example {\"FOO\": \"bar\"}, and documents no dedicated boolean error-reporting key. Also documents the user scope resolving to ~/.claude/settings.json (lowest precedence) — the only scope this rule inspects. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval."
+    }
+  ],
+  "limitations": [
+    "Only the user-level ~/.claude/settings.json env object is inspected; managed, project, local, and CLI-flag scopes are not inspected and can supply or override the effective value, and this rule cannot observe DISABLE_ERROR_REPORTING set directly in the shell or process environment outside settings.json.",
+    "Default error-reporting posture is account-, version-, and provider-dependent (on only for Pro/Max sign-ins on Claude Code v2.1.198+ connecting directly to the Claude API, absent a zero-data-retention or HIPAA agreement; off in every other documented case); this rule does not determine which of these conditions hold and never infers the effective default from account or environment state.",
+    "This rule observes only the error-reporting opt-out; usage-metrics telemetry (DISABLE_TELEMETRY), the /feedback command (DISABLE_FEEDBACK_COMMAND), session quality surveys (CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY), and the broader CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC switch are separate documented controls this rule does not evaluate.",
+    "Anthropic's documentation states that known secret, file-path, and email patterns are redacted from error reports before anything leaves the machine; this rule does not independently verify that claim — no local file can.",
+    "No settings.json key named env.DISABLE_ERROR_REPORTING appears as a worked example in either retrieved page; this rule relies on the documented, general statement that any environment variable, including DISABLE_ERROR_REPORTING, may be checked into settings.json's env object. Any value other than the documented \"1\" opt-out token has no confirmed documented effect and is treated as unrecognized rather than assumed to enable or disable error reporting."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "env.DISABLE_ERROR_REPORTING is unset in the user-level config or the user-level config is absent; other configuration layers and the ambient process environment are not inspected.",
+    "env.DISABLE_ERROR_REPORTING set to a value other than \"1\" (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

@@ -44,6 +44,31 @@ fn term_claude_risky_unset() {
     );
 }
 
+fn snap_mixed(case: &str, args: &[&str], name: &str) {
+    let out = run_mixed_case(case, args);
+    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    insta::with_settings!({filters => vec![
+        (r"\d{4}-\d{2}-\d{2}T[0-9:.+\-Z]+", "[TIMESTAMP]"),
+        (r"~[^\s]*\.claude[^\s]*", "[CONFIG_PATH]"),
+        (r"~[^\s]*\.codex[^\s]*", "[CONFIG_PATH]"),
+    ]}, {
+        insta::assert_snapshot!(name, text);
+    });
+}
+
+/// Task 18 review fix: the brief's step 5 requires a term-mode snapshot for
+/// the mixed fixture, pinning that a degraded harness (claude-code, exit 2)
+/// still renders a FULL report alongside a passing harness (codex) and the
+/// undetected third harness (grok-build) — full detail survives degradation.
+#[test]
+fn term_mixed_codex_pass_claude_degraded() {
+    snap_mixed(
+        "codex-pass-claude-degraded",
+        &["scan"],
+        "mixed_codex_pass_claude_degraded",
+    );
+}
+
 #[test]
 fn term_hardened_verbose() {
     snap("hardened", &["scan", "--verbose"], "hardened_verbose");

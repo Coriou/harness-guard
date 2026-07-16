@@ -34,6 +34,63 @@
             "stale_reason": null
           },
           {
+            "rule_id": "claude-code-error-reporting-opt-out-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level settings.json sets env.DISABLE_ERROR_REPORTING = \"1\", opting out of Claude Code's error reporting.",
+            "observation": "env.DISABLE_ERROR_REPORTING = \"1\"",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-feedback-command-opt-out-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level settings.json sets env.DISABLE_FEEDBACK_COMMAND = \"1\", disabling Claude Code's /feedback command.",
+            "observation": "env.DISABLE_FEEDBACK_COMMAND = \"1\"",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-feedback-survey-opt-out-01",
+            "status": "pass",
+            "severity": null,
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level settings.json sets env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = \"1\", disabling Claude Code's session quality survey prompt.",
+            "observation": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = \"1\"",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
             "rule_id": "claude-code-telemetry-opt-out-01",
             "status": "pass",
             "severity": null,
@@ -61,7 +118,7 @@
       "info": 0,
       "unknown": 0,
       "stale": 0,
-      "passed": 2
+      "passed": 5
     }
   }
 }

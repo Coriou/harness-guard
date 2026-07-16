@@ -96,7 +96,7 @@ pub fn run_harness_case(tool: &str, case: &str, args: &[&str]) -> Output {
 /// detects two harnesses. Same env_clear() containment: the developer's real
 /// ~/.codex, ~/.claude, and ~/.grok stay unreachable by construction.
 /// Consumed by Task 18 step 5.
-#[allow(dead_code)] // Used by scan_fixtures only; cli_surface and hostile.rs have no mixed-fixture case. Integration tests compile this module separately.
+#[allow(dead_code)] // Used by scan_fixtures and scan_snapshots; cli_surface and hostile.rs have no mixed-fixture case. Integration tests compile this module separately.
 pub fn run_mixed_case(case: &str, args: &[&str]) -> Output {
     let files_root = repo_root()
         .join("fixtures")

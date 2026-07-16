@@ -31,6 +31,54 @@
             "stale_reason": null
           },
           {
+            "rule_id": "claude-code-error-reporting-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine error-reporting opt-out posture: config path contains a symlink or reparse point — not followed",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config path contains a symlink or reparse point — not followed",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-feedback-command-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine /feedback command opt-out posture: config path contains a symlink or reparse point — not followed",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config path contains a symlink or reparse point — not followed",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-feedback-survey-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine session quality survey opt-out posture: config path contains a symlink or reparse point — not followed",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "config path contains a symlink or reparse point — not followed",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          },
+          {
             "rule_id": "claude-code-telemetry-opt-out-01",
             "status": "unknown",
             "severity": null,
@@ -53,7 +101,7 @@
       "tools_scanned": 1,
       "warning": 0,
       "info": 0,
-      "unknown": 2,
+      "unknown": 5,
       "stale": 0,
       "passed": 0
     }

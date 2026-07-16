@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "case": "risky-unset",
-  "description": "The user config exists but both claude-code rules' keys are absent, so their effective posture remains unknown because other configuration layers are not inspected.",
+  "description": "The user config exists but every claude-code rule's key is absent, so their effective posture remains unknown because other configuration layers are not inspected.",
   "expected_report": {
     "ruleset_version": "2026.07.17",
     "network_requests_made": 0,
@@ -31,18 +31,66 @@
             "stale_reason": null
           },
           {
+            "rule_id": "claude-code-error-reporting-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine error-reporting opt-out posture: env.DISABLE_ERROR_REPORTING is unset in the user-level config; error reporting is on only when the inspected install signs in with a Claude Pro or Max subscription, runs Claude Code v2.1.198 or later, connects directly to the Claude API, and the organization has no zero-data-retention or HIPAA agreement — this rule does not determine account, version, or provider state, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_ERROR_REPORTING outside this file.",
+            "observation": "env.DISABLE_ERROR_REPORTING unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "env.DISABLE_ERROR_REPORTING is unset in the user-level config; error reporting is on only when the inspected install signs in with a Claude Pro or Max subscription, runs Claude Code v2.1.198 or later, connects directly to the Claude API, and the organization has no zero-data-retention or HIPAA agreement — this rule does not determine account, version, or provider state, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_ERROR_REPORTING outside this file.",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-feedback-command-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine /feedback command opt-out posture: env.DISABLE_FEEDBACK_COMMAND is unset in the user-level config; the /feedback command is on by default for direct Claude API usage but off by default for every alternative model-provider integration, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_FEEDBACK_COMMAND outside this file.",
+            "observation": "env.DISABLE_FEEDBACK_COMMAND unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "env.DISABLE_FEEDBACK_COMMAND is unset in the user-level config; the /feedback command is on by default for direct Claude API usage but off by default for every alternative model-provider integration, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_FEEDBACK_COMMAND outside this file.",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "claude-code-feedback-survey-opt-out-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine session quality survey opt-out posture: env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is unset in the user-level config; the session quality survey is on by default regardless of model provider, and it is also disabled as a side effect when DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set — none of which this rule inspects — so this unset value alone does not establish the survey is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set the variable outside this file.",
+            "observation": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is unset in the user-level config; the session quality survey is on by default regardless of model provider, and it is also disabled as a side effect when DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set — none of which this rule inspects — so this unset value alone does not establish the survey is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set the variable outside this file.",
+            "verify_url": "https://code.claude.com/docs/en/data-usage",
+            "stale_reason": null
+          },
+          {
             "rule_id": "claude-code-telemetry-opt-out-01",
             "status": "unknown",
             "severity": null,
             "confidence": null,
             "evidence_class": null,
-            "message": "Cannot determine usage-metrics telemetry opt-out posture: env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+            "message": "Cannot determine usage-metrics telemetry opt-out posture: env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for every alternative model-provider integration unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
             "observation": "env.DISABLE_TELEMETRY unset in user config",
             "remediation": null,
             "source": null,
             "valid_from": "<=2.1.204",
             "valid_until": "2.1.204",
-            "unknown_reason": "env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for Google Cloud's Agent Platform, Amazon Bedrock, and Microsoft Foundry unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
+            "unknown_reason": "env.DISABLE_TELEMETRY is unset in the user-level config; usage metrics are on by default for direct Claude API usage but off by default for every alternative model-provider integration unless explicitly enabled, this rule does not determine which provider is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set DISABLE_TELEMETRY outside this file.",
             "verify_url": "https://code.claude.com/docs/en/data-usage",
             "stale_reason": null
           }
@@ -53,7 +101,7 @@
       "tools_scanned": 1,
       "warning": 0,
       "info": 0,
-      "unknown": 2,
+      "unknown": 5,
       "stale": 0,
       "passed": 0
     }

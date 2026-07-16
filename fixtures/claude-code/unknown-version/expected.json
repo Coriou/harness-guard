@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "case": "unknown-version",
-  "description": "An absent version marker conservatively produces a non-disclosing stale-ruleset result for every claude-code rule; the unrecognized env.DISABLE_TELEMETRY value uses the non-disclosing fallback while cleanupPeriodDays's unset rendering is quoted verbatim (its unset rendering discloses no configured content).",
+  "description": "An absent version marker conservatively produces a non-disclosing stale-ruleset result for every claude-code rule; the unrecognized env.DISABLE_TELEMETRY value uses the non-disclosing fallback, the three other env-based rules render their unset observation verbatim (env.KEY unset in user config, which discloses no configured content), and cleanupPeriodDays's unset rendering is quoted verbatim the same way.",
   "expected_report": {
     "ruleset_version": "2026.07.17",
     "network_requests_made": 0,
@@ -25,6 +25,63 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/settings",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected — no version marker found on PATH"
+          },
+          {
+            "rule_id": "claude-code-error-reporting-opt-out-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective error-reporting posture cannot be determined from an unset user-level value because uninspected configuration layers and the ambient process environment may supply or override it. Observed: env.DISABLE_ERROR_REPORTING unset in user config.",
+            "observation": "env.DISABLE_ERROR_REPORTING unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected — no version marker found on PATH"
+          },
+          {
+            "rule_id": "claude-code-feedback-command-opt-out-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective /feedback command posture cannot be determined from an unset user-level value because uninspected configuration layers and the ambient process environment may supply or override it. Observed: env.DISABLE_FEEDBACK_COMMAND unset in user config.",
+            "observation": "env.DISABLE_FEEDBACK_COMMAND unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=2.1.204",
+            "valid_until": "2.1.204",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected — no version marker found on PATH"
+          },
+          {
+            "rule_id": "claude-code-feedback-survey-opt-out-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective session quality survey posture cannot be determined from an unset user-level value because uninspected configuration layers, other documented disable paths, and the ambient process environment may supply or override it. Observed: env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY unset in user config.",
+            "observation": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://code.claude.com/docs/en/data-usage",
               "retrieved": "2026-07-17"
             },
             "valid_from": "<=2.1.204",
@@ -60,7 +117,7 @@
       "warning": 0,
       "info": 0,
       "unknown": 0,
-      "stale": 2,
+      "stale": 5,
       "passed": 0
     }
   }

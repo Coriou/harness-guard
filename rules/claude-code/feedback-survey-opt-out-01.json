@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.1",
+  "id": "claude-code-feedback-survey-opt-out-01",
+  "tool": "claude-code",
+  "category": "telemetry",
+  "title": "Session quality survey opt-out",
+  "why_it_matters": "Claude Code shows a 'How is Claude doing this session?' quality-survey prompt by default, regardless of model provider — unlike usage metrics, error reporting, and /feedback reports (whose defaults vary by provider), Anthropic's 'Default behaviors by API provider' table documents this survey as on by default in every column. Responding, including selecting 'Dismiss', records only a rating; Anthropic's documentation states no conversation transcript, input, output, or other session data is collected as part of the rating prompt itself. A separate, optional follow-up may then ask whether Anthropic may look at the session transcript; answering yes uploads the conversation transcript (known API key and token patterns redacted, but source code and other conversation content uploaded as-is) and is retained for up to 6 months, or is written to a local archive under ~/.claude/feedback-bundles/ instead of uploading on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and signed-in Claude apps gateway sessions. Setting the environment variable CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1 disables the survey outright; Anthropic's documentation also states the survey is separately disabled whenever DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set, none of which this rule inspects, so an unset or unrecognized result here does not prove the survey is actually active. Anthropic's settings reference documents no dedicated boolean settings.json key for this control; CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is documented only as an environment variable, and the same reference states that any environment variable may be checked into settings.json's user-scope env object — so this rule observes CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY only as embedded at that path (env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY) inside the inspected user-level settings.json. It cannot observe an ambient shell- or process-level CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY set outside this file, and it does not directly evaluate the separate DISABLE_TELEMETRY, DISABLE_ERROR_REPORTING, DISABLE_FEEDBACK_COMMAND, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC controls.",
+  "unknown_subject": "session quality survey opt-out posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "settings.json",
+    "key": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY",
+    "type": "enum",
+    "allowed_render": ["1", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is explicitly \"1\"",
+      "status": "pass",
+      "match": { "equals": { "value": "1" } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level settings.json sets env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = \"1\", disabling Claude Code's session quality survey prompt.",
+      "remediation": null
+    },
+    {
+      "when": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective session quality survey posture cannot be determined from an unset user-level value because uninspected configuration layers, other documented disable paths, and the ambient process environment may supply or override it.",
+      "unknown_reason": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is unset in the user-level config; the session quality survey is on by default regardless of model provider, and it is also disabled as a side effect when DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set — none of which this rule inspects — so this unset value alone does not establish the survey is active, and uninspected managed, project, local, or CLI-flag layers plus the ambient shell environment may also set the variable outside this file.",
+      "verify_url": "https://code.claude.com/docs/en/data-usage"
+    },
+    {
+      "when": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is set to a value other than the documented opt-out token \"1\"",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is set to a value other than the documented opt-out token \"1\" — raw values are never displayed.",
+      "unknown_reason": "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is set to a value other than the documented opt-out token \"1\" — raw values are never displayed",
+      "verify_url": "https://code.claude.com/docs/en/data-usage"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=2.1.204", "max": "2.1.204", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/data-usage",
+      "publisher": "Anthropic",
+      "title": "Data usage",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc",
+      "archived_url": "https://web.archive.org/web/20260716225036/https://code.claude.com/docs/en/data-usage",
+      "notes": "States, under 'Session quality surveys': the rating-only prompt collects no transcript, input, output, or session data; a separate optional follow-up asking to review the transcript, if accepted, uploads it (retained up to 6 months) or archives it locally under ~/.claude/feedback-bundles/ on Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and signed-in Claude apps gateway sessions. 'To disable these surveys, set CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1. The survey is also disabled when DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set.' The 'Default behaviors by API provider' table documents session quality surveys as 'Default on. CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1 to disable.' in every provider column (Claude API, Google Cloud's Agent Platform, Amazon Bedrock, Microsoft Foundry, Claude Platform on AWS) — the only one of the four telemetry-adjacent controls on this page that is uniformly default-on. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://code.claude.com/docs/en/settings",
+      "publisher": "Anthropic",
+      "title": "Claude Code settings",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:2e09d4e56f86027f7b7ceaa7be4cc87ef3724cbb432e8988f419a8efa3d731e1",
+      "archived_url": "https://web.archive.org/web/20260716225057/https://code.claude.com/docs/en/settings",
+      "notes": "Documents the top-level env settings.json key: 'Environment variables applied to every session,' example {\"FOO\": \"bar\"}, and documents no dedicated boolean feedback-survey key. Also documents the user scope resolving to ~/.claude/settings.json (lowest precedence) — the only scope this rule inspects. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval."
+    }
+  ],
+  "limitations": [
+    "Only the user-level ~/.claude/settings.json env object is inspected; managed, project, local, and CLI-flag scopes are not inspected and can supply or override the effective value, and this rule cannot observe CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY set directly in the shell or process environment outside settings.json.",
+    "The survey is documented as also disabled when DISABLE_TELEMETRY, DO_NOT_TRACK, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set, none of which this rule cross-checks — an unknown verdict here is a conservative absence of proof, not evidence the survey is enabled.",
+    "Session quality surveys are documented as default-on for every provider in Anthropic's behavior table, unlike usage metrics, error reporting, and /feedback reports, whose defaults vary by provider; this rule does not track provider identity since it is not needed to interpret this control's default.",
+    "This rule observes only the survey opt-out; usage-metrics telemetry (DISABLE_TELEMETRY), error reporting (DISABLE_ERROR_REPORTING), the /feedback command (DISABLE_FEEDBACK_COMMAND), and the broader CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC switch are separate documented controls this rule does not evaluate directly.",
+    "No settings.json key named env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY appears as a worked example in either retrieved page; this rule relies on the documented, general statement that any environment variable may be checked into settings.json's env object. Any value other than the documented \"1\" token has no confirmed documented effect and is treated as unrecognized rather than assumed to enable or disable the survey."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is unset in the user-level config or the user-level config is absent; other configuration layers and the documented alternate disable paths (DISABLE_TELEMETRY, DO_NOT_TRACK, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) are not inspected.",
+    "env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY set to a value other than \"1\" (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}
