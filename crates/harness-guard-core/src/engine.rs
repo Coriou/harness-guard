@@ -538,64 +538,39 @@ mod tests {
         );
     }
 
-    /// Task 6 addition beyond the ported matrix: cross-check every reachable
-    /// (ConfigState, detected_version) cell against `evaluate::evaluate_rule`
-    /// for byte-identical FindingRecords, proving the engine is a drop-in
-    /// replacement ahead of Task 7's switchover.
-    fn all_config_states() -> Vec<ConfigState> {
-        vec![
-            ConfigState::Missing,
-            ConfigState::Unreadable(RefusalReason::PermissionDenied),
-            ConfigState::Unreadable(RefusalReason::Symlink),
-            ConfigState::Unreadable(RefusalReason::NotRegularFile),
-            ConfigState::Unreadable(RefusalReason::Oversized),
-            ConfigState::Unreadable(RefusalReason::NotUtf8),
-            ConfigState::Unreadable(RefusalReason::Io),
-            ConfigState::Unparseable(ParseFailure {
-                line: Some(1),
-                col: Some(1),
-                key_path: None,
-                message: "expected an equals sign".to_string(),
-            }),
-            parsed(None),
-            parsed(Some(ExtractedValue::Str("none".into()))),
-            parsed(Some(ExtractedValue::Str("save-all".into()))),
-            parsed(Some(ExtractedValue::Str("archive".into()))),
-            parsed(Some(ExtractedValue::Bool(true))),
-            parsed(Some(ExtractedValue::Int(7))),
-            parsed(Some(ExtractedValue::Other)),
-        ]
-    }
-
-    /// Mirrors `ConfigState` field-by-field into `crate::evaluate::ConfigState`
-    /// (the two enums are structurally identical but distinct types).
-    fn to_legacy(state: &ConfigState) -> crate::evaluate::ConfigState {
-        match state {
-            ConfigState::Missing => crate::evaluate::ConfigState::Missing,
-            ConfigState::Unreadable(reason) => crate::evaluate::ConfigState::Unreadable(*reason),
-            ConfigState::Unparseable(failure) => {
-                crate::evaluate::ConfigState::Unparseable(ParseFailure {
-                    line: failure.line,
-                    col: failure.col,
-                    key_path: failure.key_path.clone(),
-                    message: failure.message.clone(),
-                })
-            }
-            ConfigState::Parsed(values) => crate::evaluate::ConfigState::Parsed(values.clone()),
-        }
-    }
-
+    /// Task 7: `evaluate.rs` is gone, so the cross-comparison this test used
+    /// to run (`engine_matches_evaluate_across_the_full_status_matrix`,
+    /// Task 6) no longer has a second implementation to compare against —
+    /// its job is done. The behavior it protected stays pinned by the
+    /// unchanged fixture goldens (`fixtures/`) and CLI insta snapshots
+    /// (`crates/harness-guard-cli/tests/snapshots/`), which the Task 7
+    /// switchover proved byte-identical, plus the ported unit tests above
+    /// covering every status branch (pass/finding/unset/unrecognized/
+    /// unreadable/unparseable/stale) for this rule. This test instead pins
+    /// engine-only coverage the removed matrix also exercised but the golden
+    /// fixtures don't reach directly: every `RefusalReason` variant still
+    /// degrades to `Status::Unknown` with its own describe() text, across
+    /// both an in-range and an out-of-range detected version (unknown beats
+    /// stale regardless of version).
     #[test]
-    fn engine_matches_evaluate_across_the_full_status_matrix() {
-        for state in all_config_states() {
+    fn every_refusal_reason_degrades_to_unknown_regardless_of_version() {
+        let reasons = [
+            RefusalReason::PermissionDenied,
+            RefusalReason::Symlink,
+            RefusalReason::NotRegularFile,
+            RefusalReason::Oversized,
+            RefusalReason::NotUtf8,
+            RefusalReason::Io,
+        ];
+        for reason in reasons {
             for detected_version in [None, Some("0.144.5"), Some("9.9.9")] {
-                let legacy = to_legacy(&state);
-                let expected = crate::evaluate::evaluate_rule(&rule(), &legacy, detected_version);
-                let actual = evaluate_rule(&rule(), &state, detected_version);
+                let finding =
+                    evaluate_rule(&rule(), &ConfigState::Unreadable(reason), detected_version);
+                assert_eq!(finding.status, Status::Unknown);
                 assert_eq!(
-                    serde_json::to_value(&actual).unwrap(),
-                    serde_json::to_value(&expected).unwrap(),
-                    "engine and evaluate.rs diverged for detected_version={detected_version:?}"
+                    finding.unknown_reason.as_deref(),
+                    Some(reason.describe()),
+                    "reason={reason:?} detected_version={detected_version:?}"
                 );
             }
         }

@@ -2,7 +2,7 @@
 //! evaluate each rule → ToolReport. Raw config text and the parsed
 //! document are dropped before this function returns.
 use crate::discovery::DiscoveryRoot;
-use crate::evaluate::{ConfigState, evaluate_rule};
+use crate::engine::{ConfigState, evaluate_rule};
 use crate::parse::{ParseFailure, extract_key, parse_config};
 use crate::readfs::{ConfigReadOutcome, PathProbe, probe_directory, read_config};
 use crate::version::{binary_on_path, detect_codex_version};
