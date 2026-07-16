@@ -208,3 +208,35 @@ fn help_uses_positioning_and_never_the_forbidden_phrase() {
         "binding positioning phrase must appear in top-level help"
     );
 }
+
+#[test]
+fn retired_grok_keys_never_appear_in_cli_output() {
+    // Spec §7.3.7: the tripwire covers user-facing output corpora, not just
+    // rule files. Help text and a fixture scan are the output corpus.
+    let retired = [
+        "GROK_TELEMETRY_ENABLED",
+        "GROK_TELEMETRY_TRACE_UPLOAD",
+        "trace_upload",
+        "[telemetry]",
+    ];
+    for args in [
+        vec!["--help"],
+        vec!["scan", "--help"],
+        vec!["scan", "--json"],
+        vec!["scan", "--verbose"],
+        vec!["explain", "codex-history-persist-01"],
+    ] {
+        let output = run_case("hardened", &args);
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        for key in retired {
+            assert!(
+                !text.contains(key),
+                "retired key {key:?} in output of {args:?}"
+            );
+        }
+    }
+}
