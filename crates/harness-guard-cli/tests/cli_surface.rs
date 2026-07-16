@@ -10,6 +10,14 @@ fn list_shows_detection_only() {
     assert!(text.contains("codex"));
     assert!(text.contains("0.144.5"));
     assert!(
+        text.contains("claude-code"),
+        "list must enumerate claude-code even when undetected"
+    );
+    assert!(
+        text.contains("grok-build"),
+        "list must enumerate grok-build even when undetected"
+    );
+    assert!(
         !text.contains("codex-history-persist-01"),
         "list must never evaluate rules"
     );
@@ -27,11 +35,16 @@ fn list_reports_version_not_detected() {
 fn list_symbolically_redacts_explicit_codex_home() {
     let files_root = fixture("hardened");
     let codex_home = files_root.join("codex-home");
-    let synthetic_home = tempfile::tempdir().unwrap();
+    let synthetic_home_dir = tempfile::tempdir().unwrap();
+    // Canonicalize for the same reason as scan_fixtures.rs's
+    // explicit_codex_home_outside_home_is_symbolic: an uncanonicalized
+    // tempdir HOME on macOS is nested under the `/var` -> `/private/var`
+    // symlink, which the hardened no-follow probes correctly refuse.
+    let synthetic_home = synthetic_home_dir.path().canonicalize().unwrap();
     let output = run_with_roots(
         &codex_home,
         &files_root.join("path"),
-        synthetic_home.path(),
+        &synthetic_home,
         &["list"],
     );
     assert_eq!(output.status.code(), Some(0));
@@ -41,7 +54,7 @@ fn list_symbolically_redacts_explicit_codex_home() {
         "config path must have a symbolic root: {text}"
     );
     assert!(!text.contains(&codex_home.to_string_lossy().into_owned()));
-    assert!(!text.contains(&synthetic_home.path().to_string_lossy().into_owned()));
+    assert!(!text.contains(&synthetic_home.to_string_lossy().into_owned()));
 }
 
 #[test]

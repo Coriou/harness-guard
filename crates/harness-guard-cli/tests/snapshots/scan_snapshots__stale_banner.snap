@@ -1,11 +1,14 @@
 ---
 source: crates/harness-guard-cli/tests/scan_snapshots.rs
+assertion_line: 17
 expression: text
 ---
 harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
+  ○ claude-code — not detected
   ● codex version not detected · config [CONFIG_PATH] · confidence medium
+  ○ grok-build — not detected
 
 codex version not detected — rules verified ≤0.144.5 · 2026-07-16
 rules verified ≤0.144.5 — version not detected, showing last-known rules as unverified

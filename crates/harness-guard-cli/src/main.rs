@@ -11,7 +11,8 @@ mod render_term;
 
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum};
 use harness_guard_core::discovery::DiscoveryRoot;
-use harness_guard_core::harness::HarnessId;
+use harness_guard_core::harness::{HarnessId, descriptor};
+use harness_guard_core::parse::ParseFailure;
 use harness_guard_core::scan::{ScanResult, scan_harness};
 use harness_guard_rules::loader::{load_rules, ruleset_version};
 use harness_guard_rules::report::{Platform, Report, Severity, Status, Summary};
@@ -60,8 +61,8 @@ enum Cmd {
 
 #[derive(clap::Args)]
 struct ScanArgs {
-    /// Restrict to specific tools (v1: only `codex` is implemented)
-    #[arg(long, value_parser = ["codex"])]
+    /// Restrict to specific tools (repeatable; default: every detected tool)
+    #[arg(long, value_parser = ["codex", "claude-code", "grok-build"])]
     tool: Vec<String>,
     /// Emit the sanitized report as JSON (the schemas/report contract)
     #[arg(long)]
@@ -145,20 +146,28 @@ fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
     // This is the only ambient-environment boundary. Core always receives an
     // explicit root and therefore cannot fall through to the real home.
     let home = directories::BaseDirs::new().map(|dirs| dirs.home_dir().to_path_buf());
+    let home_join = |dotdir: &str, fallback: &str| {
+        home.as_ref()
+            .map(|home| home.join(dotdir))
+            .unwrap_or_else(|| PathBuf::from(fallback))
+    };
     let codex_home = std::env::var_os("CODEX_HOME")
         .map(PathBuf::from)
-        .or_else(|| home.as_ref().map(|home| home.join(".codex")))
-        .unwrap_or_else(|| PathBuf::from(".codex"));
-    // Temporary fallback only — full home-override resolution (and non-codex
-    // scan dispatch) lands in Task 15. Scan behavior stays codex-only here.
-    let claude_home = home
-        .as_ref()
-        .map(|home| home.join(".claude"))
-        .unwrap_or_else(|| PathBuf::from(".claude"));
-    let grok_home = home
-        .as_ref()
-        .map(|home| home.join(".grok"))
-        .unwrap_or_else(|| PathBuf::from(".grok"));
+        .unwrap_or_else(|| home_join(".codex", ".codex"));
+    // §5.1 fresh-retrieval item (Task 15, retrieved 2026-07-16): checked
+    // https://code.claude.com/docs/en/settings and
+    // https://code.claude.com/docs/en/env-vars — neither documents an
+    // environment variable that relocates the `~/.claude` config directory.
+    // (Community reports, e.g. github.com/anthropics/claude-code/issues/33430
+    // "Document CLAUDE_CONFIG_DIR", describe an undocumented variable Claude
+    // Code itself honors, but the brief's decision rule turns on *official*
+    // documentation, which does not exist as of this retrieval.) No override
+    // is wired: home stays HOME/.claude, and the descriptor keeps the
+    // defensive "$CLAUDE_HOME" token for the (currently unreachable) case
+    // where a config path falls outside HOME.
+    let claude_home = home_join(".claude", ".claude");
+    // §5.1: no Grok home-override env var is assumed either.
+    let grok_home = home_join(".grok", ".grok");
     let path_dirs = std::env::var_os("PATH")
         .map(|path| std::env::split_paths(&path).collect())
         .unwrap_or_default();
@@ -177,16 +186,47 @@ fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
 fn cmd_scan(args: ScanArgs) -> ExitCode {
     let (root, home) = discovery_root_from_env();
     let rules = load_rules();
-    let results: Vec<ScanResult> = scan_harness(&root, HarnessId::Codex, &rules)
-        .into_iter()
+
+    let selected: Vec<HarnessId> = if args.tool.is_empty() {
+        HarnessId::ALL.to_vec()
+    } else {
+        let mut ids: Vec<HarnessId> = args
+            .tool
+            .iter()
+            .filter_map(|tool| HarnessId::parse(tool))
+            .collect();
+        ids.sort_unstable();
+        ids.dedup();
+        ids
+    };
+    let results: Vec<ScanResult> = selected
+        .iter()
+        .filter_map(|&harness| scan_harness(&root, harness, &rules))
         .collect();
     let degraded = results.iter().any(|result| result.degraded);
-    let parse_failures: Vec<_> = results
-        .iter()
-        .filter_map(|result| result.parse_failure.clone())
-        .collect();
 
-    let report = build_report(&results, home.as_deref(), &root.codex_home);
+    let report = build_report(&results, home.as_deref(), &root);
+
+    // `selected` is sorted HarnessId order (alphabetical); `results` preserves
+    // that order (filter_map only drops undetected harnesses); `report.tools`
+    // is a per-element transform of `results` re-sorted the same alphabetical
+    // way — so `zip` pairs each failure with ITS OWN tool's redacted path (a
+    // fixed `tools.first()` shortcut would mislabel every tool but the first
+    // once more than one is selected).
+    let parse_failures: Vec<(String, ParseFailure)> = report
+        .tools
+        .iter()
+        .zip(results.iter())
+        .filter_map(|(tool, result)| {
+            debug_assert_eq!(tool.tool, result.tool_report.tool);
+            result.parse_failure.clone().map(|failure| {
+                (
+                    tool.config_paths.first().cloned().unwrap_or_default(),
+                    failure,
+                )
+            })
+        })
+        .collect();
 
     if args.json {
         println!("{}", render_json::render(&report));
@@ -198,17 +238,15 @@ fn cmd_scan(args: ScanArgs) -> ExitCode {
             },
             quiet: args.quiet,
             verbose: args.verbose,
+            requested: selected
+                .iter()
+                .map(|harness| harness.as_str().to_string())
+                .collect(),
         };
         anstream::print!("{}", render_term::render(&report, &opts));
     }
-    for failure in &parse_failures {
-        let path = report
-            .tools
-            .first()
-            .and_then(|tool| tool.config_paths.first())
-            .cloned()
-            .unwrap_or_else(|| "config.toml".to_string());
-        eprint!("{}", diagnostics::report_parse_failure(failure, &path));
+    for (path, failure) in &parse_failures {
+        eprint!("{}", diagnostics::report_parse_failure(failure, path));
     }
 
     let threshold = match args.fail_on {
@@ -242,33 +280,43 @@ fn cmd_list() -> ExitCode {
     let mut table = comfy_table::Table::new();
     table.set_header(["tool", "version", "config", "confidence"]);
 
-    let home_detected = harness_guard_core::readfs::probe_directory(&root.codex_home)
-        != harness_guard_core::readfs::PathProbe::Missing;
-    let on_path = harness_guard_core::version::binary_on_path(&root, HarnessId::Codex);
-    if home_detected || on_path {
-        let version = harness_guard_core::version::detect_version(&root, HarnessId::Codex)
-            .unwrap_or_else(|| "version not detected".to_string());
-        let config_path = root.config_path(HarnessId::Codex);
-        let config = match harness_guard_core::readfs::probe_regular_file(&config_path) {
-            harness_guard_core::readfs::PathProbe::Present => redact::redact_config_path(
-                &config_path.to_string_lossy(),
-                home.as_deref(),
-                &root.codex_home,
-            ),
-            harness_guard_core::readfs::PathProbe::Missing => "no config file".to_string(),
-            harness_guard_core::readfs::PathProbe::Refused => "config path refused".to_string(),
-        };
-        let confidence = match harness_guard_core::scan::detection_confidence(
-            (version != "version not detected").then_some(version.as_str()),
-            home_detected,
-        ) {
-            harness_guard_rules::report::Confidence::Low => "low",
-            harness_guard_rules::report::Confidence::Medium => "medium",
-            harness_guard_rules::report::Confidence::High => "high",
-        };
-        table.add_row(["codex", version.as_str(), config.as_str(), confidence]);
-    } else {
-        table.add_row(["codex", "not detected", "-", "-"]);
+    for harness in HarnessId::ALL {
+        let facts = descriptor(harness);
+        let home_detected = harness_guard_core::readfs::probe_directory(root.home(harness))
+            != harness_guard_core::readfs::PathProbe::Missing;
+        let on_path = harness_guard_core::version::binary_on_path(&root, harness);
+        if home_detected || on_path {
+            let version = harness_guard_core::version::detect_version(&root, harness)
+                .unwrap_or_else(|| "version not detected".to_string());
+            let config_path = root.config_path(harness);
+            let config = match harness_guard_core::readfs::probe_regular_file(&config_path) {
+                harness_guard_core::readfs::PathProbe::Present => redact::redact_config_path(
+                    &config_path.to_string_lossy(),
+                    home.as_deref(),
+                    root.home(harness),
+                    facts.home_token,
+                    facts.config_file,
+                ),
+                harness_guard_core::readfs::PathProbe::Missing => "no config file".to_string(),
+                harness_guard_core::readfs::PathProbe::Refused => "config path refused".to_string(),
+            };
+            let confidence = match harness_guard_core::scan::detection_confidence(
+                (version != "version not detected").then_some(version.as_str()),
+                home_detected,
+            ) {
+                harness_guard_rules::report::Confidence::Low => "low",
+                harness_guard_rules::report::Confidence::Medium => "medium",
+                harness_guard_rules::report::Confidence::High => "high",
+            };
+            table.add_row([
+                harness.as_str(),
+                version.as_str(),
+                config.as_str(),
+                confidence,
+            ]);
+        } else {
+            table.add_row([harness.as_str(), "not detected", "-", "-"]);
+        }
     }
 
     anstream::println!("{table}");
@@ -303,15 +351,25 @@ fn cmd_version() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn build_report(results: &[ScanResult], home: Option<&Path>, codex_home: &Path) -> Report {
+fn build_report(results: &[ScanResult], home: Option<&Path>, root: &DiscoveryRoot) -> Report {
     let mut tools: Vec<_> = results
         .iter()
         .map(|result| {
             let mut tool = result.tool_report.clone();
+            let harness = HarnessId::parse(&tool.tool).expect("scan produces known tool ids");
+            let facts = descriptor(harness);
             tool.config_paths = tool
                 .config_paths
                 .iter()
-                .map(|path| redact::redact_config_path(path, home, codex_home))
+                .map(|path| {
+                    redact::redact_config_path(
+                        path,
+                        home,
+                        root.home(harness),
+                        facts.home_token,
+                        facts.config_file,
+                    )
+                })
                 .collect();
             tool
         })

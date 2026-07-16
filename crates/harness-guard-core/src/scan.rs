@@ -138,12 +138,19 @@ pub fn scan_harness(
         .collect();
     findings.sort_by(|left, right| left.rule_id.cmp(&right.rule_id));
 
+    // A harness can be detected with zero bundled rules (claude-code and
+    // grok-build until their rule work packages land): `harness_rules.iter().all(..)`
+    // over an empty iterator is vacuously true, which would otherwise report
+    // version_in_range: true — and, combined with the empty `findings` below,
+    // read as a verified clean audit for a tool nothing was actually
+    // evaluated against. Require at least one rule before claiming range.
     let version_in_range = detected_version
         .as_deref()
         .map(|version| {
-            harness_rules
-                .iter()
-                .all(|rule| crate::version::version_in_range(version, &rule.raw().tested_versions))
+            !harness_rules.is_empty()
+                && harness_rules.iter().all(|rule| {
+                    crate::version::version_in_range(version, &rule.raw().tested_versions)
+                })
         })
         .unwrap_or(false);
 
@@ -198,6 +205,44 @@ mod tests {
             path_dirs: vec![],
         };
         assert!(scan_harness(&root, HarnessId::Codex, &load_rules()).is_none());
+    }
+
+    #[test]
+    fn zero_rule_harness_never_reports_version_in_range_or_synthesized_findings() {
+        // claude-code has no bundled rules yet (Tasks 17-19 land them). A
+        // detected claude-code install with a real version must never look
+        // like a verified clean audit: version_in_range must not default to
+        // a vacuous true, and findings must stay empty rather than a
+        // synthesized pass.
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let claude_home = base.join("claude-home");
+        std::fs::create_dir_all(&claude_home).unwrap();
+        let package = base.join("node_modules/@anthropic-ai/claude-code");
+        std::fs::create_dir_all(package.join("bin")).unwrap();
+        std::fs::write(package.join("bin/claude"), "#!/usr/bin/env node\n").unwrap();
+        std::fs::write(
+            package.join("package.json"),
+            r#"{"name": "@anthropic-ai/claude-code", "version": "2.1.202"}"#,
+        )
+        .unwrap();
+        let root = DiscoveryRoot {
+            codex_home: base.join("absent-codex-home"),
+            claude_home,
+            grok_home: base.join("absent-grok-home"),
+            path_dirs: vec![package.join("bin")],
+        };
+
+        let result = scan_harness(&root, HarnessId::ClaudeCode, &load_rules()).unwrap();
+        assert_eq!(
+            result.tool_report.detected_version.as_deref(),
+            Some("2.1.202")
+        );
+        assert!(result.tool_report.findings.is_empty());
+        assert!(
+            !result.tool_report.version_in_range,
+            "zero bundled rules must never report version_in_range: true"
+        );
     }
 
     #[test]

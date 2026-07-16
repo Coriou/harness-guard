@@ -104,6 +104,17 @@ fn unknown_tool_flag_is_usage_error() {
 }
 
 #[test]
+fn tool_flag_accepts_all_three_ids() {
+    for tool in ["codex", "claude-code", "grok-build"] {
+        let output = run_case("hardened", &["scan", "--tool", tool, "--json"]);
+        assert!(
+            matches!(output.status.code(), Some(0) | Some(1)),
+            "{tool} must be a valid --tool"
+        );
+    }
+}
+
+#[test]
 fn scan_accepts_global_color_flag_after_subcommand() {
     assert_eq!(
         run_case("hardened", &["scan", "--color", "never"])
@@ -151,11 +162,20 @@ fn output_paths_are_redacted() {
 fn explicit_codex_home_outside_home_is_symbolic() {
     let files_root = fixture("risky-explicit");
     let codex_home = files_root.join("codex-home");
-    let synthetic_home = tempfile::tempdir().unwrap();
+    let synthetic_home_dir = tempfile::tempdir().unwrap();
+    // Canonicalize: on macOS, `$TMPDIR` (and therefore a bare `tempdir()`
+    // path) is nested under `/var`, itself a symlink to `/private/var`. The
+    // hardened no-follow readers correctly refuse any ancestor-path symlink,
+    // so an uncanonicalized HOME would make claude-code/grok-build's
+    // `HOME/.claude` and `HOME/.grok` probes come back `Refused` (degraded)
+    // instead of `Missing` (undetected) now that scan covers every harness
+    // by default — matching the established pattern used throughout the
+    // unit tests (`dir.path().canonicalize().unwrap()`).
+    let synthetic_home = synthetic_home_dir.path().canonicalize().unwrap();
     let output = run_with_roots(
         &codex_home,
         &files_root.join("path"),
-        synthetic_home.path(),
+        &synthetic_home,
         &["scan", "--json"],
     );
     assert_eq!(output.status.code(), Some(1));
@@ -178,7 +198,7 @@ fn explicit_codex_home_outside_home_is_symbolic() {
         "absolute explicit CODEX_HOME leaked"
     );
     assert!(
-        !text.contains(&synthetic_home.path().to_string_lossy().into_owned()),
+        !text.contains(&synthetic_home.to_string_lossy().into_owned()),
         "absolute HOME leaked"
     );
     assert!(

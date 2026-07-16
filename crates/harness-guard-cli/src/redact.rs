@@ -8,17 +8,23 @@ pub fn redact_home(path: &str, home: Option<&Path>) -> String {
     redact_under(path, home, "~").unwrap_or_else(|| path.to_string())
 }
 
-/// Config paths have two safe render roots. Prefer `~` when the explicit
-/// Codex home is below HOME; otherwise use a fixed token and never emit the
-/// absolute custom `CODEX_HOME` value.
-pub fn redact_config_path(path: &str, home: Option<&Path>, codex_home: &Path) -> String {
+/// Config paths have two safe render roots. Prefer `~` when the harness home
+/// is below HOME; otherwise use the harness's fixed symbolic token and never
+/// emit an absolute custom home value.
+pub fn redact_config_path(
+    path: &str,
+    home: Option<&Path>,
+    harness_home: &Path,
+    home_token: &str,
+    config_file: &str,
+) -> String {
     let home_redacted = redact_home(path, home);
     if home_redacted != path {
         return home_redacted;
     }
 
-    redact_under(path, Some(codex_home), "$CODEX_HOME")
-        .unwrap_or_else(|| "$CODEX_HOME/config.toml".to_string())
+    redact_under(path, Some(harness_home), home_token)
+        .unwrap_or_else(|| format!("{home_token}/{config_file}"))
 }
 
 fn redact_under(path: &str, root: Option<&Path>, token: &str) -> Option<String> {
@@ -67,8 +73,24 @@ mod tests {
                 "/synthetic/codex-root/config.toml",
                 Some(Path::new("/synthetic/home")),
                 Path::new("/synthetic/codex-root"),
+                "$CODEX_HOME",
+                "config.toml",
             ),
             "$CODEX_HOME/config.toml"
+        );
+    }
+
+    #[test]
+    fn config_outside_home_uses_symbolic_grok_home() {
+        assert_eq!(
+            redact_config_path(
+                "/x/grok-root/config.toml",
+                Some(Path::new("/synthetic/home")),
+                Path::new("/x/grok-root"),
+                "$GROK_HOME",
+                "config.toml",
+            ),
+            "$GROK_HOME/config.toml"
         );
     }
 }
