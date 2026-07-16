@@ -568,6 +568,7 @@ fn validate_integer_partition(raw: &RawRule) -> Result<(), RuleValidationError> 
     }
     intervals.sort_unstable();
     let mut expected_next = bounds.min;
+    let mut covered_to_max = false;
     for (low, high) in &intervals {
         if *low < expected_next {
             return invalid(
@@ -581,10 +582,17 @@ fn validate_integer_partition(raw: &RawRule) -> Result<(), RuleValidationError> 
                 "integer outcomes do not cover integer_bounds exhaustively",
             );
         }
-        // i64 overflow-safe advance: high == i64::MAX only when bounds.max is.
+        if *high >= bounds.max {
+            covered_to_max = true;
+        }
+        // `saturating_add` pins the advance at i64::MAX instead of
+        // overflowing, but that saturated value is indistinguishable from
+        // "still short of bounds.max" when bounds.max is itself i64::MAX —
+        // `covered_to_max` (not this arithmetic) is what proves the ceiling
+        // is reached.
         expected_next = high.saturating_add(1);
     }
-    if intervals.is_empty() || expected_next <= bounds.max {
+    if intervals.is_empty() || !covered_to_max {
         return invalid(
             raw,
             "integer outcomes do not cover integer_bounds exhaustively",
@@ -827,6 +835,94 @@ mod validation_tests {
                 j["observation"]["allowed_render"] = serde_json::json!(["unset", "extra"]);
             }),
             "allowed_render",
+        );
+    }
+
+    /// A synthetic integer rule for `i64` boundary corpus cases: the
+    /// unset/unrecognized outcomes are kept, but the value-matching
+    /// outcomes are replaced wholesale by `value_matches` (each cloned from
+    /// the bundled rule's first outcome, with only `match` substituted), and
+    /// `integer_bounds` is set to `[min, max]` directly.
+    fn integer_boundary_raw(min: i64, max: i64, value_matches: &[serde_json::Value]) -> RawRule {
+        let mut json: serde_json::Value = serde_json::from_str(RULE_HISTORY_PERSIST).unwrap();
+        json["observation"]["type"] = serde_json::json!("integer");
+        json["observation"]["allowed_render"] = serde_json::json!(["unset"]);
+        json["observation"]["integer_bounds"] = serde_json::json!({"min": min, "max": max});
+        let template = json["outcomes"][0].clone();
+        let unset = json["outcomes"][2].clone();
+        let unrecognized = json["outcomes"][3].clone();
+        let mut outcomes: Vec<serde_json::Value> = value_matches
+            .iter()
+            .map(|match_spec| {
+                let mut outcome = template.clone();
+                outcome["match"] = match_spec.clone();
+                outcome
+            })
+            .collect();
+        outcomes.push(unset);
+        outcomes.push(unrecognized);
+        json["outcomes"] = serde_json::Value::Array(outcomes);
+        serde_json::from_value(json).expect("integer boundary corpus mutation still deserializes")
+    }
+
+    // i64::MAX boundary: `saturating_add(1)` on the terminal interval must
+    // not be mistaken for "still short of bounds.max" (§6.3.4 soundness at
+    // the domain ceiling).
+    #[test]
+    fn single_interval_reaching_i64_max_is_accepted() {
+        assert!(
+            ValidatedRule::try_from_raw(integer_boundary_raw(
+                0,
+                i64::MAX,
+                &[serde_json::json!({"int_range": {"min": 0, "max": i64::MAX}})],
+            ))
+            .is_ok()
+        );
+    }
+    #[test]
+    fn two_interval_split_reaching_i64_max_is_accepted() {
+        let midpoint = i64::MAX / 2;
+        assert!(
+            ValidatedRule::try_from_raw(integer_boundary_raw(
+                0,
+                i64::MAX,
+                &[
+                    serde_json::json!({"int_range": {"min": 0, "max": midpoint}}),
+                    serde_json::json!({"int_range": {"min": midpoint + 1, "max": i64::MAX}}),
+                ],
+            ))
+            .is_ok()
+        );
+    }
+    #[test]
+    fn gap_just_below_i64_max_is_still_rejected() {
+        assert_rejected(
+            integer_boundary_raw(
+                0,
+                i64::MAX,
+                &[serde_json::json!({"int_range": {"min": 0, "max": i64::MAX - 1}})],
+            ),
+            "cover",
+        );
+    }
+
+    // Dedicated one-liners the reviewer flagged as only indirectly covered.
+    #[test]
+    fn unset_flag_false_is_rejected() {
+        assert_rejected(
+            raw_with(|j| j["outcomes"][2]["match"] = serde_json::json!({"unset": false})),
+            "unset",
+        );
+    }
+    #[test]
+    fn int_range_on_bool_observation_is_rejected() {
+        assert_rejected(
+            raw_with(|j| {
+                j["observation"]["type"] = serde_json::json!("bool");
+                j["observation"]["allowed_render"] = serde_json::json!(["true", "false", "unset"]);
+                j["outcomes"][0]["match"] = serde_json::json!({"int_range": {"min": 0, "max": 1}});
+            }),
+            "int_range",
         );
     }
 }
