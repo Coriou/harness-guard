@@ -12,7 +12,7 @@ mod render_term;
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum};
 use harness_guard_core::discovery::DiscoveryRoot;
 use harness_guard_core::harness::HarnessId;
-use harness_guard_core::scan::{ScanResult, scan_codex};
+use harness_guard_core::scan::{ScanResult, scan_harness};
 use harness_guard_rules::loader::{load_rules, ruleset_version};
 use harness_guard_rules::report::{Platform, Report, Severity, Status, Summary};
 use std::io::Write;
@@ -177,7 +177,9 @@ fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
 fn cmd_scan(args: ScanArgs) -> ExitCode {
     let (root, home) = discovery_root_from_env();
     let rules = load_rules();
-    let results: Vec<ScanResult> = scan_codex(&root, &rules).into_iter().collect();
+    let results: Vec<ScanResult> = scan_harness(&root, HarnessId::Codex, &rules)
+        .into_iter()
+        .collect();
     let degraded = results.iter().any(|result| result.degraded);
     let parse_failures: Vec<_> = results
         .iter()

@@ -3,12 +3,14 @@
 //! document are dropped before this function returns.
 use crate::discovery::DiscoveryRoot;
 use crate::engine::{ConfigState, evaluate_rule};
-use crate::harness::HarnessId;
+use crate::harness::{ConfigFormat, HarnessId, descriptor};
 use crate::parse::{ParseFailure, extract_key, parse_config};
+use crate::parse_json::{extract_key_json, parse_config_json};
 use crate::readfs::{ConfigReadOutcome, PathProbe, probe_directory, read_config};
-use crate::version::{binary_on_path, detect_version};
+use crate::version::{binary_on_path, detect_version, parse_version};
 use harness_guard_rules::loader::ValidatedRule;
 use harness_guard_rules::report::{Confidence, ToolReport};
+use harness_guard_rules::schema::TestedVersion;
 use std::collections::BTreeMap;
 
 pub struct ScanResult {
@@ -32,45 +34,90 @@ pub fn detection_confidence(
     }
 }
 
-/// Returns `None` iff neither the injected Codex home nor a regular Codex
-/// entry in the injected path directories is present.
-pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanResult> {
-    let home_detected = probe_directory(&root.codex_home) != PathProbe::Missing;
-    let on_path = binary_on_path(root, HarnessId::Codex);
+/// §5.5 (decision j): rules_last_verified_version is the MINIMUM of the
+/// rules' greatest tested maxes (the weakest guarantee) and
+/// rules_verified_date the EARLIEST verified_on among those greatest-max
+/// entries — conservative in both dimensions. Fixes the former
+/// rules.first() shortcut before >1 rule can mislead.
+pub fn conservative_aggregates(rules: &[&ValidatedRule]) -> (Option<String>, Option<String>) {
+    let mut greatest_per_rule: Vec<&TestedVersion> = Vec::new();
+    for rule in rules {
+        let greatest = rule
+            .raw()
+            .tested_versions
+            .iter()
+            .max_by_key(|tested| parse_version(&tested.max).unwrap_or((0, 0, 0)));
+        match greatest {
+            Some(tested) => greatest_per_rule.push(tested),
+            None => return (None, None),
+        }
+    }
+    let weakest_version = greatest_per_rule
+        .iter()
+        .min_by_key(|tested| parse_version(&tested.max).unwrap_or((0, 0, 0)))
+        .map(|tested| tested.max.clone());
+    // ISO dates: lexicographic order IS chronological order.
+    let earliest_date = greatest_per_rule
+        .iter()
+        .map(|tested| tested.verified_on.as_str())
+        .min()
+        .map(str::to_string);
+    (weakest_version, earliest_date)
+}
+
+enum ParsedDocument {
+    Toml(toml::Value),
+    Json(serde_json::Value),
+}
+
+/// Returns None iff neither the harness home nor a PATH marker is present
+/// (§5.5). Rules are filtered to this harness's tool id.
+pub fn scan_harness(
+    root: &DiscoveryRoot,
+    harness: HarnessId,
+    rules: &[ValidatedRule],
+) -> Option<ScanResult> {
+    let facts = descriptor(harness);
+    let home_detected = probe_directory(root.home(harness)) != PathProbe::Missing;
+    let on_path = binary_on_path(root, harness);
     if !home_detected && !on_path {
         return None;
     }
 
-    let detected_version = detect_version(root, HarnessId::Codex);
+    let harness_rules: Vec<&ValidatedRule> = rules
+        .iter()
+        .filter(|rule| rule.raw().tool == harness.as_str())
+        .collect();
+
+    let detected_version = detect_version(root, harness);
     let mut parse_failure = None;
     let mut config_paths = Vec::new();
 
-    let config_state = match read_config(root, HarnessId::Codex) {
+    let config_state = match read_config(root, harness) {
         ConfigReadOutcome::NoConfig => ConfigState::Missing,
         ConfigReadOutcome::Refused(reason) => {
-            config_paths.push(
-                root.config_path(HarnessId::Codex)
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            config_paths.push(root.config_path(harness).to_string_lossy().into_owned());
             ConfigState::Unreadable(reason)
         }
         ConfigReadOutcome::Ok(text) => {
-            config_paths.push(
-                root.config_path(HarnessId::Codex)
-                    .to_string_lossy()
-                    .into_owned(),
-            );
-            match parse_config(&text) {
+            config_paths.push(root.config_path(harness).to_string_lossy().into_owned());
+            let parsed = match facts.config_format {
+                ConfigFormat::Toml => parse_config(&text).map(ParsedDocument::Toml),
+                ConfigFormat::Json => parse_config_json(&text).map(ParsedDocument::Json),
+            };
+            match parsed {
                 Err(failure) => {
                     parse_failure = Some(failure.clone());
                     ConfigState::Unparseable(failure)
                 }
                 Ok(document) => {
                     let mut extracted = BTreeMap::new();
-                    for rule in rules {
+                    for rule in &harness_rules {
                         let key = rule.raw().observation.key.clone();
-                        let value = extract_key(&document, &key);
+                        let value = match &document {
+                            ParsedDocument::Toml(doc) => extract_key(doc, &key),
+                            ParsedDocument::Json(doc) => extract_key_json(doc, &key),
+                        };
                         extracted.insert(key, value);
                     }
                     // The parsed document and every unrelated value drop here.
@@ -85,7 +132,7 @@ pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanR
         ConfigState::Unreadable(_) | ConfigState::Unparseable(_)
     );
 
-    let mut findings: Vec<_> = rules
+    let mut findings: Vec<_> = harness_rules
         .iter()
         .map(|rule| evaluate_rule(rule, &config_state, detected_version.as_deref()))
         .collect();
@@ -94,25 +141,19 @@ pub fn scan_codex(root: &DiscoveryRoot, rules: &[ValidatedRule]) -> Option<ScanR
     let version_in_range = detected_version
         .as_deref()
         .map(|version| {
-            rules
+            harness_rules
                 .iter()
                 .all(|rule| crate::version::version_in_range(version, &rule.raw().tested_versions))
         })
         .unwrap_or(false);
 
-    let (rules_last_verified_version, rules_verified_date) = rules
-        .first()
-        .map(|rule| {
-            let tested = &rule.raw().tested_versions[0];
-            (Some(tested.max.clone()), Some(tested.verified_on.clone()))
-        })
-        .unwrap_or((None, None));
-
+    let (rules_last_verified_version, rules_verified_date) =
+        conservative_aggregates(&harness_rules);
     let detection_confidence = detection_confidence(detected_version.as_deref(), home_detected);
 
     Some(ScanResult {
         tool_report: ToolReport {
-            tool: "codex".to_string(),
+            tool: harness.as_str().to_string(),
             detected_version,
             config_paths,
             detection_confidence,
@@ -156,7 +197,7 @@ mod tests {
             grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
-        assert!(scan_codex(&root, &load_rules()).is_none());
+        assert!(scan_harness(&root, HarnessId::Codex, &load_rules()).is_none());
     }
 
     #[test]
@@ -172,7 +213,7 @@ mod tests {
             grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
-        let result = scan_codex(&root, &load_rules()).unwrap();
+        let result = scan_harness(&root, HarnessId::Codex, &load_rules()).unwrap();
         assert!(result.degraded);
         assert!(result.parse_failure.is_some());
         assert!(
@@ -182,6 +223,27 @@ mod tests {
                 .iter()
                 .all(|finding| finding.status == Status::Unknown)
         );
+    }
+
+    #[test]
+    fn per_tool_aggregates_are_conservative_in_both_dimensions() {
+        // Two synthetic rules: greatest maxes 0.144.5 (verified 2026-07-16) and
+        // 0.150.0 (verified 2026-07-10). Weakest guarantee: min of maxes =
+        // 0.144.5; earliest date = 2026-07-10.
+        let rules = load_rules();
+        let mut newer = rules[0].raw().clone();
+        newer.id = "codex-synthetic-02".to_string();
+        newer.tested_versions = vec![harness_guard_rules::schema::TestedVersion {
+            min: "<=0.150.0".to_string(),
+            max: "0.150.0".to_string(),
+            verified_on: "2026-07-10".to_string(),
+        }];
+        let newer = harness_guard_rules::loader::ValidatedRule::try_from_raw(newer).unwrap();
+        let pair = [&rules[0], &newer];
+        let (version, date) = conservative_aggregates(&pair);
+        assert_eq!(version.as_deref(), Some("0.144.5"));
+        assert_eq!(date.as_deref(), Some("2026-07-10"));
+        assert_eq!(conservative_aggregates(&[]), (None, None));
     }
 
     #[test]
@@ -197,7 +259,7 @@ mod tests {
             grok_home: base.join("absent-grok-home"),
             path_dirs: vec![],
         };
-        let result = scan_codex(&root, &load_rules()).unwrap();
+        let result = scan_harness(&root, HarnessId::Codex, &load_rules()).unwrap();
         let ids: Vec<_> = result
             .tool_report
             .findings
