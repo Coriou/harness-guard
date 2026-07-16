@@ -567,32 +567,29 @@ fn validate_integer_partition(raw: &RawRule) -> Result<(), RuleValidationError> 
         }
     }
     intervals.sort_unstable();
-    let mut expected_next = bounds.min;
-    let mut covered_to_max = false;
+    // i128 bookkeeping: `i64::MAX + 1` must be representable so a value at
+    // the domain ceiling is never double-counted as both "the last covered
+    // value" and "one past it" — the failure mode of doing this arithmetic
+    // (and its saturation) in i64.
+    let mut expected_next: i128 = i128::from(bounds.min);
     for (low, high) in &intervals {
-        if *low < expected_next {
+        let low = i128::from(*low);
+        let high = i128::from(*high);
+        if low < expected_next {
             return invalid(
                 raw,
                 "integer outcomes overlap; evaluation must be order-independent",
             );
         }
-        if *low > expected_next {
+        if low > expected_next {
             return invalid(
                 raw,
                 "integer outcomes do not cover integer_bounds exhaustively",
             );
         }
-        if *high >= bounds.max {
-            covered_to_max = true;
-        }
-        // `saturating_add` pins the advance at i64::MAX instead of
-        // overflowing, but that saturated value is indistinguishable from
-        // "still short of bounds.max" when bounds.max is itself i64::MAX —
-        // `covered_to_max` (not this arithmetic) is what proves the ceiling
-        // is reached.
-        expected_next = high.saturating_add(1);
+        expected_next = high + 1;
     }
-    if intervals.is_empty() || !covered_to_max {
+    if intervals.is_empty() || expected_next <= i128::from(bounds.max) {
         return invalid(
             raw,
             "integer outcomes do not cover integer_bounds exhaustively",
@@ -903,6 +900,23 @@ mod validation_tests {
                 &[serde_json::json!({"int_range": {"min": 0, "max": i64::MAX - 1}})],
             ),
             "cover",
+        );
+    }
+    #[test]
+    fn overlap_exactly_at_i64_max_is_rejected() {
+        // Both outcomes match the value i64::MAX: {0, i64::MAX} entirely
+        // subsumes {i64::MAX, i64::MAX}. i64 saturation must not swallow
+        // this overlap at the domain ceiling.
+        assert_rejected(
+            integer_boundary_raw(
+                0,
+                i64::MAX,
+                &[
+                    serde_json::json!({"int_range": {"min": 0, "max": i64::MAX}}),
+                    serde_json::json!({"int_range": {"min": i64::MAX, "max": i64::MAX}}),
+                ],
+            ),
+            "overlap",
         );
     }
 
