@@ -3,6 +3,7 @@
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 compile_error!("harness-guard supports only macOS and Linux");
 
+mod capabilities;
 mod diagnostics;
 mod explain;
 mod redact;
@@ -54,6 +55,15 @@ enum Cmd {
     /// Show binary version and ruleset version separately
     #[command(before_help = "Examples:\n  harness-guard version")]
     Version,
+    /// Machine-readable summary of audited tools, rule counts, and contracts
+    #[command(
+        before_help = "Examples:\n  harness-guard capabilities\n  harness-guard capabilities --json"
+    )]
+    Capabilities {
+        /// Emit JSON (schemas/capabilities.schema.json contract)
+        #[arg(long)]
+        json: bool,
+    },
     /// Generate shell completions
     #[command(before_help = "Examples:\n  harness-guard completions bash")]
     Completions { shell: clap_complete::Shell },
@@ -103,6 +113,7 @@ fn main() -> ExitCode {
         Cmd::List => cmd_list(),
         Cmd::Explain { rule_id } => cmd_explain(&rule_id),
         Cmd::Version => cmd_version(),
+        Cmd::Capabilities { json } => cmd_capabilities(json),
         Cmd::Completions { shell } => cmd_completions(shell),
     }
 }
@@ -348,6 +359,16 @@ fn cmd_version() -> ExitCode {
     // revised independently of the binary release.
     println!("harness-guard {}", env!("CARGO_PKG_VERSION"));
     println!("ruleset {}", ruleset_version());
+    ExitCode::SUCCESS
+}
+
+fn cmd_capabilities(json: bool) -> ExitCode {
+    let caps = capabilities::gather();
+    if json {
+        println!("{}", capabilities::render_json(&caps));
+    } else {
+        anstream::print!("{}", capabilities::render_table(&caps));
+    }
     ExitCode::SUCCESS
 }
 

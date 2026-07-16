@@ -227,6 +227,7 @@ fn help_uses_positioning_and_never_the_forbidden_phrase() {
         vec!["list", "--help"],
         vec!["explain", "--help"],
         vec!["version", "--help"],
+        vec!["capabilities", "--help"],
         vec!["completions", "--help"],
     ] {
         let output = run_case("hardened", &args);

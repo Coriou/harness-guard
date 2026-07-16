@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-guard:capabilities:1.0",
+  "title": "Harness Guard capabilities introspection",
+  "type": "object",
+  "required": ["schema_version", "harness_guard_version", "ruleset_version", "report_schema_version", "tools", "commands", "exit_codes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "harness_guard_version": { "type": "string", "minLength": 1 },
+    "ruleset_version": { "type": "string", "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}$" },
+    "report_schema_version": { "const": "1.1" },
+    "tools": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["tool", "rules", "categories", "rules_last_verified_version", "rules_verified_date"],
+        "additionalProperties": false,
+        "properties": {
+          "tool": { "enum": ["claude-code", "codex", "grok-build"] },
+          "rules": { "type": "integer", "minimum": 0 },
+          "categories": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "rules_last_verified_version": { "type": ["string", "null"] },
+          "rules_verified_date": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "commands": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "exit_codes": {
+      "type": "object",
+      "required": ["0", "1", "2"],
+      "additionalProperties": false,
+      "properties": {
+        "0": { "type": "string", "minLength": 1 },
+        "1": { "type": "string", "minLength": 1 },
+        "2": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
