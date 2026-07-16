@@ -222,14 +222,20 @@ mod tests {
 
     #[test]
     fn no_package_json_is_none() {
+        // Canonicalize: the package.json parent-walk goes through the
+        // hardened no-follow reader, which refuses any ancestor-path symlink
+        // — including macOS's `/var` -> `/private/var` — so an
+        // uncanonicalized tempdir would make this fail for the wrong reason
+        // (symlink refusal) instead of exhausting the real parent walk.
         let dir = tempfile::tempdir().unwrap();
-        let bin = dir.path().join("bin");
+        let base = dir.path().canonicalize().unwrap();
+        let bin = base.join("bin");
         std::fs::create_dir_all(&bin).unwrap();
         std::fs::write(bin.join("codex"), "binary").unwrap();
         let root = DiscoveryRoot {
-            codex_home: dir.path().join("x"),
-            claude_home: dir.path().join("absent-claude-home"),
-            grok_home: dir.path().join("absent-grok-home"),
+            codex_home: base.join("x"),
+            claude_home: base.join("absent-claude-home"),
+            grok_home: base.join("absent-grok-home"),
             path_dirs: vec![bin],
         };
         assert_eq!(detect_version(&root, HarnessId::Codex), None);

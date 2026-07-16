@@ -65,6 +65,48 @@ fn run_with_roots_and_color_env(
     command.output().expect("harness-guard binary runs")
 }
 
+pub fn harness_fixture(tool: &str, case: &str) -> PathBuf {
+    repo_root()
+        .join("fixtures")
+        .join(tool)
+        .join(case)
+        .join("files")
+}
+
+/// New-harness runner (claude-code, grok-build): HOME points at the fixture's
+/// committed synthetic home (containing .claude/ or .grok/), PATH at the
+/// fixture's path dir, and CODEX_HOME at an absent dir so codex stays
+/// undetected. env_clear() plus these roots make the developer's real
+/// ~/.codex, ~/.claude, and ~/.grok unreachable by construction.
+#[allow(dead_code)]
+pub fn run_harness_case(tool: &str, case: &str, args: &[&str]) -> Output {
+    let files_root = harness_fixture(tool, case);
+    let home = files_root.join("home");
+    run_with_roots(
+        &home.join("absent-codex-home"),
+        &files_root.join("path"),
+        &home,
+        args,
+    )
+}
+
+/// Mixed multi-harness runner (§11.2 aggregation): the fixture's committed
+/// synthetic home contains TWO stores (.codex/ AND .claude/), and CODEX_HOME
+/// points INTO the fixture home rather than at an absent dir, so one scan
+/// detects two harnesses. Same env_clear() containment: the developer's real
+/// ~/.codex, ~/.claude, and ~/.grok stay unreachable by construction.
+/// Consumed by Task 18 step 5.
+#[allow(dead_code)]
+pub fn run_mixed_case(case: &str, args: &[&str]) -> Output {
+    let files_root = repo_root()
+        .join("fixtures")
+        .join("mixed")
+        .join(case)
+        .join("files");
+    let home = files_root.join("home");
+    run_with_roots(&home.join(".codex"), &files_root.join("path"), &home, args)
+}
+
 /// Recursively assert that every expected key exists and matches. Arrays are
 /// ordered and match element-by-element because report ordering is contractual.
 #[allow(dead_code)] // Only fixture-golden test crates need the subset assertion.

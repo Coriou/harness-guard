@@ -206,3 +206,42 @@ fn explicit_codex_home_outside_home_is_symbolic() {
         "remediation must remain correct for a custom CODEX_HOME: {remediation:?}"
     );
 }
+
+#[test]
+fn no_absolute_path_escapes_the_fixture_tree_for_any_harness() {
+    // §5.1: extends the existing real-config protection to ~/.claude and
+    // ~/.grok, which also exist on dev machines. The scan runs with every
+    // ambient variable cleared and all three homes inside the fixture; no
+    // absolute path outside the fixture may appear in any output.
+    //
+    // This run only covers the codex `hardened` fixture — claude-code and
+    // grok-build are not detected in it, so their config-path redaction is
+    // not yet exercised here. Task 18 extends this test to also run over
+    // `fixtures/mixed/codex-pass-claude-degraded` once that two-store
+    // fixture lands, covering claude-code's redaction in the same test.
+    let files_root = fixture("hardened");
+    let output = run_in(&files_root, &["scan", "--json", "--verbose"]);
+    let all = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        !all.contains("/Users/"),
+        "home-anchored absolute path leaked"
+    );
+    assert!(
+        !all.contains(&files_root.to_string_lossy().into_owned()),
+        "fixture path leaked"
+    );
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    for tool in report["tools"].as_array().unwrap() {
+        for path in tool["config_paths"].as_array().unwrap() {
+            let rendered = path.as_str().unwrap();
+            assert!(
+                rendered.starts_with('~') || rendered.starts_with('$'),
+                "config path {rendered:?} must have a symbolic root"
+            );
+        }
+    }
+}
