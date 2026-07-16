@@ -546,12 +546,13 @@ mod tests {
     /// (`crates/harness-guard-cli/tests/snapshots/`), which the Task 7
     /// switchover proved byte-identical, plus the ported unit tests above
     /// covering every status branch (pass/finding/unset/unrecognized/
-    /// unreadable/unparseable/stale) for this rule. This test instead pins
-    /// engine-only coverage the removed matrix also exercised but the golden
-    /// fixtures don't reach directly: every `RefusalReason` variant still
-    /// degrades to `Status::Unknown` with its own describe() text, across
-    /// both an in-range and an out-of-range detected version (unknown beats
-    /// stale regardless of version).
+    /// unreadable/unparseable/stale) for this rule at the in-range version.
+    /// These two tests instead pin engine-only coverage the removed matrix
+    /// also exercised but the golden fixtures don't reach directly: every
+    /// `RefusalReason` variant, and a synthetic `Unparseable` failure, still
+    /// degrade to `Status::Unknown` with the right reason text across an
+    /// undetected, in-range, and out-of-range detected version each (unknown
+    /// beats stale regardless of version).
     #[test]
     fn every_refusal_reason_degrades_to_unknown_regardless_of_version() {
         let reasons = [
@@ -573,6 +574,29 @@ mod tests {
                     "reason={reason:?} detected_version={detected_version:?}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn unparseable_config_degrades_to_unknown_regardless_of_version() {
+        let failure = ParseFailure {
+            line: Some(1),
+            col: Some(1),
+            key_path: None,
+            message: "expected an equals sign".to_string(),
+        };
+        for detected_version in [None, Some("0.144.5"), Some("9.9.9")] {
+            let finding = evaluate_rule(
+                &rule(),
+                &ConfigState::Unparseable(failure.clone()),
+                detected_version,
+            );
+            assert_eq!(finding.status, Status::Unknown);
+            assert_eq!(
+                finding.unknown_reason.as_deref(),
+                Some("config not safely parseable: expected an equals sign"),
+                "detected_version={detected_version:?}"
+            );
         }
     }
 }
