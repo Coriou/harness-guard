@@ -1,9 +1,8 @@
 ---
 source: crates/harness-guard-cli/tests/scan_snapshots.rs
-assertion_line: 17
 expression: text
 ---
-harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
+harness-guard 0.1.0 · ruleset 2026.07.17 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
   ○ claude-code — not detected
@@ -11,12 +10,27 @@ detected tools
   ○ grok-build — not detected
 
 codex 0.144.5 — rules verified ≤0.144.5 · 2026-07-16
-0 warning · 0 info · 1 unknown · 0 stale · 0 passed
+0 warning · 0 info · 4 unknown · 0 stale · 0 passed
+
+?? UNKNOWN: Cannot determine usage analytics telemetry posture: analytics.enabled is unset in the user-level config; Codex's documented default sends anonymous usage and health metrics unless disabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   reason: analytics.enabled is unset in the user-level config; Codex's documented default sends anonymous usage and health metrics unless disabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   verify: https://learn.chatgpt.com/docs/config-file/config-reference
+   = harness-guard explain codex-analytics-01
+
+?? UNKNOWN: Cannot determine feedback submission channel posture: feedback.enabled is unset in the user-level config; Codex's documented default (true) leaves the /feedback submission channel enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   reason: feedback.enabled is unset in the user-level config; Codex's documented default (true) leaves the /feedback submission channel enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   verify: https://learn.chatgpt.com/docs/config-file/config-reference
+   = harness-guard explain codex-feedback-01
 
 ?? UNKNOWN: Cannot determine history persistence posture: history.persistence is set to an unrecognized value — raw values are never displayed
    reason: history.persistence is set to an unrecognized value — raw values are never displayed
    verify: https://learn.chatgpt.com/docs/config-file/config-reference
    = harness-guard explain codex-history-persist-01
 
-0 warning · 0 info · 1 unknown · 0 stale · 0 passed — 0 network requests made
+?? UNKNOWN: Cannot determine OpenTelemetry raw prompt export posture: otel.log_user_prompt is unset in the user-level config; Codex's documented example redacts raw prompts from OpenTelemetry logs unless explicitly enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   reason: otel.log_user_prompt is unset in the user-level config; Codex's documented example redacts raw prompts from OpenTelemetry logs unless explicitly enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.
+   verify: https://learn.chatgpt.com/docs/config-file/config-reference
+   = harness-guard explain codex-otel-prompt-log-01
+
+0 warning · 0 info · 4 unknown · 0 stale · 0 passed — 0 network requests made
 No numeric score is produced — read findings individually.

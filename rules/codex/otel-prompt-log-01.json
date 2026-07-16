@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.1",
+  "id": "codex-otel-prompt-log-01",
+  "tool": "codex",
+  "category": "telemetry",
+  "title": "Raw user prompt export via OpenTelemetry",
+  "why_it_matters": "Codex's OpenTelemetry (OTel) log export can track Codex runs, including API requests, SSE/events, prompts, and tool approvals/results, but OpenAI's documentation states OTel export is disabled by default and must be opted into via the [otel] table, whose documented example configures exporter = \"none\" (send nothing). Within that table, otel.log_user_prompt controls whether raw user prompts are included in any exported OTel logs; the documented example sets log_user_prompt = false with the comment \"redact user prompts unless explicitly enabled.\" This rule observes only the otel.log_user_prompt flag: it does not inspect otel.exporter or otel.trace_exporter, so an enabled flag has no effect while every OTel exporter remains at its documented \"none\" default, and other configuration layers are not inspected.",
+  "unknown_subject": "OpenTelemetry raw prompt export posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "config.toml",
+    "key": "otel.log_user_prompt",
+    "type": "bool",
+    "allowed_render": ["true", "false", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "otel.log_user_prompt is explicitly false",
+      "status": "pass",
+      "match": { "equals": { "value": false } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level config keeps raw user prompts redacted from OpenTelemetry logs (otel.log_user_prompt = false).",
+      "remediation": null
+    },
+    {
+      "when": "otel.log_user_prompt is explicitly true in the user-level config",
+      "status": "finding",
+      "match": { "equals": { "value": true } },
+      "severity": "warning",
+      "confidence": "high",
+      "message": "The inspected user-level config explicitly opts in to exporting raw user prompts with OpenTelemetry logs (otel.log_user_prompt = true).",
+      "remediation": {
+        "summary": "Stop exporting raw user prompts via OpenTelemetry.",
+        "command": "Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):\n[otel]\nlog_user_prompt = false"
+      }
+    },
+    {
+      "when": "otel.log_user_prompt is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective OpenTelemetry raw prompt export posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
+      "unknown_reason": "otel.log_user_prompt is unset in the user-level config; Codex's documented example redacts raw prompts from OpenTelemetry logs unless explicitly enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+      "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference"
+    },
+    {
+      "when": "otel.log_user_prompt is set to a value outside boolean true/false",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "otel.log_user_prompt is set to an unrecognized value — raw values are never displayed.",
+      "unknown_reason": "otel.log_user_prompt is set to an unrecognized value — raw values are never displayed",
+      "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=0.144.5", "max": "0.144.5", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "publisher": "OpenAI",
+      "title": "Codex configuration reference",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:de1707a407f3cadaa1bc4e86a3d289b9e64f0ce70b1edbd0b8914e98f84d185d",
+      "archived_url": "https://web.archive.org/web/20260716221055/https://learn.chatgpt.com/docs/config-file/config-reference",
+      "notes": "Documents otel.log_user_prompt as a boolean key: \"Opt in to exporting raw user prompts with OpenTelemetry logs.\" Re-verified 2026-07-17; page content unchanged since the 2026-07-16 retrieval cited by codex-history-persist-01 (identical normalized content hash)."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://learn.chatgpt.com/docs/config-file/config-advanced",
+      "publisher": "OpenAI",
+      "title": "Codex advanced configuration",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:85675e13af7727a5941bbfa2224c02f2039b322f308f3229db142f8f829b2a0f",
+      "archived_url": "https://web.archive.org/web/20260716221153/https://learn.chatgpt.com/docs/config-file/config-advanced",
+      "notes": "States, under \"Observability and telemetry\": \"Enable OpenTelemetry (OTel) log export to track Codex runs (API requests, SSE/events, prompts, tool approvals/results). Disabled by default; opt in via [otel]:\", followed by an example configuring exporter = \"none\" and log_user_prompt = false with the comment \"redact user prompts unless explicitly enabled.\" Re-verified 2026-07-17; page content unchanged since the 2026-07-16 retrieval cited by codex-history-persist-01 (identical normalized content hash)."
+    }
+  ],
+  "limitations": [
+    "Only the user-level CODEX_HOME/config.toml is inspected; system config, selected profiles, trusted-project config, and CLI overrides are not inspected.",
+    "An explicit user-level value describes that layer only and does not prove the effective value for every profile, trusted project, or invocation.",
+    "This rule does not inspect otel.exporter or otel.trace_exporter; OpenAI's documentation states OTel export is disabled by default, so an enabled otel.log_user_prompt has no effect unless an exporter is also configured.",
+    "This rule cannot confirm any server-side or remote retention of exported OTel data — no local file can.",
+    "Auth method (ChatGPT sign-in vs API key) changes data-policy interpretation and is user-confirmed-or-unknown; this rule never infers it."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "otel.log_user_prompt is unset in the user-level config or the user-level config is absent; other configuration layers are not inspected.",
+    "otel.log_user_prompt set to a value outside boolean true/false (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

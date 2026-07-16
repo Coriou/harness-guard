@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "case": "risky-explicit",
-  "description": "The documented persisting value is explicitly configured and produces a warning finding.",
+  "description": "The documented risky values are explicitly configured for every codex rule and produce warning/info findings.",
   "expected_report": {
-    "ruleset_version": "2026.07.16",
+    "ruleset_version": "2026.07.17",
     "network_requests_made": 0,
     "tools": [
       {
@@ -14,6 +14,50 @@
         "rules_verified_date": "2026-07-16",
         "version_in_range": true,
         "findings": [
+          {
+            "rule_id": "codex-analytics-01",
+            "status": "finding",
+            "severity": "info",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly enables anonymous usage and health metrics collection (analytics.enabled = true), the same behavior Codex applies by default.",
+            "observation": "analytics.enabled = true",
+            "remediation": {
+              "summary": "Disable anonymous usage and health metrics collection.",
+              "command": "Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):\n[analytics]\nenabled = false"
+            },
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "codex-feedback-01",
+            "status": "finding",
+            "severity": "info",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly enables the /feedback submission channel (feedback.enabled = true), the same behavior Codex applies by default.",
+            "observation": "feedback.enabled = true",
+            "remediation": {
+              "summary": "Disable the /feedback submission channel.",
+              "command": "Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):\n[feedback]\nenabled = false"
+            },
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
           {
             "rule_id": "codex-history-persist-01",
             "status": "finding",
@@ -35,14 +79,36 @@
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
+          },
+          {
+            "rule_id": "codex-otel-prompt-log-01",
+            "status": "finding",
+            "severity": "warning",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly opts in to exporting raw user prompts with OpenTelemetry logs (otel.log_user_prompt = true).",
+            "observation": "otel.log_user_prompt = true",
+            "remediation": {
+              "summary": "Stop exporting raw user prompts via OpenTelemetry.",
+              "command": "Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):\n[otel]\nlog_user_prompt = false"
+            },
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
           }
         ]
       }
     ],
     "summary": {
       "tools_scanned": 1,
-      "warning": 1,
-      "info": 0,
+      "warning": 2,
+      "info": 2,
       "unknown": 0,
       "stale": 0,
       "passed": 0

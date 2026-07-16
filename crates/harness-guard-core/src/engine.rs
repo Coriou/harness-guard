@@ -336,8 +336,15 @@ mod tests {
     use harness_guard_rules::report::Status;
     use std::collections::BTreeMap;
 
+    // Task 17 added more codex rules, so "first loaded rule" is no longer
+    // reliably codex-history-persist-01 (rules are sorted by id). These
+    // tests exercise that rule's specific enum/persistence semantics, so
+    // select it by id rather than by position.
     fn rule() -> harness_guard_rules::loader::ValidatedRule {
-        load_rules().into_iter().next().unwrap()
+        load_rules()
+            .into_iter()
+            .find(|rule| rule.raw().id == "codex-history-persist-01")
+            .expect("codex-history-persist-01 must remain embedded")
     }
 
     fn parsed(value: Option<ExtractedValue>) -> ConfigState {

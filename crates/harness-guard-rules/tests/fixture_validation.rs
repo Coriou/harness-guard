@@ -229,9 +229,17 @@ fn unknown_version_pins_non_disclosing_fallback_for_unrecognized_value() {
     );
     let json: serde_json::Value = serde_json::from_str(&expected_text).unwrap();
     let tool = &json["expected_report"]["tools"][0];
-    let finding = &tool["findings"][0];
     assert_eq!(tool["detected_version"], serde_json::Value::Null);
     assert_eq!(tool["version_in_range"], false);
+    // Findings are sorted by rule_id (Task 17 added rules that sort before
+    // codex-history-persist-01), so locate this rule's finding by id rather
+    // than assuming it is first.
+    let finding = tool["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|finding| finding["rule_id"] == "codex-history-persist-01")
+        .expect("codex-history-persist-01 finding must be present");
     assert_eq!(finding["status"], "stale-ruleset");
     assert_eq!(
         finding["message"],

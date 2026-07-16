@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "case": "unrecognized-value",
-  "description": "An in-range but unrecognized persistence value produces an unknown result without disclosing the raw value.",
+  "description": "An in-range but unrecognized persistence value produces an unknown result without disclosing the raw value; the other codex rules' keys are absent and are separately unknown as unset.",
   "expected_report": {
-    "ruleset_version": "2026.07.16",
+    "ruleset_version": "2026.07.17",
     "network_requests_made": 0,
     "tools": [
       {
@@ -14,6 +14,38 @@
         "rules_verified_date": "2026-07-16",
         "version_in_range": true,
         "findings": [
+          {
+            "rule_id": "codex-analytics-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine usage analytics telemetry posture: analytics.enabled is unset in the user-level config; Codex's documented default sends anonymous usage and health metrics unless disabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+            "observation": "analytics.enabled unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": "analytics.enabled is unset in the user-level config; Codex's documented default sends anonymous usage and health metrics unless disabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+            "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "codex-feedback-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine feedback submission channel posture: feedback.enabled is unset in the user-level config; Codex's documented default (true) leaves the /feedback submission channel enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+            "observation": "feedback.enabled unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": "feedback.enabled is unset in the user-level config; Codex's documented default (true) leaves the /feedback submission channel enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+            "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+            "stale_reason": null
+          },
           {
             "rule_id": "codex-history-persist-01",
             "status": "unknown",
@@ -29,6 +61,22 @@
             "unknown_reason": "history.persistence is set to an unrecognized value — raw values are never displayed",
             "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference",
             "stale_reason": null
+          },
+          {
+            "rule_id": "codex-otel-prompt-log-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine OpenTelemetry raw prompt export posture: otel.log_user_prompt is unset in the user-level config; Codex's documented example redacts raw prompts from OpenTelemetry logs unless explicitly enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+            "observation": "otel.log_user_prompt unset in user config",
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": "otel.log_user_prompt is unset in the user-level config; Codex's documented example redacts raw prompts from OpenTelemetry logs unless explicitly enabled, but uninspected system, profile, trusted-project, or CLI layers may determine the effective value.",
+            "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+            "stale_reason": null
           }
         ]
       }
@@ -37,7 +85,7 @@
       "tools_scanned": 1,
       "warning": 0,
       "info": 0,
-      "unknown": 1,
+      "unknown": 4,
       "stale": 0,
       "passed": 0
     }

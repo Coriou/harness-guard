@@ -36,7 +36,7 @@ fn term_hardened_default_hides_pass_blocks() {
         !text.contains("PASS:"),
         "default output shows passes only as a count"
     );
-    assert!(text.contains("1 passed"));
+    assert!(text.contains("4 passed"));
 }
 
 #[test]

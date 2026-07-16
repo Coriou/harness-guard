@@ -1,9 +1,8 @@
 ---
 source: crates/harness-guard-cli/tests/scan_snapshots.rs
-assertion_line: 17
 expression: text
 ---
-harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
+harness-guard 0.1.0 · ruleset 2026.07.17 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
   ○ claude-code — not detected
@@ -11,7 +10,19 @@ detected tools
   ○ grok-build — not detected
 
 codex 0.144.5 — rules verified ≤0.144.5 · 2026-07-16
-0 warning · 0 info · 0 unknown · 0 stale · 1 passed
+0 warning · 0 info · 0 unknown · 0 stale · 4 passed
+
+ok PASS: The inspected user-level config disables anonymous usage and health metrics collection (analytics.enabled = false).
+   rule codex-analytics-01 · official-documentation
+   observed: analytics.enabled = false
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-17)
+   = harness-guard explain codex-analytics-01
+
+ok PASS: The inspected user-level config disables the /feedback submission channel (feedback.enabled = false).
+   rule codex-feedback-01 · official-documentation
+   observed: feedback.enabled = false
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-17)
+   = harness-guard explain codex-feedback-01
 
 ok PASS: The inspected user-level config sets history.persistence = "none".
    rule codex-history-persist-01 · official-documentation
@@ -19,5 +30,11 @@ ok PASS: The inspected user-level config sets history.persistence = "none".
    = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-16)
    = harness-guard explain codex-history-persist-01
 
-0 warning · 0 info · 0 unknown · 0 stale · 1 passed — 0 network requests made
+ok PASS: The inspected user-level config keeps raw user prompts redacted from OpenTelemetry logs (otel.log_user_prompt = false).
+   rule codex-otel-prompt-log-01 · official-documentation
+   observed: otel.log_user_prompt = false
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-17)
+   = harness-guard explain codex-otel-prompt-log-01
+
+0 warning · 0 info · 0 unknown · 0 stale · 4 passed — 0 network requests made
 No numeric score is produced — read findings individually.

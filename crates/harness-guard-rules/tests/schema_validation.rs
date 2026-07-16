@@ -322,18 +322,35 @@ fn embedded_source_def_matches_source_schema() {
 
 #[test]
 fn rules_load_and_validate_via_types() {
+    // Rule-count-robust (Task 17 heads-up from Task 8): the bundled ruleset
+    // grows across WP3a/b/c, so this pins per-tool minimums and per-rule
+    // structural invariants instead of a magic total.
     let rules = harness_guard_rules::loader::load_rules();
-    assert_eq!(rules.len(), 1);
-    let r = &rules[0];
-    assert_eq!(r.raw().id, "codex-history-persist-01");
+    assert!(
+        rules.len() >= 3,
+        "expected at least 3 loaded rules, got {}",
+        rules.len()
+    );
+    let codex_rules: Vec<_> = rules.iter().filter(|r| r.raw().tool == "codex").collect();
+    assert!(
+        codex_rules.len() >= 3,
+        "expected at least 3 codex rules (spec §13.3), got {}",
+        codex_rules.len()
+    );
+    let history_rule = rules
+        .iter()
+        .find(|r| r.raw().id == "codex-history-persist-01")
+        .expect("codex-history-persist-01 must remain embedded");
     assert_eq!(
-        r.raw().observation.allowed_render,
+        history_rule.raw().observation.allowed_render,
         vec!["save-all", "none", "unset"]
     );
-    assert!(r.primary_source().url.starts_with("https://"));
-    assert!(!r.primary_source().retrieved.is_empty());
-    assert!(!r.raw().limitations.is_empty());
-    assert!(!r.raw().unknown_conditions.is_empty());
+    for r in &rules {
+        assert!(r.primary_source().url.starts_with("https://"));
+        assert!(!r.primary_source().retrieved.is_empty());
+        assert!(!r.raw().limitations.is_empty());
+        assert!(!r.raw().unknown_conditions.is_empty());
+    }
 }
 
 #[test]

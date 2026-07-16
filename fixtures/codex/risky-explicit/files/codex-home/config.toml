@@ -1,2 +1,11 @@
+[analytics]
+enabled = true
+
+[feedback]
+enabled = true
+
 [history]
 persistence = "save-all"
+
+[otel]
+log_user_prompt = true

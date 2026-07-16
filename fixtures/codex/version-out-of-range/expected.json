@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "case": "version-out-of-range",
-  "description": "A safe-looking value with a synthetic version beyond the tested range conservatively produces a stale-ruleset result.",
+  "description": "Safe-looking and unset values with a synthetic version beyond the tested range conservatively produce a stale-ruleset result for every codex rule.",
   "expected_report": {
-    "ruleset_version": "2026.07.16",
+    "ruleset_version": "2026.07.17",
     "network_requests_made": 0,
     "tools": [
       {
@@ -14,6 +14,44 @@
         "rules_verified_date": "2026-07-16",
         "version_in_range": false,
         "findings": [
+          {
+            "rule_id": "codex-analytics-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective usage analytics telemetry posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: analytics.enabled unset in user config.",
+            "observation": "analytics.enabled unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.144.5)"
+          },
+          {
+            "rule_id": "codex-feedback-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective feedback submission channel posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: feedback.enabled unset in user config.",
+            "observation": "feedback.enabled unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.144.5)"
+          },
           {
             "rule_id": "codex-history-persist-01",
             "status": "stale-ruleset",
@@ -32,6 +70,25 @@
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.144.5)"
+          },
+          {
+            "rule_id": "codex-otel-prompt-log-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified — last-known rule indicates: Effective OpenTelemetry raw prompt export posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: otel.log_user_prompt unset in user config.",
+            "observation": "otel.log_user_prompt unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.144.5",
+            "valid_until": "0.144.5",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.144.5)"
           }
         ]
       }
@@ -41,7 +98,7 @@
       "warning": 0,
       "info": 0,
       "unknown": 0,
-      "stale": 1,
+      "stale": 4,
       "passed": 0
     }
   }

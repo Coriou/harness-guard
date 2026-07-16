@@ -152,7 +152,7 @@ fn version_reports_binary_and_ruleset_separately() {
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.contains("harness-guard 0.1.0"));
-    assert!(text.contains("ruleset 2026.07.16"));
+    assert!(text.contains("ruleset 2026.07.17"));
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn top_level_version_reports_binary_and_ruleset_separately() {
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.contains("harness-guard 0.1.0"));
-    assert!(text.contains("ruleset 2026.07.16"));
+    assert!(text.contains("ruleset 2026.07.17"));
 }
 
 #[test]

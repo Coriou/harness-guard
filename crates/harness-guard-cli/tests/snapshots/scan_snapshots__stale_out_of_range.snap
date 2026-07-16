@@ -1,9 +1,8 @@
 ---
 source: crates/harness-guard-cli/tests/scan_snapshots.rs
-assertion_line: 17
 expression: text
 ---
-harness-guard 0.1.0 · ruleset 2026.07.16 · scanned [TIMESTAMP] · no network requests made
+harness-guard 0.1.0 · ruleset 2026.07.17 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
   ○ claude-code — not detected
@@ -12,7 +11,21 @@ detected tools
 
 codex 9.9.9 — rules verified ≤0.144.5 · 2026-07-16
 rules verified ≤0.144.5 — you have 9.9.9, showing last-known rules as unverified
-0 warning · 0 info · 0 unknown · 1 stale · 0 passed
+0 warning · 0 info · 0 unknown · 4 stale · 0 passed
+
+~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates: Effective usage analytics telemetry posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: analytics.enabled unset in user config.
+   reason: detected version 9.9.9 is outside every tested range (max tested 0.144.5)
+   rule codex-analytics-01 · official-documentation
+   observed: analytics.enabled unset in user config
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-17)
+   = harness-guard explain codex-analytics-01
+
+~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates: Effective feedback submission channel posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: feedback.enabled unset in user config.
+   reason: detected version 9.9.9 is outside every tested range (max tested 0.144.5)
+   rule codex-feedback-01 · official-documentation
+   observed: feedback.enabled unset in user config
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-17)
+   = harness-guard explain codex-feedback-01
 
 ~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates: The inspected user-level config sets history.persistence = "none". Observed: history.persistence = "none".
    reason: detected version 9.9.9 is outside every tested range (max tested 0.144.5)
@@ -21,5 +34,12 @@ rules verified ≤0.144.5 — you have 9.9.9, showing last-known rules as unveri
    = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-16)
    = harness-guard explain codex-history-persist-01
 
-0 warning · 0 info · 0 unknown · 1 stale · 0 passed — 0 network requests made
+~ UNVERIFIED (stale ruleset): Unverified — last-known rule indicates: Effective OpenTelemetry raw prompt export posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: otel.log_user_prompt unset in user config.
+   reason: detected version 9.9.9 is outside every tested range (max tested 0.144.5)
+   rule codex-otel-prompt-log-01 · official-documentation
+   observed: otel.log_user_prompt unset in user config
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-17)
+   = harness-guard explain codex-otel-prompt-log-01
+
+0 warning · 0 info · 0 unknown · 4 stale · 0 passed — 0 network requests made
 No numeric score is produced — read findings individually.

@@ -102,11 +102,14 @@ run_case() {
         /bin/cat "$stderr" >&2
         exit 1
     fi
+    # >= 1, not == 1 (Task 17 heads-up): the codex ruleset now has more than
+    # one rule, so a case can produce more than one finding of the same
+    # summary marker. The proof only needs at least one, plus zero network.
     # shellcheck disable=SC2016 # jq, not the shell, expands $marker.
     if ! "$JQ_BIN" -e --arg marker "$summary_marker" \
-        'type == "object" and .network_requests_made == 0 and .summary[$marker] == 1' \
+        'type == "object" and .network_requests_made == 0 and .summary[$marker] >= 1' \
         "$stdout" >/dev/null; then
-        echo "FAIL: case $case_name did not emit valid zero-network JSON with summary.$summary_marker = 1" >&2
+        echo "FAIL: case $case_name did not emit valid zero-network JSON with summary.$summary_marker >= 1" >&2
         /bin/cat "$stdout" >&2
         exit 1
     fi
@@ -129,7 +132,8 @@ run_case() {
         exit 1
     fi
 
-    echo "ok: $case_name (exit $got; summary.$summary_marker=1; network_requests_made=0)"
+    marker_count=$("$JQ_BIN" -r --arg marker "$summary_marker" '.summary[$marker]' "$stdout")
+    echo "ok: $case_name (exit $got; summary.$summary_marker=$marker_count; network_requests_made=0)"
 }
 
 # Record the start before any scans. A tagged denial in this interval means a
