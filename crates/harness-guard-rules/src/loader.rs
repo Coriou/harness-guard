@@ -3,7 +3,8 @@
 use crate::schema::{MatchSpec, MatchValue, Observation, RawRule, Source};
 
 const RULESET_JSON: &str = include_str!("../../../rules/ruleset.json");
-const RULE_HISTORY_PERSIST: &str = include_str!("../../../rules/codex/history-persist-01.json");
+
+include!(concat!(env!("OUT_DIR"), "/embedded_rules.rs"));
 
 /// A rule that passed structural validation. The `primary_source` field is
 /// non-optional: only a rule with a validated Source can become a
@@ -602,15 +603,20 @@ fn invalid<T>(raw: &RawRule, message: &str) -> Result<T, RuleValidationError> {
     Err(RuleValidationError(format!("rule {} {message}", raw.id)))
 }
 
-/// All bundled rules. Panics only on a corrupt embed, which `cargo test`
-/// catches before any release build ships.
+/// All bundled rules, sorted by id. Panics only on a corrupt embed, which
+/// `cargo test` catches before any release build ships.
 pub fn load_rules() -> Vec<ValidatedRule> {
-    let raw: RawRule = serde_json::from_str(RULE_HISTORY_PERSIST)
-        .expect("embedded rule JSON is valid (checked in tests)");
-    vec![
-        ValidatedRule::try_from_raw(raw)
-            .expect("embedded rule passes validation (checked in tests)"),
-    ]
+    let mut rules: Vec<ValidatedRule> = EMBEDDED_RULES
+        .iter()
+        .map(|(path, text)| {
+            let raw: RawRule = serde_json::from_str(text)
+                .unwrap_or_else(|error| panic!("embedded rule {path} is invalid JSON: {error}"));
+            ValidatedRule::try_from_raw(raw)
+                .unwrap_or_else(|error| panic!("embedded rule {path} failed validation: {error}"))
+        })
+        .collect();
+    rules.sort_by(|left, right| left.raw().id.cmp(&right.raw().id));
+    rules
 }
 
 pub fn ruleset_version() -> String {
@@ -626,12 +632,20 @@ pub fn ruleset_version() -> String {
 mod validation_tests {
     use super::*;
 
+    fn bundled_rule_text() -> &'static str {
+        EMBEDDED_RULES
+            .iter()
+            .find(|(path, _)| *path == "codex/history-persist-01.json")
+            .expect("codex rule is embedded")
+            .1
+    }
+
     fn raw_rule() -> RawRule {
-        serde_json::from_str(RULE_HISTORY_PERSIST).unwrap()
+        serde_json::from_str(bundled_rule_text()).unwrap()
     }
 
     fn raw_with(mutate: impl FnOnce(&mut serde_json::Value)) -> RawRule {
-        let mut json: serde_json::Value = serde_json::from_str(RULE_HISTORY_PERSIST).unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(bundled_rule_text()).unwrap();
         mutate(&mut json);
         serde_json::from_value(json).expect("corpus mutation still deserializes")
     }
@@ -640,7 +654,7 @@ mod validation_tests {
     /// rule: same shape (2 value outcomes + unset + unrecognized), retyped
     /// to `integer` with bounds `[0, 90]` split as `[0,29]` / `[30,90]`.
     fn integer_raw_with(mutate: impl FnOnce(&mut serde_json::Value)) -> RawRule {
-        let mut json: serde_json::Value = serde_json::from_str(RULE_HISTORY_PERSIST).unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(bundled_rule_text()).unwrap();
         json["observation"]["type"] = serde_json::json!("integer");
         json["observation"]["allowed_render"] = serde_json::json!(["unset"]);
         json["observation"]["integer_bounds"] = serde_json::json!({"min": 0, "max": 90});
@@ -841,7 +855,7 @@ mod validation_tests {
     /// the bundled rule's first outcome, with only `match` substituted), and
     /// `integer_bounds` is set to `[min, max]` directly.
     fn integer_boundary_raw(min: i64, max: i64, value_matches: &[serde_json::Value]) -> RawRule {
-        let mut json: serde_json::Value = serde_json::from_str(RULE_HISTORY_PERSIST).unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(bundled_rule_text()).unwrap();
         json["observation"]["type"] = serde_json::json!("integer");
         json["observation"]["allowed_render"] = serde_json::json!(["unset"]);
         json["observation"]["integer_bounds"] = serde_json::json!({"min": min, "max": max});

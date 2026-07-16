@@ -33,7 +33,11 @@ fn every_rule_file_validates_against_rule_schema() {
         );
         seen += 1;
     }
-    assert_eq!(seen, 1, "slice ships exactly one rule");
+    assert_eq!(
+        seen,
+        harness_guard_rules::loader::load_rules().len(),
+        "every on-disk rule must be embedded and validated"
+    );
 }
 
 #[test]
