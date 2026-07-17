@@ -177,8 +177,12 @@ fn discovery_root_from_env() -> (DiscoveryRoot, Option<PathBuf>) {
     // defensive "$CLAUDE_HOME" token for the (currently unreachable) case
     // where a config path falls outside HOME.
     let claude_home = home_join(".claude", ".claude");
-    // §5.1: no Grok home-override env var is assumed either.
-    let grok_home = home_join(".grok", ".grok");
+    // §5.1 (Task 19 evidence pack 2026-07-17 + OSS user guide
+    // `05-configuration.md`): Grok documents `GROK_HOME` as the override for
+    // the config directory (default `~/.grok`). Honor it like `CODEX_HOME`.
+    let grok_home = std::env::var_os("GROK_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_join(".grok", ".grok"));
     let path_dirs = std::env::var_os("PATH")
         .map(|path| std::env::split_paths(&path).collect())
         .unwrap_or_default();

@@ -481,3 +481,46 @@ fn grok_build_symlink_config_is_not_followed() {
         .unwrap();
     assert!(reason.contains("symlink"));
 }
+
+/// End-to-end managed-install version detection: PATH `grok` is a relative
+/// symlink to `downloads/grok-0.2.102-macos-x86_64`, with no package.json so
+/// the npm walk fails and the basename fallback supplies 0.2.102. Symlink is
+/// created at runtime (committed trees must stay symlink-free).
+#[cfg(unix)]
+#[test]
+fn grok_build_managed_install_version_detects_from_symlink_basename() {
+    let (_temp, files) = temp_copy_harness("grok-build", "managed-install-version");
+    let path_dir = files.join("path");
+    std::os::unix::fs::symlink(
+        Path::new("downloads/grok-0.2.102-macos-x86_64"),
+        path_dir.join("grok"),
+    )
+    .unwrap();
+    assert!(
+        !path_dir.join("package.json").exists(),
+        "managed-install fixture must not ship npm package.json"
+    );
+    assert!(
+        path_dir
+            .join("downloads/grok-0.2.102-macos-x86_64")
+            .is_file(),
+        "versioned binary target must exist"
+    );
+
+    let output = run_harness_files(&files, &["scan", "--json", "--tool", "grok-build"]);
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "hardened managed-install should pass: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report = json_report(&output, "grok-build/managed-install-version");
+    assert_json_subset(
+        &expected_report_for("grok-build", "managed-install-version"),
+        &report,
+        "grok-build/managed-install-version",
+    );
+    assert_eq!(report["tools"][0]["detected_version"], "0.2.102");
+    assert_eq!(report["tools"][0]["version_in_range"], true);
+    assert_eq!(report["summary"]["passed"], 4);
+}

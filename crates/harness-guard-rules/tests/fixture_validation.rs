@@ -74,11 +74,14 @@ const CLAUDE_IN_RANGE_VERSION_CASES: [&str; 15] = [
     "unrecognized-value",
 ];
 
-/// grok-build fixture matrix (Task 19): same 13-case TOML pattern as codex.
-const GROK_CASES: [&str; 13] = [
+/// grok-build fixture matrix (Task 19): 13-case TOML pattern as codex, plus
+/// managed-install-version (symlink basename detection; PATH symlink is
+/// runtime-only like symlink-config).
+const GROK_CASES: [&str; 14] = [
     "deep-nesting",
     "hardened",
     "malformed-toml",
+    "managed-install-version",
     "minimal",
     "missing",
     "oversized",
@@ -91,6 +94,9 @@ const GROK_CASES: [&str; 13] = [
     "version-out-of-range",
 ];
 
+/// npm-layout in-range cases (committed package.json @ 0.2.102). Managed-install
+/// is asserted separately — no package.json; version comes from the runtime
+/// PATH symlink target basename.
 const GROK_IN_RANGE_VERSION_CASES: [&str; 10] = [
     "deep-nesting",
     "hardened",
@@ -348,7 +354,7 @@ fn every_grok_build_expected_json_validates_against_fixture_schema() {
         .collect::<BTreeSet<_>>();
     assert_eq!(
         case_dirs, expected_cases,
-        "the grok-build fixture matrix must contain exactly the 13 named cases"
+        "the grok-build fixture matrix must contain exactly the 14 named cases"
     );
 
     for case in GROK_CASES {
@@ -393,6 +399,29 @@ fn grok_build_in_range_fixture_version_markers_are_synthetic_and_exact_latest() 
     let unknown_path = grok_root.join("unknown-version/files/path");
     assert!(unknown_path.join("grok").is_file());
     assert!(!unknown_path.join("package.json").exists());
+
+    // Managed-install: versioned binary target is committed under
+    // path/downloads/; PATH `grok` symlink is created at test runtime
+    // (hostile.rs) so fixture trees stay symlink-free on disk.
+    let managed = grok_root.join("managed-install-version/files");
+    assert!(!managed.join("path/package.json").exists());
+    assert!(!managed.join("path/grok").exists());
+    assert_eq!(
+        std::fs::read_to_string(managed.join("path/downloads/grok-0.2.102-macos-x86_64")).unwrap(),
+        "synthetic managed-install binary; never executed by harness-guard\n"
+    );
+    let managed_expected: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(grok_root.join("managed-install-version/expected.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        managed_expected["expected_report"]["tools"][0]["detected_version"],
+        "0.2.102"
+    );
+    assert_eq!(
+        managed_expected["expected_report"]["tools"][0]["version_in_range"],
+        true
+    );
 
     let out_of_range: serde_json::Value = serde_json::from_str(
         &std::fs::read_to_string(grok_root.join("version-out-of-range/files/path/package.json"))

@@ -364,6 +364,69 @@ fn explicit_codex_home_outside_home_is_symbolic() {
 }
 
 #[test]
+fn explicit_grok_home_outside_home_is_symbolic() {
+    // Evidence pack 2026-07-17 + OSS user guide document GROK_HOME as the
+    // config-directory override. When it points outside HOME, redaction must
+    // use the $GROK_HOME token (mirrors explicit CODEX_HOME above).
+    let files_root = harness_fixture("grok-build", "risky-explicit");
+    let grok_home = files_root.join("home/.grok");
+    let synthetic_home_dir = tempfile::tempdir().unwrap();
+    let synthetic_home = synthetic_home_dir.path().canonicalize().unwrap();
+    let path_dir = files_root.join("path");
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_harness-guard"))
+        .args(["scan", "--json", "--tool", "grok-build"])
+        .env_clear()
+        .env("HOME", &synthetic_home)
+        .env("GROK_HOME", &grok_home)
+        .env("PATH", &path_dir)
+        .env("CODEX_HOME", synthetic_home.join("absent-codex-home"))
+        .env("NO_COLOR", "1")
+        .output()
+        .expect("harness-guard binary runs");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "risky-explicit should surface findings: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let tool = report["tools"]
+        .as_array()
+        .and_then(|tools| tools.iter().find(|t| t["tool"] == "grok-build"))
+        .expect("grok-build tool present");
+    let rendered_path = tool["config_paths"][0]
+        .as_str()
+        .expect("config path is rendered as a string");
+    assert_eq!(
+        rendered_path, "$GROK_HOME/config.toml",
+        "explicit GROK_HOME outside HOME must render with the symbolic token"
+    );
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        !text.contains(&grok_home.to_string_lossy().into_owned()),
+        "absolute explicit GROK_HOME leaked"
+    );
+    assert!(
+        !text.contains(&synthetic_home.to_string_lossy().into_owned()),
+        "absolute HOME leaked"
+    );
+
+    let remediation = tool["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find_map(|finding| finding["remediation"]["command"].as_str())
+        .expect("at least one finding has remediation text");
+    assert!(
+        remediation.contains("GROK_HOME/config.toml"),
+        "remediation must remain correct for a custom GROK_HOME: {remediation:?}"
+    );
+}
+
+#[test]
 fn no_absolute_path_escapes_the_fixture_tree_for_any_harness() {
     // §5.1: extends the existing real-config protection to ~/.claude and
     // ~/.grok, which also exist on dev machines. The scan runs with every
