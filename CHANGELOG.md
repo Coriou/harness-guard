@@ -17,9 +17,10 @@ co-equal audited harnesses.
   legality) is proven at rule load time.
 - `capabilities` subcommand (`schemas/capabilities.schema.json` 1.0) and
   `docs/agent-guide.md` for agent consumers.
-- Grok Build local-posture rules citing 2026-07-17 clean-room evidence;
-  clean-room reproduction protocol with a source-reading path; behavior
-  claims are version-pinned to the reproduced release.
+- Grok Build local-posture rules citing the 2026-07-17 OSS source-reading
+  intake (config surface, defaults, and detection from official source and
+  docs at the pinned release); clean-room protocol documents a lab path for
+  future behavior claims (none ship in 0.0.1).
 - JSON config parsing (Claude Code `settings.json`) at the same hostile-input
   rigor as TOML: bounded reads, depth limits, value-free diagnostics.
 
