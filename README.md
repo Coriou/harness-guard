@@ -61,6 +61,8 @@ without asking me first.
 
 Exit `2` means the scan degraded; the JSON report still explains why.
 
+See [docs/agent-guide.md](docs/agent-guide.md) for driving Harness Guard from an agent.
+
 ## Commands
 
 ```bash

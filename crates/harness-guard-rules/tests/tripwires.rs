@@ -34,6 +34,9 @@ fn retired_grok_keys_never_reappear_in_rules() {
     let mut files = Vec::new();
     walk_files(&repo_root().join("rules"), &mut files);
     assert!(!files.is_empty(), "rules tree must exist");
+    // The consumer-facing agent guide is user-facing prose, same mechanism:
+    // a retired mitigation key must never resurface there either (§8.2).
+    files.push(repo_root().join("docs/agent-guide.md"));
     for file in files {
         let text = std::fs::read_to_string(&file)
             .unwrap_or_else(|_| panic!("rule file {file:?} is readable UTF-8"));
@@ -43,5 +46,24 @@ fn retired_grok_keys_never_reappear_in_rules() {
                 "retired Grok mitigation key {key:?} reappeared in {file:?}"
             );
         }
+    }
+}
+
+#[test]
+fn agent_guide_carries_positioning_and_no_cadence_claims() {
+    let text = std::fs::read_to_string(repo_root().join("docs/agent-guide.md")).unwrap();
+    assert!(text.contains("local, execution-free, per-finding-cited config auditor"));
+    let forbidden_phrase = ["AI agent", "security scanner"].join(" ");
+    assert!(!text.contains(&forbidden_phrase));
+    for cadence in [
+        "weekly",
+        "daily re-verification",
+        "continuously verified",
+        "always up to date",
+    ] {
+        assert!(
+            !text.to_lowercase().contains(cadence),
+            "cadence claim {cadence:?} found"
+        );
     }
 }
