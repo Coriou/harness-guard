@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "harness-guard-cli"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anstream 0.6.21",
  "clap",
@@ -458,7 +458,7 @@ dependencies = [
 
 [[package]]
 name = "harness-guard-core"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "harness-guard-rules",
  "rustix 1.1.4",
@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "harness-guard-rules"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "jsonschema",
  "serde",

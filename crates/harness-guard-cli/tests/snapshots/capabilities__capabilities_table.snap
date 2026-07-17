@@ -2,7 +2,7 @@
 source: crates/harness-guard-cli/tests/capabilities.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
-harness-guard 0.1.0 · ruleset 2026.07.17 · report schema 1.1
+harness-guard 0.0.1 · ruleset 2026.07.17 · report schema 1.1
 +-------------+-------+--------------------------------+------------+-------------+
 | tool        | rules | categories                     | verified ≤ | verified on |
 +=================================================================================+

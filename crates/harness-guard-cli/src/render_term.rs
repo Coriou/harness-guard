@@ -249,7 +249,7 @@ mod tests {
     fn network_wording_comes_from_the_report() {
         let report = Report {
             schema_version: "1.0".to_string(),
-            harness_guard_version: "0.1.0".to_string(),
+            harness_guard_version: "0.0.1".to_string(),
             ruleset_version: "test".to_string(),
             scanned_at: "2026-07-15T00:00:00Z".to_string(),
             network_requests_made: 3,
@@ -296,7 +296,7 @@ mod tests {
         };
         let report = Report {
             schema_version: "1.1".to_string(),
-            harness_guard_version: "0.1.0".to_string(),
+            harness_guard_version: "0.0.1".to_string(),
             ruleset_version: "test".to_string(),
             scanned_at: "2026-07-16T00:00:00Z".to_string(),
             network_requests_made: 0,
