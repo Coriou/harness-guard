@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "harness_guard_version": "0.1.0",
+  "ruleset_version": "2026.07.17",
+  "report_schema_version": "1.1",
+  "tools": [
+    {
+      "tool": "claude-code",
+      "rules": 5,
+      "categories": [
+        "retention",
+        "telemetry"
+      ],
+      "rules_last_verified_version": "2.1.204",
+      "rules_verified_date": "2026-07-17"
+    },
+    {
+      "tool": "codex",
+      "rules": 4,
+      "categories": [
+        "retention",
+        "telemetry",
+        "transfer"
+      ],
+      "rules_last_verified_version": "0.144.5",
+      "rules_verified_date": "2026-07-16"
+    },
+    {
+      "tool": "grok-build",
+      "rules": 4,
+      "categories": [
+        "telemetry",
+        "transfer"
+      ],
+      "rules_last_verified_version": "0.2.102",
+      "rules_verified_date": "2026-07-17"
+    }
+  ],
+  "commands": [
+    "scan",
+    "list",
+    "explain",
+    "version",
+    "capabilities",
+    "completions"
+  ],
+  "exit_codes": {
+    "0": "no findings at/above --fail-on",
+    "1": "findings at/above --fail-on",
+    "2": "degraded or internal/usage error"
+  }
+}

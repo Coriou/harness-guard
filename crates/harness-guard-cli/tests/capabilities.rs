@@ -53,15 +53,35 @@ fn capabilities_table_lists_all_three_tools() {
     }
 }
 
-// DEFERRED (plan-review amendment, binding — see
-// .superpowers/sdd/task-20-brief.md Step 3 Sequencing note): §8.1 requires
-// both views golden-tested — a `capabilities_table_view_is_golden_tested`
-// insta snapshot of the table view, and a
-// `capabilities_json_view_matches_committed_golden` byte-compare against a
-// committed `tests/goldens/capabilities.expected.json`, the same convention
-// scan_fixtures.rs uses for `expected.json`. Both pin exact rule counts and
-// categories per tool, which are not stable until Task 19 (Grok Build rules,
-// last of the rule-authoring tasks, release-gating) lands. Task 19's
-// implementer (or a follow-up task) must author those two tests plus the
-// reviewed, committed golden fixture once rule counts are final — do not add
-// them before then, or they will immediately drift.
+// §8.1 requires both views golden-tested. Authored after Task 19 (Grok Build
+// rules) landed so rule counts and categories per tool are final.
+#[test]
+fn capabilities_table_view_is_golden_tested() {
+    let output = run_case("hardened", &["capabilities"]);
+    insta::assert_snapshot!(
+        "capabilities_table",
+        String::from_utf8_lossy(&output.stdout)
+    );
+}
+
+#[test]
+fn capabilities_json_view_matches_committed_golden() {
+    // Companion to the table snapshot above: golden-tested via byte-for-byte
+    // comparison against a committed fixture — the same convention
+    // scan_fixtures.rs uses for expected.json — rather than a second insta
+    // snapshot, so a rule-count regression is caught by two independent
+    // mechanisms.
+    let output = run_case("hardened", &["capabilities", "--json"]);
+    let actual: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let golden: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(
+            repo_root().join("crates/harness-guard-cli/tests/goldens/capabilities.expected.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        actual, golden,
+        "capabilities --json output drifted from the committed golden"
+    );
+}
