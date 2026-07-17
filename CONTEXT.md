@@ -3,28 +3,39 @@
 **Project:** Harness Guard
 **Purpose:** Local, execution-free, per-finding-cited config auditor.
 **Context date:** 2026-07-17
-**Current phase:** Multi-harness generalization in progress
+**Current phase:** 0.0.1 multi-harness release content complete
 (`docs/superpowers/plans/2026-07-16-harness-guard-0.0.1-multi-harness.md`,
-20 of 25 tasks complete). Grok Build rule authoring, the multi-harness
-no-egress proof, the 0.0.1 version bump, the full documentation-corrections
-pass, and the release tag remain — see the latest handoff under
-`docs/superpowers/handoffs/` for exact status.
+Tasks 1–24 done). Only the owner-gated release-gate run and tag checklist
+(Task 25) remain — no tag, GitHub Release, package publish, or workflow
+enablement without exact owner authorization. See the latest handoff under
+`docs/superpowers/handoffs/` for prior session status (superseded in part by
+the shipped Grok rules and this documentation pass).
 
 ## Current implemented scope
 
 Harness Guard is a free/open-source, read-only Rust CLI and core, built on a
 declarative rule engine (rules are data over a closed set of typed match
 primitives; totality is proven at load time). Runtime code supports **three
-harnesses**: Codex CLI (4 source-cited rules: history persistence, analytics,
-feedback, OpenTelemetry prompt logging), Claude Code (5 source-cited rules:
-session-history cleanup period, telemetry/error-reporting/feedback-command/
-feedback-survey opt-outs), and Grok Build (detection only — recognized as a
-supported harness, zero bundled rules, pending fresh clean-room evidence per
-`docs/research/protocols/grok-build-cleanroom.md`; every Grok Build scan
-result is honestly "no rules bundled for this tool yet", never a pass). The
-`capabilities` subcommand and `docs/agent-guide.md` expose this inventory
+harnesses**:
+
+- **Codex CLI** — 4 source-cited rules (history persistence, analytics,
+  feedback, OpenTelemetry prompt logging); categories retention, telemetry,
+  transfer; verified through 0.144.5.
+- **Claude Code** — 5 source-cited rules (session-history cleanup period,
+  telemetry / error-reporting / feedback-command / feedback-survey opt-outs);
+  categories retention, telemetry; verified through 2.1.204.
+- **Grok Build** — 4 local-posture rules (`features.telemetry`,
+  `features.feedback`, `telemetry.trace_upload`,
+  `telemetry.otel_log_user_prompts`); categories telemetry, transfer; tested
+  on 0.2.102 with evidence under
+  `docs/research/evidence/grok-build/2026-07-17/`. Detection uses PATH binary
+  `grok`, npm package `@xai-official/grok`, and a managed-install symlink
+  basename version fallback; `GROK_HOME` is honored. Rules describe local
+  config posture only — not wire-level upload behavior.
+
+The `capabilities` subcommand and `docs/agent-guide.md` expose this inventory
 machine-readably so it never needs to be hardcoded by a consumer. The bundled
-ruleset is the authoritative record of tested harness version ranges.
+ruleset CalVer is **2026.07.17**. Workspace / binary version is **0.0.1**.
 
 GitHub Copilot CLI, Gemini CLI, Cursor, OpenCode, and the other tools discussed
 in early research and product-strategy documents are not implemented or
@@ -93,10 +104,9 @@ plan/auth context, and official primary source.
 - `harness-guard-cli`: argument parsing, environment/home resolution, sanitized
   rendering, and exit-code semantics.
 
-The repository is under Git version control and has been public since
-2026-07-16. Freshness workflows remain triage-only and disabled. Do not
-publish packages, create a GitHub Release, tag a release, or make other
-external changes without the exact authorization required by `AGENTS.md`.
+The repository is public. Freshness workflows remain triage-only and disabled.
+Do not publish packages, create a GitHub Release, or make other external
+changes without the exact authorization required by `AGENTS.md`.
 
 ## Session continuity
 

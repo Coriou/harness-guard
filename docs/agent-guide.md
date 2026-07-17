@@ -36,7 +36,7 @@ whether/how to invoke the tool, and the only supported discovery entrypoint
 ```json
 {
   "schema_version": "1.0",
-  "harness_guard_version": "0.1.0",
+  "harness_guard_version": "0.0.1",
   "ruleset_version": "2026.07.17",
   "report_schema_version": "1.1",
   "tools": [

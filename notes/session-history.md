@@ -128,3 +128,29 @@ until review.
 - Did an interim documentation-truthfulness pass (README, CONTEXT.md,
   AGENTS.md) ahead of the full Task 24 sweep, then merged this branch to
   `main` and pushed to the now-public `origin` with owner authorization.
+
+## 2026-07-17 (later) — Grok rules shipped; 0.0.1 content complete through Task 24
+
+- **Grok Build local-posture rules (Task 19+):** four bundled rules for
+  `features.telemetry`, `features.feedback`, `telemetry.trace_upload`, and
+  `telemetry.otel_log_user_prompts`, tested on **0.2.102**, citing
+  `docs/research/evidence/grok-build/2026-07-17/` (OSS primary + install
+  channel). Local posture only — not wire-level behavior. Clean-room protocol
+  has a source-reading path plus a lab path.
+- **Detection:** PATH binary `grok`, npm `@xai-official/grok`, managed-install
+  symlink basename version fallback; `GROK_HOME` honored. Synthetic fixture
+  matrix under `fixtures/grok-build/`.
+- **Capabilities goldens** pin Claude 5 / Codex 4 / Grok 4 rule counts
+  (ruleset CalVer **2026.07.17**).
+- **Version:** workspace **0.0.1** (not 0.1.0); `CHANGELOG.md` present.
+  Multi-harness no-egress proof green on macOS.
+- **Task 24 documentation corrections:** README/CONTEXT/`rules/README`/
+  agent-guide reflect three co-equal harnesses with Grok rules (removed all
+  "detection-only / zero bundled rules" public claims); strategy doc gets a
+  dated third-tool supersession note; AGENTS.md already generalized real-store
+  language for `~/.codex` / `~/.claude` / `~/.grok`. Freshness workflows remain
+  default-off.
+- **Unresolved / next:** Task 25 owner-gated release-gate sweep and tag —
+  requires explicit owner authorization for `git tag 0.0.1` and any GitHub
+  Release. No package publish. No `ENABLE_FRESHNESS_WORKFLOWS`. Wire-level
+  Grok behavior claims remain out of scope until a targeted lab run lands.

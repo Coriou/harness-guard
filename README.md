@@ -13,10 +13,10 @@ requests, never execute the tools they discover, and never read source code,
 session transcripts, shell history, `.env` files, or secrets.
 
 > **Current scope:** three harnesses are supported —
-> [Codex CLI](./rules/codex/) (4 bundled rules) and
-> [Claude Code](./rules/claude-code/) (5 bundled rules) each ship source-cited
-> retention/telemetry rules; Grok Build is detected but ships no bundled rules
-> yet. See [Current scope and limits](#current-scope-and-limits) below.
+> [Codex CLI](./rules/codex/) (4 bundled rules),
+> [Claude Code](./rules/claude-code/) (5 bundled rules), and
+> [Grok Build](./rules/grok-build/) (4 local-posture rules). See
+> [Current scope and limits](#current-scope-and-limits) below.
 
 ## Quick start
 
@@ -135,12 +135,12 @@ That command intentionally exits `1` because the fixture contains a warning.
 During a scan, Harness Guard may read only, per detected harness:
 
 - the harness's user-scope config file — `CODEX_HOME/config.toml`,
-  `~/.claude/settings.json`, or `~/.grok/config.toml` (each bounded to 1 MiB),
-  and
-- for Codex and Claude Code (both npm-packaged), a nearby npm `package.json`
-  version marker (bounded to 64 KiB). Grok Build has no established install
-  channel yet, so no such marker is read for it and its version is never
-  detected.
+  `~/.claude/settings.json`, or `~/.grok/config.toml` (each bounded to 1 MiB;
+  Grok also honors `GROK_HOME`), and
+- a nearby version marker when one exists without executing the harness:
+  npm `package.json` for Codex and Claude Code, and for Grok Build either
+  npm `@xai-official/grok` or a managed-install symlink whose target basename
+  encodes the version (each marker bounded to 64 KiB).
 
 Reads refuse symlinks and non-regular files, use a pinned opened handle, and
 discard unrelated/raw config data before reporting. Usernames, home paths, and
@@ -160,16 +160,16 @@ scripts/no-egress/run-macos.sh
 | --- | ---: | --- | --- |
 | Codex CLI | 4 | retention, telemetry, transfer | Implemented |
 | Claude Code | 5 | retention, telemetry | Implemented |
-| Grok Build | 0 | — | Detected only — no bundled rules yet |
+| Grok Build | 4 | telemetry, transfer | Implemented (local posture) |
 
 Run `harness-guard capabilities --json` for the live, authoritative count
 instead of relying on this table — it is regenerated from the same bundled
 rule data and will not drift from what a scan actually evaluates.
 
-- Grok Build is recognized during detection so a scan reports it by name, but
-  no rule has shipped for it yet: a scan renders "no rules bundled for this
-  tool yet" rather than a pass. Coverage is pending fresh clean-room evidence
-  of its current configuration surface.
+- Grok Build rules describe **local config posture only** (telemetry master
+  switch, feedback, session/trace upload sub-switch, external OTEL prompt
+  log), cited from OSS primary sources for version `0.2.102`. They do not
+  claim wire-level upload behavior.
 - Only the user-level config for each harness is inspected. System config,
   selected profiles, trusted-project config, and CLI overrides are not
   inspected, so an unset user-level value is reported as `unknown`.

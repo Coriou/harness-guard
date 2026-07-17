@@ -4,6 +4,13 @@
 **Status:** Approved direction; implementation remains gated by evidence and user validation.  
 **Product definition:** Local-only, read-only, source-cited posture auditor for AI coding tools.
 
+> **Correction (2026-07-16 / 2026-07-17):** Phase sequencing below that treats
+> Grok Build as later advisory coverage is superseded. The 0.0.1 harness set is
+> Claude Code + Codex CLI + Grok Build (local-posture rules shipped for
+> 0.2.102). See `CONTEXT.md` and `docs/product/decision-and-strategy.md` for
+> current scope. Remaining Phase 3 candidates are tools not yet implemented
+> (e.g. Gemini CLI, OpenCode, Cursor, Copilot CLI).
+
 ## Production principles
 
 1. **Bound every claim.** A scan reports local evidence, documented vendor behavior, or an unknown state—not a guess about live traffic.

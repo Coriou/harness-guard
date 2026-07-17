@@ -4,6 +4,13 @@
 **Status:** Proceed with a deliberately narrow, validation-gated implementation.  
 **Distribution recommendation:** Free and open source first; do not launch as a $0.99 App Store product.
 
+> **Correction (2026-07-16):** the third-tool selection below is superseded by
+> the 2026-07-16 owner decision — the 0.0.1 harness set is Claude Code + Codex
+> CLI + Grok Build. GitHub Copilot CLI remains a likely 0.x candidate and its
+> freshness tracking is retained. (Grok Build later shipped four local-posture
+> rules for 0.2.102 from 2026-07-17 evidence; see `CONTEXT.md` and
+> `rules/grok-build/` for current scope.)
+
 ## Decision in one sentence
 
 Build Harness Guard as a local-only, cross-platform, source-cited auditor of AI coding-tool privacy, permissions, local retention, and synchronization posture—starting with a read-only CLI and three well-supported tools, then earn the right to add a GUI or commercial layer through user validation.
