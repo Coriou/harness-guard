@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "case": "unknown-version",
+  "description": "An absent version marker conservatively produces a non-disclosing stale-ruleset result for every grok-build rule.",
+  "expected_report": {
+    "schema_version": "1.1",
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "grok-build",
+        "detected_version": null,
+        "detection_confidence": "medium",
+        "rules_last_verified_version": "0.2.102",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": false,
+        "findings": [
+          {
+            "rule_id": "grok-build-feedback-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified \u2014 last-known rule indicates: Effective feedback system posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: features.feedback unset in user config.",
+            "observation": "features.feedback unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected \u2014 no version marker found on PATH"
+          },
+          {
+            "rule_id": "grok-build-otel-prompt-log-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified \u2014 last-known rule indicates: Effective external OpenTelemetry raw prompt export posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: telemetry.otel_log_user_prompts unset in user config.",
+            "observation": "telemetry.otel_log_user_prompts unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected \u2014 no version marker found on PATH"
+          },
+          {
+            "rule_id": "grok-build-telemetry-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified \u2014 last-known rule indicates: Effective product telemetry master-switch posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it. Observed: features.telemetry unset in user config.",
+            "observation": "features.telemetry unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected \u2014 no version marker found on PATH"
+          },
+          {
+            "rule_id": "grok-build-trace-upload-01",
+            "status": "stale-ruleset",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": "official-documentation",
+            "message": "Unverified \u2014 last-known rule indicates: Effective session/trace upload sub-switch posture cannot be determined from an unset user-level value because the key inherits the telemetry master switch and other layers are not inspected. Observed: telemetry.trace_upload unset in user config.",
+            "observation": "telemetry.trace_upload unset in user config",
+            "remediation": null,
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": "tool version not detected \u2014 no version marker found on PATH"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 0,
+      "stale": 4,
+      "passed": 0
+    }
+  }
+}

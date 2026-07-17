@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.1",
+  "id": "grok-build-otel-prompt-log-01",
+  "tool": "grok-build",
+  "category": "telemetry",
+  "title": "Raw user prompt export via external OpenTelemetry",
+  "why_it_matters": "Grok Build's user guide documents an external OpenTelemetry stream under the [telemetry] table that is independent of the product telemetry master switch and ships to the operator's own OTLP collector. Within that table, otel_log_user_prompts is the content gate for raw user prompts; the documented example sets otel_log_user_prompts = false. This rule observes only that boolean at user scope: it does not inspect otel_enabled, exporters, or endpoints, so an enabled flag has no effect while external OTEL remains off, and other configuration layers are not inspected.",
+  "unknown_subject": "external OpenTelemetry raw prompt export posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "config.toml",
+    "key": "telemetry.otel_log_user_prompts",
+    "type": "bool",
+    "allowed_render": ["true", "false", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "telemetry.otel_log_user_prompts is explicitly false",
+      "status": "pass",
+      "match": { "equals": { "value": false } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level config keeps raw user prompts redacted from external OpenTelemetry logs (telemetry.otel_log_user_prompts = false).",
+      "remediation": null
+    },
+    {
+      "when": "telemetry.otel_log_user_prompts is explicitly true in the user-level config",
+      "status": "finding",
+      "match": { "equals": { "value": true } },
+      "severity": "warning",
+      "confidence": "high",
+      "message": "The inspected user-level config explicitly opts in to exporting raw user prompts with external OpenTelemetry logs (telemetry.otel_log_user_prompts = true).",
+      "remediation": {
+        "summary": "Stop exporting raw user prompts via external OpenTelemetry.",
+        "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[telemetry]\notel_log_user_prompts = false"
+      }
+    },
+    {
+      "when": "telemetry.otel_log_user_prompts is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective external OpenTelemetry raw prompt export posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
+      "unknown_reason": "telemetry.otel_log_user_prompts is unset in the user-level config; the user guide example redacts raw prompts (false) and OSS types default the Option to None (off unless enabled), but uninspected CLI flags, environment variables, managed/requirements config, or other layers may determine the effective value.",
+      "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
+    },
+    {
+      "when": "telemetry.otel_log_user_prompts is set to a value outside boolean true/false",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "telemetry.otel_log_user_prompts is set to an unrecognized value — raw values are never displayed.",
+      "unknown_reason": "telemetry.otel_log_user_prompts is set to an unrecognized value — raw values are never displayed",
+      "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=0.2.102", "max": "0.2.102", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+      "publisher": "xAI",
+      "title": "Grok Build user guide — Configuration",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:7b19d8b0cb8c589f672bc49a47d217de206f25ad4893b1233c02031cfd3a8319",
+      "archived_url": null,
+      "notes": "In-tree user guide at OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1 (retrieved 2026-07-17). Documents external OTEL under [telemetry] with otel_log_user_prompts = false as the content gate. External OTEL is independent of the product telemetry toggle. Local posture only."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-telemetry/src/config.rs",
+      "publisher": "xAI",
+      "title": "Grok Build telemetry configuration types",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:11044f207a0894d0c0e2f729bc8c88fcc51b1b98a85d9eaadf85491b124a8e36",
+      "archived_url": null,
+      "notes": "OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1. TelemetryConfig.otel_log_user_prompts: Option<bool> external OTEL content gate; default None in Default impl."
+    }
+  ],
+  "limitations": [
+    "Only the user-level GROK_HOME/config.toml is inspected; CLI flags, environment variables, managed/requirements config, and project-scoped config are not inspected.",
+    "An explicit user-level value describes that layer only and does not prove the effective value for every invocation.",
+    "This rule does not inspect otel_enabled, otel_logs_exporter, otel_endpoint, or related exporter keys; the user guide describes external OTEL as an independent opt-in.",
+    "This rule cannot confirm any server-side or remote retention of exported OTEL data — no local file can.",
+    "Auth/account state is user-confirmed-or-unknown; this rule never infers it."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "telemetry.otel_log_user_prompts is unset in the user-level config or the user-level config is absent; other configuration layers are not inspected.",
+    "telemetry.otel_log_user_prompts set to a value outside boolean true/false (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

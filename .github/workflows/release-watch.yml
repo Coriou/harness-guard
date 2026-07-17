@@ -70,11 +70,19 @@ jobs:
           }
           # Watch exactly these tags: stable for claude-code (not latest or
           # next), latest for codex (ignore its other dist-tags and filter
-          # -alpha. if releases.atom is ever used), and latest for copilot
-          # (not prerelease).
+          # -alpha. if releases.atom is ever used), latest for copilot
+          # (not prerelease), and latest for Grok Build's npm package.
+          # Grok Build's primary install channel is the cli-pointer at
+          # https://x.ai/cli/stable (see freshness/last-seen.json channels
+          # and docs/research/evidence/grok-build/2026-07-17); npm
+          # @xai-official/grok is the automated probe because the channel
+          # pointer is not an npm dist-tag. Keep ENABLE_FRESHNESS_WORKFLOWS
+          # gate above — this job stays authored-off by default.
           check "@anthropic-ai/claude-code" "stable" \
             "https://github.com/anthropics/claude-code/releases"
           check "@openai/codex" "latest" \
             "https://github.com/openai/codex/releases"
           check "@github/copilot" "latest" \
             "https://www.npmjs.com/package/@github/copilot"
+          check "@xai-official/grok" "latest" \
+            "https://www.npmjs.com/package/@xai-official/grok"

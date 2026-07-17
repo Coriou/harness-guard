@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.1",
+  "id": "grok-build-trace-upload-01",
+  "tool": "grok-build",
+  "category": "telemetry",
+  "title": "Session and trace upload sub-switch",
+  "why_it_matters": "Grok Build's user guide and OSS telemetry config document [telemetry] trace_upload as an optional boolean: None inherits the [features] telemetry master switch; Some(false) disables session/trace uploads only. This rule observes only the explicit user-level boolean. An unset value is unknown (inheritance from the master switch and other layers cannot be resolved from this key alone). This is local posture only and does not claim wire-level upload or canary-repo behavior.",
+  "unknown_subject": "session/trace upload sub-switch posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "config.toml",
+    "key": "telemetry.trace_upload",
+    "type": "bool",
+    "allowed_render": ["true", "false", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "telemetry.trace_upload is explicitly false",
+      "status": "pass",
+      "match": { "equals": { "value": false } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level config disables session/trace uploads (telemetry.trace_upload = false).",
+      "remediation": null
+    },
+    {
+      "when": "telemetry.trace_upload is explicitly true in the user-level config",
+      "status": "finding",
+      "match": { "equals": { "value": true } },
+      "severity": "info",
+      "confidence": "high",
+      "message": "The inspected user-level config explicitly enables session/trace uploads (telemetry.trace_upload = true).",
+      "remediation": {
+        "summary": "Disable session/trace uploads at user scope.",
+        "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[telemetry]\ntrace_upload = false"
+      }
+    },
+    {
+      "when": "telemetry.trace_upload is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective session/trace upload sub-switch posture cannot be determined from an unset user-level value because the key inherits the telemetry master switch and other layers are not inspected.",
+      "unknown_reason": "telemetry.trace_upload is unset in the user-level config; OSS documents that None inherits [features] telemetry, so the effective value cannot be established from this key alone without inspecting the master switch and other layers.",
+      "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
+    },
+    {
+      "when": "telemetry.trace_upload is set to a value outside boolean true/false",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "telemetry.trace_upload is set to an unrecognized value — raw values are never displayed.",
+      "unknown_reason": "telemetry.trace_upload is set to an unrecognized value — raw values are never displayed",
+      "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=0.2.102", "max": "0.2.102", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+      "publisher": "xAI",
+      "title": "Grok Build user guide — Configuration",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:7b19d8b0cb8c589f672bc49a47d217de206f25ad4893b1233c02031cfd3a8319",
+      "archived_url": null,
+      "notes": "In-tree user guide at OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1 (retrieved 2026-07-17). Documents [telemetry] trace_upload = false as \"disable session/trace uploads (inherits the telemetry toggle when unset)\". Live key re-documented in OSS; not a retired mitigation. Local posture only; no wire capture."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-telemetry/src/config.rs",
+      "publisher": "xAI",
+      "title": "Grok Build telemetry configuration types",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:11044f207a0894d0c0e2f729bc8c88fcc51b1b98a85d9eaadf85491b124a8e36",
+      "archived_url": null,
+      "notes": "OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1. TelemetryConfig.trace_upload: Option<bool> with comment \"None = inherit from [features] telemetry. Some(false) = disable GCS uploads only.\""
+    }
+  ],
+  "limitations": [
+    "Only the user-level GROK_HOME/config.toml is inspected; CLI flags, environment variables, managed/requirements config, and project-scoped config are not inspected.",
+    "An unset telemetry.trace_upload inherits the features.telemetry master switch; this rule does not resolve that inheritance into an effective value.",
+    "This rule does not inspect wire-level uploads or canary-repo transmission — local posture only; behavior claims require lab artifacts.",
+    "An explicit user-level value describes that layer only and does not prove the effective value for every invocation.",
+    "Auth/account state is user-confirmed-or-unknown; this rule never infers it."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "telemetry.trace_upload is unset in the user-level config or the user-level config is absent (inherits master switch; other layers not inspected).",
+    "telemetry.trace_upload set to a value outside boolean true/false (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

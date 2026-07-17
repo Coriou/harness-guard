@@ -6,6 +6,11 @@
     "https://learn.chatgpt.com/docs/config-file/config-advanced": "sha256:85675e13af7727a5941bbfa2224c02f2039b322f308f3229db142f8f829b2a0f",
     "https://learn.chatgpt.com/docs/config-file/config-basic": "sha256:9823d3632a18076df3a6283fb20fd05ee598348f797ddac5f9b15733b7014165",
     "https://code.claude.com/docs/en/settings": "sha256:2e09d4e56f86027f7b7ceaa7be4cc87ef3724cbb432e8988f419a8efa3d731e1",
-    "https://code.claude.com/docs/en/data-usage": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc"
+    "https://code.claude.com/docs/en/data-usage": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc",
+    "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md": "sha256:7b19d8b0cb8c589f672bc49a47d217de206f25ad4893b1233c02031cfd3a8319",
+    "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-telemetry/src/config.rs": "sha256:11044f207a0894d0c0e2f729bc8c88fcc51b1b98a85d9eaadf85491b124a8e36",
+    "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-update/src/version.rs": "sha256:55f91336fb79fc0680459776f0fed55bf3577742b64417a50f952108cc293d39",
+    "https://x.ai/cli/install.sh": "sha256:aacadba2136e5ba6378ddfa84bee36851dcbb29c03985c5e3cd1355d2453e270",
+    "https://x.ai/cli/stable": "sha256:060c2b1a4f89732010aad18e5ab90b0f306013e2382fe1eaa3ff96daf9c06840"
   }
 }

@@ -36,6 +36,21 @@ const CLAUDE_CASES: &[(&str, i32)] = &[
     ("secret-shaped", 2),
 ];
 
+/// grok-build fixture matrix (Task 19). Runtime-mutated hostile cases
+/// (oversized, permission-denied, symlink-config) are exercised in hostile.rs.
+const GROK_CASES: &[(&str, i32)] = &[
+    ("missing", 0),
+    ("minimal", 0),
+    ("hardened", 0),
+    ("risky-unset", 0),
+    ("risky-explicit", 1),
+    ("malformed-toml", 2),
+    ("unrecognized-value", 0),
+    ("deep-nesting", 2),
+    ("unknown-version", 0),
+    ("version-out-of-range", 0),
+];
+
 #[test]
 fn fixture_exit_codes_and_json_goldens() {
     for (case, expected_exit) in CASES {
@@ -88,6 +103,37 @@ fn claude_code_fixture_exit_codes_and_json_goldens() {
             &expected["expected_report"],
             &report,
             &format!("claude-code/{case}"),
+        );
+    }
+}
+
+#[test]
+fn grok_build_fixture_exit_codes_and_json_goldens() {
+    for (case, expected_exit) in GROK_CASES {
+        let output = run_harness_case("grok-build", case, &["scan", "--json"]);
+        assert_eq!(
+            output.status.code(),
+            Some(*expected_exit),
+            "exit code for grok-build/{case}"
+        );
+        let report: serde_json::Value =
+            serde_json::from_slice(&output.stdout).unwrap_or_else(|error| {
+                panic!("grok-build/{case}: --json must emit valid JSON: {error}")
+            });
+        let expected: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(
+                repo_root()
+                    .join("fixtures/grok-build")
+                    .join(case)
+                    .join("expected.json"),
+            )
+            .expect("fixture golden is readable"),
+        )
+        .expect("fixture golden is JSON");
+        assert_json_subset(
+            &expected["expected_report"],
+            &report,
+            &format!("grok-build/{case}"),
         );
     }
 }

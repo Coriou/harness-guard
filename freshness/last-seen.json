@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "checked": "2026-07-16",
+  "checked": "2026-07-17",
   "packages": {
     "@anthropic-ai/claude-code": {
       "dist_tag": "stable",
@@ -13,6 +13,18 @@
     "@github/copilot": {
       "dist_tag": "latest",
       "version": "1.0.70"
+    },
+    "@xai-official/grok": {
+      "dist_tag": "latest",
+      "version": "0.2.102"
+    }
+  },
+  "channels": {
+    "grok-build": {
+      "channel": "cli-pointer",
+      "url": "https://x.ai/cli/stable",
+      "version": "0.2.102",
+      "notes": "Primary install channel per evidence pack 2026-07-17; npm @xai-official/grok is also published at the same version and is the release-watch probe."
     }
   }
 }

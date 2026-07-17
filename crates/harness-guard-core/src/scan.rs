@@ -138,12 +138,13 @@ pub fn scan_harness(
         .collect();
     findings.sort_by(|left, right| left.rule_id.cmp(&right.rule_id));
 
-    // A harness can be detected with zero bundled rules (grok-build until its
-    // rule work package lands, §7.3): `harness_rules.iter().all(..)` over an
-    // empty iterator is vacuously true, which would otherwise report
-    // version_in_range: true — and, combined with the empty `findings` below,
-    // read as a verified clean audit for a tool nothing was actually
-    // evaluated against. Require at least one rule before claiming range.
+    // A harness can be detected with zero bundled rules (historical grok-build
+    // pre-Task-19; still possible if rules are filtered away):
+    // `harness_rules.iter().all(..)` over an empty iterator is vacuously true,
+    // which would otherwise report version_in_range: true — and, combined with
+    // the empty `findings` below, read as a verified clean audit for a tool
+    // nothing was actually evaluated against. Require at least one rule before
+    // claiming range.
     let version_in_range = detected_version
         .as_deref()
         .map(|version| {
@@ -209,17 +210,11 @@ mod tests {
 
     #[test]
     fn zero_rule_harness_never_reports_version_in_range_or_synthesized_findings() {
-        // Task 18 gave claude-code its first bundled rules, so it can no
-        // longer stand in for "a harness with zero bundled rules" the way it
-        // did before (grok-build remains ruleless until Task 19, but its
-        // version detection is also disabled by descriptor design, §5.3, so
-        // it cannot exercise "detected version + zero rules" either). Force
-        // the zero-rule condition directly by passing an empty rules slice
-        // for a harness (claude-code) whose version detection genuinely
-        // works, so the invariant this test protects — a detected version
-        // must never look like a verified clean audit when zero rules were
-        // actually evaluated — stays testable regardless of future ruleset
-        // content.
+        // Force the zero-rule condition directly by passing an empty rules
+        // slice for a harness whose version detection genuinely works, so the
+        // invariant this test protects — a detected version must never look
+        // like a verified clean audit when zero rules were actually evaluated
+        // — stays testable regardless of future ruleset content.
         let dir = tempfile::tempdir().unwrap();
         let base = dir.path().canonicalize().unwrap();
         let claude_home = base.join("claude-home");

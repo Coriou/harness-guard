@@ -1,8 +1,8 @@
 # Harness Guard rules — standalone data package
 
 Machine-readable, source-cited audit rules for the privacy/retention/telemetry
-posture of AI coding harness configuration. Codex CLI and Claude Code are
-currently represented; Grok Build is pending. This package is consumed by
+posture of AI coding harness configuration. Codex CLI, Claude Code, and Grok
+Build (local-posture rules) are currently represented. This package is consumed by
 [Harness Guard](../README.md), a local, execution-free, per-finding-cited
 config auditor for privacy/retention/telemetry posture — but this directory is
 an **independently usable, forkable, permissively licensed data package from

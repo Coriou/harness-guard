@@ -1,0 +1,7 @@
+[features]
+telemetry = "session_metrics"
+feedback = false
+
+[telemetry]
+trace_upload = false
+otel_log_user_prompts = false

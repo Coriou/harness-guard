@@ -37,6 +37,23 @@ guard.
    rule silently failing to match config shape is stronger drift evidence than
    a document hash.
 
+## Grok Build channel notes
+
+Grok Build's primary install channel is the CLI channel pointer
+`https://x.ai/cli/stable` (and sibling `alpha` / `enterprise` pointers), not
+npm-first. Evidence pack: `docs/research/evidence/grok-build/2026-07-17/`.
+
+- `freshness/last-seen.json` records both the cli-pointer under `channels.grok-build`
+  and the npm package `@xai-official/grok` under `packages` (same version when
+  they agree).
+- `release-watch.yml` probes the npm package only (dist-tag `latest`) because
+  the channel pointer is not an npm registry object. When triage fires, also
+  re-check `https://x.ai/cli/stable` and the OSS monorepo `SOURCE_REV` before
+  widening `tested_versions`.
+- Local-posture rules cite OSS user guide + telemetry types
+  (`evidence_class: official-documentation`). Behavior claims still require a
+  lab run per `docs/research/protocols/grok-build-cleanroom.md`.
+
 ## Cadence claims
 
 No public verification-cadence claim ("verified monthly", badges, and similar)

@@ -259,15 +259,11 @@ fn help_uses_positioning_and_never_the_forbidden_phrase() {
 }
 
 #[test]
-fn retired_grok_keys_never_appear_in_cli_output() {
-    // Spec §7.3.7: the tripwire covers user-facing output corpora, not just
-    // rule files. Help text and a fixture scan are the output corpus.
-    let retired = [
-        "GROK_TELEMETRY_ENABLED",
-        "GROK_TELEMETRY_TRACE_UPLOAD",
-        "trace_upload",
-        "[telemetry]",
-    ];
+fn cli_output_never_claims_keys_stop_canary_uploads() {
+    // Protocol §7 amended 2026-07-17: the retired-key ban is lifted (OSS
+    // re-documented the keys). User-facing output must still never revive the
+    // legacy research-only claim that those keys alone stop canary-repo uploads.
+    let legacy_claims = ["stop canary", "stops canary", "canary-repo upload"];
     for args in [
         vec!["--help"],
         vec!["scan", "--help"],
@@ -280,11 +276,12 @@ fn retired_grok_keys_never_appear_in_cli_output() {
             "{}{}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
-        );
-        for key in retired {
+        )
+        .to_lowercase();
+        for claim in legacy_claims {
             assert!(
-                !text.contains(key),
-                "retired key {key:?} in output of {args:?}"
+                !text.contains(claim),
+                "legacy canary-upload claim {claim:?} in output of {args:?}"
             );
         }
     }

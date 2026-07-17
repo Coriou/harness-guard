@@ -74,6 +74,36 @@ const CLAUDE_IN_RANGE_VERSION_CASES: [&str; 15] = [
     "unrecognized-value",
 ];
 
+/// grok-build fixture matrix (Task 19): same 13-case TOML pattern as codex.
+const GROK_CASES: [&str; 13] = [
+    "deep-nesting",
+    "hardened",
+    "malformed-toml",
+    "minimal",
+    "missing",
+    "oversized",
+    "permission-denied",
+    "risky-explicit",
+    "risky-unset",
+    "symlink-config",
+    "unknown-version",
+    "unrecognized-value",
+    "version-out-of-range",
+];
+
+const GROK_IN_RANGE_VERSION_CASES: [&str; 10] = [
+    "deep-nesting",
+    "hardened",
+    "malformed-toml",
+    "minimal",
+    "oversized",
+    "permission-denied",
+    "risky-explicit",
+    "risky-unset",
+    "symlink-config",
+    "unrecognized-value",
+];
+
 /// Mixed multi-harness fixtures (§11.2 aggregation); the per-harness CASES
 /// arrays above stay per-harness.
 const MIXED_CASES: [&str; 1] = ["codex-pass-claude-degraded"];
@@ -296,6 +326,80 @@ fn claude_code_in_range_fixture_version_markers_are_synthetic_and_exact_latest()
     )
     .unwrap();
     assert_eq!(out_of_range["name"], "@anthropic-ai/claude-code");
+    assert_eq!(out_of_range["version"], "9.9.9");
+}
+
+#[test]
+fn every_grok_build_expected_json_validates_against_fixture_schema() {
+    let schema_raw =
+        std::fs::read_to_string(repo_root().join("schemas/fixture.schema.json")).unwrap();
+    let schema: serde_json::Value = serde_json::from_str(&schema_raw).unwrap();
+    let validator = jsonschema::validator_for(&schema).unwrap();
+
+    let case_dirs = std::fs::read_dir(fixtures_root().join("grok-build"))
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().is_dir())
+        .map(|entry| entry.file_name().into_string().unwrap())
+        .collect::<BTreeSet<_>>();
+    let expected_cases = GROK_CASES
+        .into_iter()
+        .map(str::to_string)
+        .collect::<BTreeSet<_>>();
+    assert_eq!(
+        case_dirs, expected_cases,
+        "the grok-build fixture matrix must contain exactly the 13 named cases"
+    );
+
+    for case in GROK_CASES {
+        let path = fixtures_root()
+            .join("grok-build")
+            .join(case)
+            .join("expected.json");
+        let json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert!(
+            validator.validate(&json).is_ok(),
+            "schema violation in {path:?}: {:?}",
+            validator
+                .iter_errors(&json)
+                .map(|error| error.to_string())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(json["case"], case, "case field must equal directory name");
+        assert_eq!(
+            json["expected_report"]["network_requests_made"], 0,
+            "{case} must pin the no-egress report field"
+        );
+    }
+}
+
+#[test]
+fn grok_build_in_range_fixture_version_markers_are_synthetic_and_exact_latest() {
+    let grok_root = fixtures_root().join("grok-build");
+    for case in GROK_IN_RANGE_VERSION_CASES {
+        let path = grok_root.join(case).join("files/path");
+        assert_eq!(
+            std::fs::read_to_string(path.join("grok")).unwrap(),
+            "#!/usr/bin/env node\n// synthetic fixture shim — never executed by harness-guard\n"
+        );
+        let package: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(path.join("package.json")).unwrap())
+                .unwrap();
+        assert_eq!(package["name"], "@xai-official/grok");
+        assert_eq!(package["version"], "0.2.102");
+    }
+
+    let unknown_path = grok_root.join("unknown-version/files/path");
+    assert!(unknown_path.join("grok").is_file());
+    assert!(!unknown_path.join("package.json").exists());
+
+    let out_of_range: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(grok_root.join("version-out-of-range/files/path/package.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(out_of_range["name"], "@xai-official/grok");
     assert_eq!(out_of_range["version"], "9.9.9");
 }
 

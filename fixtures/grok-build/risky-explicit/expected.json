@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0",
+  "case": "risky-explicit",
+  "description": "The documented risky values are explicitly configured for every grok-build rule and produce warning/info findings.",
+  "expected_report": {
+    "schema_version": "1.1",
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "grok-build",
+        "detected_version": "0.2.102",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "0.2.102",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "grok-build-feedback-01",
+            "status": "finding",
+            "severity": "info",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly enables the feedback system (features.feedback = true), the same behavior the user guide documents as default.",
+            "observation": "features.feedback = true",
+            "remediation": {
+              "summary": "Disable the in-product feedback system at user scope.",
+              "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[features]\nfeedback = false"
+            },
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "grok-build-otel-prompt-log-01",
+            "status": "finding",
+            "severity": "warning",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly opts in to exporting raw user prompts with external OpenTelemetry logs (telemetry.otel_log_user_prompts = true).",
+            "observation": "telemetry.otel_log_user_prompts = true",
+            "remediation": {
+              "summary": "Stop exporting raw user prompts via external OpenTelemetry.",
+              "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[telemetry]\notel_log_user_prompts = false"
+            },
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "grok-build-telemetry-01",
+            "status": "finding",
+            "severity": "info",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly enables the product telemetry master switch (features.telemetry = true).",
+            "observation": "features.telemetry = true",
+            "remediation": {
+              "summary": "Disable the product telemetry master switch at user scope.",
+              "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[features]\ntelemetry = false"
+            },
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          },
+          {
+            "rule_id": "grok-build-trace-upload-01",
+            "status": "finding",
+            "severity": "info",
+            "confidence": "high",
+            "evidence_class": "official-documentation",
+            "message": "The inspected user-level config explicitly enables session/trace uploads (telemetry.trace_upload = true).",
+            "observation": "telemetry.trace_upload = true",
+            "remediation": {
+              "summary": "Disable session/trace uploads at user scope.",
+              "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[telemetry]\ntrace_upload = false"
+            },
+            "source": {
+              "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+              "retrieved": "2026-07-17"
+            },
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": null,
+            "verify_url": null,
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 1,
+      "info": 3,
+      "unknown": 0,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}

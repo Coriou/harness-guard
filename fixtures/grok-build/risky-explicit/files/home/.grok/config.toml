@@ -1,0 +1,7 @@
+[features]
+telemetry = true
+feedback = true
+
+[telemetry]
+trace_upload = true
+otel_log_user_prompts = true

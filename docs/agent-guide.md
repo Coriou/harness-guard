@@ -44,8 +44,8 @@ whether/how to invoke the tool, and the only supported discovery entrypoint
       "rules_last_verified_version": "2.1.204", "rules_verified_date": "2026-07-17" },
     { "tool": "codex", "rules": 4, "categories": ["retention", "telemetry", "transfer"],
       "rules_last_verified_version": "0.144.5", "rules_verified_date": "2026-07-16" },
-    { "tool": "grok-build", "rules": 0, "categories": [],
-      "rules_last_verified_version": null, "rules_verified_date": null }
+    { "tool": "grok-build", "rules": 4, "categories": ["telemetry", "transfer"],
+      "rules_last_verified_version": "0.2.102", "rules_verified_date": "2026-07-17" }
   ],
   "commands": ["scan", "list", "explain", "version", "capabilities", "completions"],
   "exit_codes": { "0": "no findings at/above --fail-on", "1": "findings at/above --fail-on", "2": "degraded or internal/usage error" }
@@ -55,9 +55,9 @@ whether/how to invoke the tool, and the only supported discovery entrypoint
 Read this, don't assume it:
 
 - `tools[].rules` is the number of bundled rules for that tool *right now*.
-  `grok-build` is detected (Harness Guard recognizes it as a supported
-  harness) but has zero bundled rules as of this writing — a scan will detect
-  a Grok Build install and report nothing about it, honestly, not silently.
+  `grok-build` ships four local-posture rules (telemetry master switch,
+  feedback, session/trace upload sub-switch, external OTEL prompt log) cited
+  from OSS primary sources for version `0.2.102` — not wire-level behavior.
 - `harness_guard_version` (the binary) and `ruleset_version` (the rule data,
   CalVer) move independently. A `scan` can report stale findings on a
   perfectly current binary if the *rules* haven't been re-verified for a new

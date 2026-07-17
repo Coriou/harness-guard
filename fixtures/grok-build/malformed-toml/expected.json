@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "case": "malformed-toml",
+  "description": "Malformed synthetic TOML is rejected without retaining source text and produces an unknown result for every grok-build rule.",
+  "expected_report": {
+    "schema_version": "1.1",
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [
+      {
+        "tool": "grok-build",
+        "detected_version": "0.2.102",
+        "detection_confidence": "high",
+        "rules_last_verified_version": "0.2.102",
+        "rules_verified_date": "2026-07-17",
+        "version_in_range": true,
+        "findings": [
+          {
+            "rule_id": "grok-build-feedback-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine feedback system posture: config not safely parseable: unclosed table, expected `]`",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": "config not safely parseable: unclosed table, expected `]`",
+            "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "grok-build-otel-prompt-log-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine external OpenTelemetry raw prompt export posture: config not safely parseable: unclosed table, expected `]`",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": "config not safely parseable: unclosed table, expected `]`",
+            "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "grok-build-telemetry-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine product telemetry master-switch posture: config not safely parseable: unclosed table, expected `]`",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": "config not safely parseable: unclosed table, expected `]`",
+            "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+            "stale_reason": null
+          },
+          {
+            "rule_id": "grok-build-trace-upload-01",
+            "status": "unknown",
+            "severity": null,
+            "confidence": null,
+            "evidence_class": null,
+            "message": "Cannot determine session/trace upload sub-switch posture: config not safely parseable: unclosed table, expected `]`",
+            "observation": null,
+            "remediation": null,
+            "source": null,
+            "valid_from": "<=0.2.102",
+            "valid_until": "0.2.102",
+            "unknown_reason": "config not safely parseable: unclosed table, expected `]`",
+            "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+            "stale_reason": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "tools_scanned": 1,
+      "warning": 0,
+      "info": 0,
+      "unknown": 4,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.1",
+  "id": "grok-build-telemetry-01",
+  "tool": "grok-build",
+  "category": "telemetry",
+  "title": "Product telemetry master switch",
+  "why_it_matters": "Grok Build's user guide documents [features] telemetry as the master switch for anonymous usage telemetry (SpaceXAI product telemetry). The OSS telemetry types accept a boolean or the string mode \"session_metrics\"; this rule observes only boolean true/false at the user-level config — string modes fall to unrecognized/unknown. Source defaults TelemetryMode to Disabled, but the user guide example shows telemetry = false as the explicit opt-out and other configuration layers (CLI flags, environment variables, managed/requirements config) are not inspected. This rule describes local posture only and does not claim wire-level upload behavior.",
+  "unknown_subject": "product telemetry master-switch posture",
+  "os": ["macos", "linux"],
+  "scopes": ["user"],
+  "auth_prerequisites": null,
+  "observation": {
+    "file": "config.toml",
+    "key": "features.telemetry",
+    "type": "bool",
+    "allowed_render": ["true", "false", "unset"]
+  },
+  "outcomes": [
+    {
+      "when": "features.telemetry is explicitly false",
+      "status": "pass",
+      "match": { "equals": { "value": false } },
+      "severity": null,
+      "confidence": "high",
+      "message": "The inspected user-level config disables the product telemetry master switch (features.telemetry = false).",
+      "remediation": null
+    },
+    {
+      "when": "features.telemetry is explicitly true in the user-level config",
+      "status": "finding",
+      "match": { "equals": { "value": true } },
+      "severity": "info",
+      "confidence": "high",
+      "message": "The inspected user-level config explicitly enables the product telemetry master switch (features.telemetry = true).",
+      "remediation": {
+        "summary": "Disable the product telemetry master switch at user scope.",
+        "command": "Add to GROK_HOME/config.toml (normally ~/.grok/config.toml):\n[features]\ntelemetry = false"
+      }
+    },
+    {
+      "when": "features.telemetry is unset in the user-level config or the user-level config is absent",
+      "status": "unknown",
+      "match": { "unset": true },
+      "severity": null,
+      "confidence": null,
+      "message": "Effective product telemetry master-switch posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
+      "unknown_reason": "features.telemetry is unset in the user-level config; OSS TelemetryMode defaults to Disabled and the user guide shows an explicit false example, but uninspected CLI flags, environment variables, managed/requirements config, or other layers may determine the effective value.",
+      "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
+    },
+    {
+      "when": "features.telemetry is set to a value outside boolean true/false (including string modes such as session_metrics)",
+      "status": "unknown",
+      "match": { "unrecognized": true },
+      "severity": null,
+      "confidence": null,
+      "message": "features.telemetry is set to an unrecognized value — raw values are never displayed.",
+      "unknown_reason": "features.telemetry is set to an unrecognized value — raw values are never displayed",
+      "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
+    }
+  ],
+  "tested_versions": [
+    { "min": "<=0.2.102", "max": "0.2.102", "verified_on": "2026-07-17" }
+  ],
+  "sources": [
+    {
+      "schema_version": "1.0",
+      "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+      "publisher": "xAI",
+      "title": "Grok Build user guide — Configuration",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:7b19d8b0cb8c589f672bc49a47d217de206f25ad4893b1233c02031cfd3a8319",
+      "archived_url": null,
+      "notes": "In-tree user guide at OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1 (retrieved 2026-07-17). Documents [features] telemetry = false as anonymous usage telemetry master switch, and the [telemetry] table for selective sub-controls. Prefer this OSS primary over lagging docs.x.ai when they disagree (owner decision 2026-07-17). Local posture only; no wire capture."
+    },
+    {
+      "schema_version": "1.0",
+      "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-telemetry/src/config.rs",
+      "publisher": "xAI",
+      "title": "Grok Build telemetry configuration types",
+      "evidence_class": "official-documentation",
+      "retrieved": "2026-07-17",
+      "content_hash": "sha256:11044f207a0894d0c0e2f729bc8c88fcc51b1b98a85d9eaadf85491b124a8e36",
+      "archived_url": null,
+      "notes": "OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1. TelemetryMode default is Disabled; wire format for [features] telemetry accepts bool or \"session_metrics\" string. String modes are outside this rule's bool observation domain."
+    }
+  ],
+  "limitations": [
+    "Only the user-level GROK_HOME/config.toml is inspected; CLI flags, environment variables, managed/requirements config, and project-scoped config are not inspected.",
+    "An explicit user-level value describes that layer only and does not prove the effective value for every invocation.",
+    "String telemetry modes such as \"session_metrics\" are outside the boolean observation domain and yield unrecognized/unknown.",
+    "This rule does not inspect wire-level uploads, Mixpanel, or session/trace upload behavior — local posture only.",
+    "Auth/account state is user-confirmed-or-unknown; this rule never infers it."
+  ],
+  "unknown_conditions": [
+    "Config file unreadable (permissions).",
+    "Config file is a symlink or non-regular file (not followed).",
+    "features.telemetry is unset in the user-level config or the user-level config is absent; other configuration layers are not inspected.",
+    "features.telemetry set to a value outside boolean true/false (raw values are never displayed).",
+    "Config file exceeds parse bounds (size > 1 MiB or nesting depth > 32)."
+  ]
+}

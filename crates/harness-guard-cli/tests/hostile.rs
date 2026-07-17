@@ -399,3 +399,85 @@ fn claude_code_non_utf8_config_degrades_to_unknown() {
         .unwrap();
     assert!(reason.contains("UTF-8"));
 }
+
+// --- Task 19: grok-build hostile runtime mutations (TOML, peer of codex). ---
+
+#[test]
+fn grok_build_oversized_config_is_refused() {
+    let (_temp, files) = temp_copy_harness("grok-build", "oversized");
+    let config = files.join("home/.grok/config.toml");
+    let mut oversized = String::with_capacity(1_100_000);
+    while oversized.len() <= 1024 * 1024 {
+        oversized.push_str("# synthetic padding line\n");
+    }
+    std::fs::write(config, oversized).unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "grok-build/oversized");
+    assert_json_subset(
+        &expected_report_for("grok-build", "oversized"),
+        &report,
+        "grok-build/oversized",
+    );
+    assert_eq!(report["tools"][0]["findings"][0]["status"], "unknown");
+}
+
+#[cfg(unix)]
+#[test]
+fn grok_build_permission_denied_degrades_to_unknown() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (_temp, files) = temp_copy_harness("grok-build", "permission-denied");
+    let config = files.join("home/.grok/config.toml");
+    let restore = RestorePermissions {
+        path: config.clone(),
+        permissions: std::fs::metadata(&config).unwrap().permissions(),
+    };
+    std::fs::set_permissions(&config, std::fs::Permissions::from_mode(0o000)).unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    drop(restore);
+
+    assert_eq!(output.status.code(), Some(2));
+    let report = json_report(&output, "grok-build/permission-denied");
+    assert_json_subset(
+        &expected_report_for("grok-build", "permission-denied"),
+        &report,
+        "grok-build/permission-denied",
+    );
+    let reason = report["tools"][0]["findings"][0]["unknown_reason"]
+        .as_str()
+        .unwrap();
+    assert!(reason.contains("permission"));
+}
+
+#[cfg(unix)]
+#[test]
+fn grok_build_symlink_config_is_not_followed() {
+    let (_temp, files) = temp_copy_harness("grok-build", "symlink-config");
+    let grok_home = files.join("home/.grok");
+    std::os::unix::fs::symlink(
+        grok_home.join("real-config.toml"),
+        grok_home.join("config.toml"),
+    )
+    .unwrap();
+
+    let output = run_harness_files(&files, &["scan", "--json"]);
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "refused read degrades the scan"
+    );
+    let report = json_report(&output, "grok-build/symlink-config");
+    assert_json_subset(
+        &expected_report_for("grok-build", "symlink-config"),
+        &report,
+        "grok-build/symlink-config",
+    );
+    assert_eq!(report["tools"][0]["findings"][0]["status"], "unknown");
+    let reason = report["tools"][0]["findings"][0]["unknown_reason"]
+        .as_str()
+        .unwrap();
+    assert!(reason.contains("symlink"));
+}

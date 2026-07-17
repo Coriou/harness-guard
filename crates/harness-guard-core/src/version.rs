@@ -1,7 +1,9 @@
 //! Execution-free version detection, parameterized per harness (§5.3, §9).
 //! NEVER runs any harness binary. npm layouts yield a version; standalone/
 //! Homebrew layouts, and harnesses without an established marker, legitimately
-//! yield None → stale-ruleset ("version not detected").
+//! yield None → stale-ruleset ("version not detected"). Grok Build also has a
+//! managed-install fallback: parse the versioned binary basename from a
+//! symlink target without exec (evidence pack 2026-07-17).
 use crate::discovery::DiscoveryRoot;
 use crate::harness::{HarnessId, descriptor};
 use crate::readfs::{BoundedReadError, read_bounded_regular_with_hook};
@@ -24,10 +26,34 @@ fn detect_version_with_hook(
     let facts = descriptor(harness);
     // §5.3: no established, evidence-backed marker ⇒ None ⇒ stale-ruleset.
     let binary_name = facts.path_binary?;
-    let expected_package = facts.npm_package?;
     let binary = find_path_entry(root, binary_name)?;
-    let resolved = resolve_bounded(&binary)?;
-    let bytes = read_nearest_package_json_with_hook(&resolved, after_package_open)?;
+    // Hook is optional: only the npm path opens package.json.
+    let mut after_package_open = Some(after_package_open);
+
+    // 1. npm package.json walk when the harness has a known package name.
+    if let Some(expected_package) = facts.npm_package {
+        if let Some(resolved) = resolve_bounded(&binary) {
+            if let Some(version) = version_from_npm_package(&resolved, expected_package, || {
+                if let Some(hook) = after_package_open.take() {
+                    hook();
+                }
+            }) {
+                return Some(version);
+            }
+        }
+    }
+
+    // 2. Non-npm fallback: managed-install versioned binary name (Grok Build
+    //    `version_from_versioned_binary_name`, evidence pack 2026-07-17).
+    version_from_managed_install(&binary, binary_name)
+}
+
+fn version_from_npm_package(
+    resolved_binary: &Path,
+    expected_package: &str,
+    after_package_open: impl FnOnce(),
+) -> Option<String> {
+    let bytes = read_nearest_package_json_with_hook(resolved_binary, after_package_open)?;
     let text = String::from_utf8(bytes).ok()?;
     let package: serde_json::Value = serde_json::from_str(&text).ok()?;
     if package.get("name").and_then(|name| name.as_str()) != Some(expected_package) {
@@ -36,6 +62,75 @@ fn detect_version_with_hook(
     let version = package.get("version")?.as_str()?;
     parse_version(version)?;
     Some(version.to_string())
+}
+
+/// Managed-install layout: PATH entry is a symlink whose target basename is
+/// `grok-<semver>[-platform…]`. Never execs the binary. Mirrors Grok's
+/// `installed_on_disk_version` probe (read_link + basename parse + target
+/// existence check).
+fn version_from_managed_install(path_entry: &Path, binary_name: &str) -> Option<String> {
+    let metadata = std::fs::symlink_metadata(path_entry).ok()?;
+    if metadata.file_type().is_symlink() {
+        let target = std::fs::read_link(path_entry).ok()?;
+        let resolved = if target.is_absolute() {
+            target.clone()
+        } else {
+            path_entry.parent()?.join(&target)
+        };
+        // Grok requires the target to exist (metadata follows the symlink).
+        std::fs::metadata(&resolved).ok()?;
+        let name = target.file_name()?.to_str()?;
+        return version_from_versioned_binary_name(name, binary_name);
+    }
+    // Uncommon: PATH entry itself is the versioned regular file.
+    let name = path_entry.file_name()?.to_str()?;
+    version_from_versioned_binary_name(name, binary_name)
+}
+
+/// Extract the `<version>` portion of a versioned binary file name.
+///
+/// Mirrors Grok Build's `version_from_versioned_binary_name` (evidence pack
+/// `docs/research/evidence/grok-build/2026-07-17`, SOURCE_REV
+/// `124d85bc5dc6e7805560215fcc6d5413944920e1`,
+/// `crates/codegen/xai-grok-update/src/version.rs`): everything between the
+/// `{bin_prefix}-` prefix and the first platform-OS token
+/// (`macos`|`linux`|`darwin`|`windows`) is the version, validated as semver
+/// so unknown layouts return `None`.
+pub fn version_from_versioned_binary_name(name: &str, bin_prefix: &str) -> Option<String> {
+    const PLATFORM_OS: &[&str] = &["macos", "linux", "darwin", "windows"];
+    let suffix = name.strip_prefix(bin_prefix)?.strip_prefix('-')?;
+    let parts: Vec<&str> = suffix.split('-').collect();
+    let platform_start = parts
+        .iter()
+        .position(|part| PLATFORM_OS.contains(part))
+        .unwrap_or(parts.len());
+    let ver_str = parts[..platform_start].join("-");
+    if !is_loose_semver(&ver_str) {
+        return None;
+    }
+    Some(ver_str)
+}
+
+/// Lightweight semver check (no `semver` crate dependency): strict X.Y.Z or
+/// X.Y.Z-prerelease, matching the cases Grok's own tests accept.
+fn is_loose_semver(ver_str: &str) -> bool {
+    let (core, pre) = match ver_str.split_once('-') {
+        Some((core, pre)) => (core, Some(pre)),
+        None => (ver_str, None),
+    };
+    if parse_version(core).is_none() {
+        return false;
+    }
+    match pre {
+        None => true,
+        Some("") => false,
+        Some(pre) => {
+            pre.bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'.' || byte == b'-')
+                && !pre.starts_with('.')
+                && !pre.ends_with('.')
+        }
+    }
 }
 
 /// Tool-on-PATH check used for detection confidence and the `list` command.
@@ -363,16 +458,123 @@ mod tests {
     }
 
     #[test]
-    fn grok_detection_is_none_until_evidence_establishes_a_marker() {
+    fn grok_npm_layout_detects_version() {
         let dir = tempfile::tempdir().unwrap();
         let base = dir.path().canonicalize().unwrap();
+        let package = base.join("node_modules/@xai-official/grok");
+        std::fs::create_dir_all(package.join("bin")).unwrap();
+        std::fs::write(package.join("bin/grok"), "#!/usr/bin/env node\n").unwrap();
+        std::fs::write(
+            package.join("package.json"),
+            r#"{"name": "@xai-official/grok", "version": "0.2.102"}"#,
+        )
+        .unwrap();
+        let root = DiscoveryRoot {
+            codex_home: base.join("absent-codex"),
+            claude_home: base.join("absent-claude"),
+            grok_home: base.join("absent-grok"),
+            path_dirs: vec![package.join("bin")],
+        };
+        assert_eq!(
+            detect_version(&root, HarnessId::GrokBuild),
+            Some("0.2.102".to_string())
+        );
+        assert!(binary_on_path(&root, HarnessId::GrokBuild));
+        assert_eq!(detect_version(&root, HarnessId::Codex), None);
+    }
+
+    /// Cases from Grok Build's own `test_version_from_versioned_binary_name`
+    /// (evidence pack raw/update-version.rs, 2026-07-17).
+    #[test]
+    fn version_from_versioned_binary_name_matches_grok_cases() {
+        let cases: &[(&str, Option<&str>)] = &[
+            ("grok-0.2.46-darwin-arm64", Some("0.2.46")),
+            ("grok-0.1.220-linux-x86_64", Some("0.1.220")),
+            ("grok-0.2.5-windows-x86_64.exe", Some("0.2.5")),
+            ("grok-0.1.220-alpha.4-linux-x86_64", Some("0.1.220-alpha.4")),
+            ("grok-0.1.220-alpha.4", Some("0.1.220-alpha.4")),
+            ("grok-pager-0.1.5-darwin-arm64", None),
+            ("grok-garbage-darwin-arm64", None),
+            ("grok-0.2.46", Some("0.2.46")),
+            ("other-0.2.46-darwin-arm64", None),
+            ("grok-latest", None),
+            ("grok", None),
+            ("", None),
+        ];
+        for (name, expected) in cases {
+            assert_eq!(
+                version_from_versioned_binary_name(name, "grok").as_deref(),
+                *expected,
+                "version_from_versioned_binary_name({name:?})"
+            );
+        }
+        assert_eq!(
+            version_from_versioned_binary_name("grok-pager-0.1.5-darwin-arm64", "grok-pager")
+                .as_deref(),
+            Some("0.1.5")
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn grok_managed_install_symlink_detects_version_without_npm() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let downloads = base.join("downloads");
+        let path = base.join("path");
+        std::fs::create_dir_all(&downloads).unwrap();
+        std::fs::create_dir_all(&path).unwrap();
+        let target = downloads.join("grok-0.2.102-macos-x86_64");
+        std::fs::write(&target, "synthetic managed binary; never executed").unwrap();
+        std::os::unix::fs::symlink(&target, path.join("grok")).unwrap();
+        let root = DiscoveryRoot {
+            codex_home: base.join("absent-codex"),
+            claude_home: base.join("absent-claude"),
+            grok_home: base.join("absent-grok"),
+            path_dirs: vec![path],
+        };
+        assert_eq!(
+            detect_version(&root, HarnessId::GrokBuild),
+            Some("0.2.102".to_string())
+        );
+        assert!(binary_on_path(&root, HarnessId::GrokBuild));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn grok_dangling_managed_symlink_is_none() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let path = base.join("path");
+        std::fs::create_dir_all(&path).unwrap();
+        std::os::unix::fs::symlink(
+            base.join("downloads/grok-0.2.102-macos-x86_64"),
+            path.join("grok"),
+        )
+        .unwrap();
+        let root = DiscoveryRoot {
+            codex_home: base.join("absent-codex"),
+            claude_home: base.join("absent-claude"),
+            grok_home: base.join("absent-grok"),
+            path_dirs: vec![path],
+        };
+        assert_eq!(detect_version(&root, HarnessId::GrokBuild), None);
+    }
+
+    #[test]
+    fn grok_path_binary_without_marker_is_none() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().canonicalize().unwrap();
+        let path = base.join("path");
+        std::fs::create_dir_all(&path).unwrap();
+        std::fs::write(path.join("grok"), "synthetic stub; never executed").unwrap();
         let root = DiscoveryRoot {
             codex_home: base.join("a"),
             claude_home: base.join("b"),
             grok_home: base.join("c"),
-            path_dirs: vec![base.clone()],
+            path_dirs: vec![path],
         };
+        assert!(binary_on_path(&root, HarnessId::GrokBuild));
         assert_eq!(detect_version(&root, HarnessId::GrokBuild), None);
-        assert!(!binary_on_path(&root, HarnessId::GrokBuild));
     }
 }

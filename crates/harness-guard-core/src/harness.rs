@@ -48,11 +48,12 @@ pub struct HarnessDescriptor {
     /// User-scope config file name inside the harness home (§5.1 table).
     pub config_file: &'static str,
     pub config_format: ConfigFormat,
-    /// PATH entry name used for detection. None until evidence establishes
-    /// one (grok-build: §7.3 protocol output).
+    /// PATH entry name used for detection. None disables PATH-based
+    /// detection for that harness.
     pub path_binary: Option<&'static str>,
-    /// npm package the version walk expects. None disables detection
-    /// entirely — findings then degrade to stale-ruleset, never a guess.
+    /// npm package the version walk expects. None skips the npm walk; a
+    /// harness may still detect version via a non-npm fallback (e.g. Grok
+    /// managed-install symlink basename parsing).
     pub npm_package: Option<&'static str>,
     /// Symbolic token for a redacted config path that is not under the user
     /// home (reachable only via a home-override env var in the CLI crate).
@@ -83,11 +84,12 @@ static GROK_BUILD: HarnessDescriptor = HarnessDescriptor {
     id: HarnessId::GrokBuild,
     config_file: "config.toml",
     config_format: ConfigFormat::Toml,
-    // §5.3: detection strategy is an output of the §7.3 protocol. Until
-    // packaging is established from evidence, detection returns None and
-    // every Grok finding degrades to stale-ruleset. Do NOT assume npm.
-    path_binary: None,
-    npm_package: None,
+    // Evidence pack docs/research/evidence/grok-build/2026-07-17 (SOURCE_REV
+    // 124d85bc5dc6e7805560215fcc6d5413944920e1): PATH binary `grok`, npm
+    // package `@xai-official/grok` still published; managed installs expose
+    // version via symlink target basename (version.rs fallback).
+    path_binary: Some("grok"),
+    npm_package: Some("@xai-official/grok"),
     home_token: "$GROK_HOME",
 };
 
@@ -139,8 +141,16 @@ mod tests {
             descriptor(HarnessId::ClaudeCode).npm_package,
             Some("@anthropic-ai/claude-code")
         );
-        // Grok detection stays off until §7.3 evidence exists.
-        assert_eq!(descriptor(HarnessId::GrokBuild).path_binary, None);
-        assert_eq!(descriptor(HarnessId::GrokBuild).npm_package, None);
+        // Grok detection from 2026-07-17 evidence pack (SOURCE_REV 124d85bc…).
+        assert_eq!(descriptor(HarnessId::GrokBuild).path_binary, Some("grok"));
+        assert_eq!(
+            descriptor(HarnessId::GrokBuild).npm_package,
+            Some("@xai-official/grok")
+        );
+        assert_eq!(descriptor(HarnessId::GrokBuild).config_file, "config.toml");
+        assert_eq!(
+            descriptor(HarnessId::GrokBuild).config_format,
+            ConfigFormat::Toml
+        );
     }
 }

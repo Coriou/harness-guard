@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "case": "missing",
+  "description": "Neither a synthetic Grok Build home nor a Grok Build PATH marker exists, so the tool is not detected.",
+  "expected_report": {
+    "schema_version": "1.1",
+    "ruleset_version": "2026.07.17",
+    "network_requests_made": 0,
+    "tools": [],
+    "summary": {
+      "tools_scanned": 0,
+      "warning": 0,
+      "info": 0,
+      "unknown": 0,
+      "stale": 0,
+      "passed": 0
+    }
+  }
+}
