@@ -1,2 +1,6 @@
 /target
 **/.DS_Store
+
+# Isolated agent worktrees
+.worktrees/
+.claude/worktrees/
