@@ -17,9 +17,11 @@ documentation.
 
 ## Non-negotiable safety rules
 
-- Never inspect or ingest the developer's real `~/.codex`, ambient
-  `CODEX_HOME`, other harness stores, source projects, prompt/session
-  transcripts, shell history, `.env` files, credentials, or secrets.
+- Never inspect or ingest the developer's real harness stores — `~/.codex`,
+  `~/.claude`, `~/.grok`, or any home-override environment variable pointing
+  at them (`CODEX_HOME` and any documented equivalents) — nor source
+  projects, prompt/session transcripts, shell history, `.env` files,
+  credentials, or secrets.
 - Every test and development scan must use an explicit synthetic root under
   `fixtures/` or a temporary directory derived from one. Do not run an ambient
   `harness-guard scan` as a test.

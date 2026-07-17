@@ -101,3 +101,30 @@ until review.
 - Secret scans of reachable history and the current worktree found no leaks.
   The pre-public provenance cleanup is limited to the already-approved absolute
   checkout path and author email normalization.
+
+## 2026-07-17 — Multi-harness architecture and engine shipped; public push
+
+- Executed `docs/superpowers/plans/2026-07-16-harness-guard-0.0.1-multi-harness.md`
+  via subagent-driven development: 20 of its 25 tasks complete and
+  adversarially reviewed (~28 commits since `bc6610e`).
+- Shipped a declarative rule engine (rules are data over a closed set of
+  typed match primitives; totality — exhaustiveness, overlap-freedom, status
+  legality — proven at load time), the `HarnessId`/descriptor abstraction,
+  and JSON config parsing at TOML-equivalent hostile rigor.
+- Generalized runtime coverage from Codex-only to three harnesses: Codex CLI
+  (4 rules: history persistence, analytics, feedback, OTel prompt logging)
+  and Claude Code (5 rules: cleanup period, telemetry/error-reporting/
+  feedback-command/feedback-survey opt-outs), both with fresh-evidence
+  fixture matrices. Grok Build is detection-only — recognized as a supported
+  harness with zero bundled rules, pending its clean-room evidence run.
+- Added the `capabilities` subcommand (schema 1.0) and `docs/agent-guide.md`
+  as the agent-facing discovery surface.
+- Remaining work (dependency order): Grok Build rules (release-gating, owner
+  lab-run evidence), the deferred `capabilities` goldens, the multi-harness
+  no-egress proof, the 0.0.1 version/CHANGELOG bump, the full documentation-
+  corrections pass, a final whole-branch review, then the owner-gated release
+  tag. Full status, per-task commit ranges, and the next starting prompt are
+  in `docs/superpowers/handoffs/2026-07-17-0.0.1-multi-harness-handoff.md`.
+- Did an interim documentation-truthfulness pass (README, CONTEXT.md,
+  AGENTS.md) ahead of the full Task 24 sweep, then merged this branch to
+  `main` and pushed to the now-public `origin` with owner authorization.

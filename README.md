@@ -12,8 +12,11 @@ and cites the exact documentation behind each finding. Scans make no network
 requests, never execute the tools they discover, and never read source code,
 session transcripts, shell history, `.env` files, or secrets.
 
-> **Early preview:** the current slice audits one setting:
-> [Codex CLI `history.persistence`](./rules/codex/history-persist-01.json).
+> **Current scope:** three harnesses are supported —
+> [Codex CLI](./rules/codex/) (4 bundled rules) and
+> [Claude Code](./rules/claude-code/) (5 bundled rules) each ship source-cited
+> retention/telemetry rules; Grok Build is detected but ships no bundled rules
+> yet. See [Current scope and limits](#current-scope-and-limits) below.
 
 ## Quick start
 
@@ -78,6 +81,9 @@ harness-guard list
 # Full bundled evidence, hashes, archives, limitations, and tested versions
 harness-guard explain codex-history-persist-01
 
+# Machine-readable tool/rule/category inventory (the discovery entrypoint for agents)
+harness-guard capabilities --json
+
 # Binary and ruleset versions
 harness-guard version
 
@@ -102,30 +108,39 @@ color, verbosity, and failure-threshold options.
 ## Test it without using your config
 
 All committed fixtures are synthetic. This exercises the complete fixture
-matrix without touching your real Codex home:
+matrix without touching your real Codex, Claude Code, or Grok Build config:
 
 ```bash
 cargo test --workspace
 ```
 
-To inspect a synthetic warning end to end:
+To inspect a synthetic warning end to end, isolate `HOME` as well as
+`CODEX_HOME`—otherwise the scan will also look for a real `~/.claude` or
+`~/.grok` on your machine, since three harnesses are now detected, not one:
 
 ```bash
 cargo build -p harness-guard-cli
 
-CODEX_HOME="$PWD/fixtures/codex/risky-explicit/files/codex-home" \
-PATH="$PWD/fixtures/codex/risky-explicit/files/path:$PATH" \
-./target/debug/harness-guard scan --color never
+env -i \
+  HOME="$PWD/fixtures/codex/risky-explicit/files/codex-home" \
+  CODEX_HOME="$PWD/fixtures/codex/risky-explicit/files/codex-home" \
+  PATH="$PWD/fixtures/codex/risky-explicit/files/path:/usr/bin:/bin" \
+  ./target/debug/harness-guard scan --color never
 ```
 
 That command intentionally exits `1` because the fixture contains a warning.
 
 ## Safety model
 
-During a Codex scan, Harness Guard may read only:
+During a scan, Harness Guard may read only, per detected harness:
 
-- `CODEX_HOME/config.toml` (bounded to 1 MiB), and
-- a nearby npm `package.json` version marker (bounded to 64 KiB).
+- the harness's user-scope config file — `CODEX_HOME/config.toml`,
+  `~/.claude/settings.json`, or `~/.grok/config.toml` (each bounded to 1 MiB),
+  and
+- for Codex and Claude Code (both npm-packaged), a nearby npm `package.json`
+  version marker (bounded to 64 KiB). Grok Build has no established install
+  channel yet, so no such marker is read for it and its version is never
+  detected.
 
 Reads refuse symlinks and non-regular files, use a pinned opened handle, and
 discard unrelated/raw config data before reporting. Usernames, home paths, and
@@ -141,16 +156,26 @@ scripts/no-egress/run-macos.sh
 
 ## Current scope and limits
 
-| Tool | Rule | Status |
-| --- | --- | --- |
-| Codex CLI | Local session-history persistence | Implemented |
+| Tool | Rules | Categories | Status |
+| --- | ---: | --- | --- |
+| Codex CLI | 4 | retention, telemetry, transfer | Implemented |
+| Claude Code | 5 | retention, telemetry | Implemented |
+| Grok Build | 0 | — | Detected only — no bundled rules yet |
 
-- Only the user-level Codex config is inspected. System config, selected
-  profiles, trusted-project config, and CLI overrides are not inspected, so an
-  unset user-level value is reported as `unknown`.
+Run `harness-guard capabilities --json` for the live, authoritative count
+instead of relying on this table — it is regenerated from the same bundled
+rule data and will not drift from what a scan actually evaluates.
+
+- Grok Build is recognized during detection so a scan reports it by name, but
+  no rule has shipped for it yet: a scan renders "no rules bundled for this
+  tool yet" rather than a pass. Coverage is pending fresh clean-room evidence
+  of its current configuration surface.
+- Only the user-level config for each harness is inspected. System config,
+  selected profiles, trusted-project config, and CLI overrides are not
+  inspected, so an unset user-level value is reported as `unknown`.
 - Auth method and server-side policy are never inferred from local files.
-- An unknown or untested Codex version produces an unverified result, never a
-  pass.
+- An unknown or untested harness version produces an unverified result, never
+  a pass.
 - Windows is not supported in this release because its filesystem traversal has
   not yet met the same race-resistant path-refusal invariant as macOS/Linux.
 - Rules carry source URLs, retrieval dates, semantic hashes, archive links,

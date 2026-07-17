@@ -2,22 +2,36 @@
 
 **Project:** Harness Guard
 **Purpose:** Local, execution-free, per-finding-cited config auditor.
-**Context date:** 2026-07-16
-**Current phase:** Codex CLI thin slice implemented; release, security, evidence,
-and public-readiness validation in progress.
+**Context date:** 2026-07-17
+**Current phase:** Multi-harness generalization in progress
+(`docs/superpowers/plans/2026-07-16-harness-guard-0.0.1-multi-harness.md`,
+20 of 25 tasks complete). Grok Build rule authoring, the multi-harness
+no-egress proof, the 0.0.1 version bump, the full documentation-corrections
+pass, and the release tag remain — see the latest handoff under
+`docs/superpowers/handoffs/` for exact status.
 
 ## Current implemented scope
 
-Harness Guard is a free/open-source, read-only Rust CLI and core. Runtime code
-currently supports **Codex CLI only**, with a single source-cited rule for local
-history persistence. The bundled ruleset is the authoritative record of the
-tested Codex version range.
+Harness Guard is a free/open-source, read-only Rust CLI and core, built on a
+declarative rule engine (rules are data over a closed set of typed match
+primitives; totality is proven at load time). Runtime code supports **three
+harnesses**: Codex CLI (4 source-cited rules: history persistence, analytics,
+feedback, OpenTelemetry prompt logging), Claude Code (5 source-cited rules:
+session-history cleanup period, telemetry/error-reporting/feedback-command/
+feedback-survey opt-outs), and Grok Build (detection only — recognized as a
+supported harness, zero bundled rules, pending fresh clean-room evidence per
+`docs/research/protocols/grok-build-cleanroom.md`; every Grok Build scan
+result is honestly "no rules bundled for this tool yet", never a pass). The
+`capabilities` subcommand and `docs/agent-guide.md` expose this inventory
+machine-readably so it never needs to be hardcoded by a consumer. The bundled
+ruleset is the authoritative record of tested harness version ranges.
 
-Claude Code, GitHub Copilot CLI, Grok, and the other tools discussed in early
-research and product-strategy documents are not implemented or supported. Those
-documents describe possible sequencing, not shipped coverage. Adding a harness,
-rule, write/fix behavior, network feature, database, output format, GUI, or new
-public claim requires explicit approval and fresh primary evidence.
+GitHub Copilot CLI, Gemini CLI, Cursor, OpenCode, and the other tools discussed
+in early research and product-strategy documents are not implemented or
+supported. Those documents describe possible sequencing, not shipped coverage.
+Adding a harness, rule, write/fix behavior, network feature, database, output
+format, GUI, or new public claim requires explicit approval and fresh primary
+evidence.
 
 The CLI supports macOS and Linux. Unsupported build targets fail at compile
 time rather than falling back to an unhardened filesystem open or being
@@ -31,7 +45,8 @@ traversal can meet the same race-resistant, reparse-point-refusing invariant.
 3. `README.md`
 4. `SECURITY.md`
 5. `docs/maintenance/runbook.md`
-6. The thin-slice design, plan, and review findings under `docs/superpowers/`
+6. The design specs, implementation plans, and review findings under
+   `docs/superpowers/`, and any handoff under `docs/superpowers/handoffs/`
 7. Relevant production code, schemas, bundled rules, freshness state, synthetic
    fixtures, workflows, and no-egress scripts
 
@@ -78,11 +93,10 @@ plan/auth context, and official primary source.
 - `harness-guard-cli`: argument parsing, environment/home resolution, sanitized
   rendering, and exit-code semantics.
 
-The repository is under Git version control. Release work must preserve private
-visibility until local gates and private CI pass. Freshness workflows remain
-triage-only and disabled. Do not publish packages, create a GitHub Release, or
-make other external changes without the exact authorization required by
-`AGENTS.md`.
+The repository is under Git version control and has been public since
+2026-07-16. Freshness workflows remain triage-only and disabled. Do not
+publish packages, create a GitHub Release, tag a release, or make other
+external changes without the exact authorization required by `AGENTS.md`.
 
 ## Session continuity
 
