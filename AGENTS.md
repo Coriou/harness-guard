@@ -90,3 +90,13 @@ the change; do not weaken a safety gate or golden merely to make it pass.
   that exact external action.
 - Never make a public verification-cadence claim until the pipeline has
   demonstrably run on schedule.
+
+## Audit and release
+
+When asked to audit, re-verify, run a freshness pass, or prepare a release,
+follow `.grok/skills/audit-and-release/SKILL.md` and
+`docs/maintenance/audit-and-release-loop.md`. Invoking the loop authorizes
+certified re-verify of existing shipped rules and a STOP packet; it does
+not authorize `git push`, `git tag`, GitHub Release, package publish,
+moving an existing tag, or setting `ENABLE_FRESHNESS_WORKFLOWS`. Each of
+those needs a fresh explicit owner sentence that names that exact action.

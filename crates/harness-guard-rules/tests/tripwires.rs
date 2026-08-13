@@ -77,20 +77,101 @@ fn rules_never_claim_keys_stop_canary_uploads_without_lab_evidence() {
 }
 
 #[test]
-fn agent_guide_carries_positioning_and_no_cadence_claims() {
-    let text = std::fs::read_to_string(repo_root().join("docs/agent-guide.md")).unwrap();
-    assert!(text.contains("local, execution-free, per-finding-cited config auditor"));
+fn readme_and_agent_guide_carry_positioning_and_no_cadence_claims() {
+    let root = repo_root();
+    let files = ["docs/agent-guide.md", "README.md"];
     let forbidden_phrase = ["AI agent", "security scanner"].join(" ");
-    assert!(!text.contains(&forbidden_phrase));
-    for cadence in [
-        "weekly",
-        "daily re-verification",
-        "continuously verified",
-        "always up to date",
-    ] {
+    for rel in files {
+        let path = root.join(rel);
+        let text = std::fs::read_to_string(&path)
+            .unwrap_or_else(|_| panic!("{path:?} must be readable UTF-8"));
         assert!(
-            !text.to_lowercase().contains(cadence),
-            "cadence claim {cadence:?} found"
+            text.contains("local, execution-free, per-finding-cited config auditor"),
+            "{rel} must carry the positioning phrase"
         );
+        assert!(
+            !text.contains(&forbidden_phrase),
+            "{rel} must not contain {forbidden_phrase:?}"
+        );
+        for cadence in [
+            "weekly",
+            "daily re-verification",
+            "continuously verified",
+            "always up to date",
+        ] {
+            assert!(
+                !text.to_lowercase().contains(cadence),
+                "cadence claim {cadence:?} found in {rel}"
+            );
+        }
+    }
+}
+
+#[test]
+fn security_md_does_not_claim_versioned_releases_are_absent() {
+    let text = std::fs::read_to_string(repo_root().join("SECURITY.md")).unwrap();
+    assert!(
+        !text
+            .to_lowercase()
+            .contains("until versioned releases exist"),
+        "SECURITY.md must name the current tagged preview now that 0.0.1 / 0.0.2 exist"
+    );
+}
+
+fn line_writes_into_rules_or_freshness(line: &str) -> bool {
+    let compact: String = line
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect::<String>()
+        .to_lowercase();
+    let after_redirect = compact.contains(">freshness/")
+        || compact.contains(">>freshness/")
+        || compact.contains(">rules/")
+        || compact.contains(">>rules/");
+    let tee_into = compact.contains("teefreshness/")
+        || compact.contains("tee-afreshness/")
+        || compact.contains("teerules/")
+        || compact.contains("tee-arules/");
+    after_redirect || tee_into
+}
+
+#[test]
+fn maintainer_fetch_scripts_are_strict_and_write_nothing_under_rules_or_freshness() {
+    let root = repo_root();
+    let scripts = [
+        root.join("scripts/freshness/probe-releases.sh"),
+        root.join("scripts/freshness/fetch-cited.sh"),
+    ];
+    for script in scripts {
+        let text = std::fs::read_to_string(&script)
+            .unwrap_or_else(|_| panic!("maintainer script {script:?} must exist"));
+        assert!(text.contains("set -eu"), "{script:?} must contain set -eu");
+        for line in text.lines() {
+            assert!(
+                !line_writes_into_rules_or_freshness(line),
+                "{script:?} must not redirect into rules/ or freshness/: {line}"
+            );
+        }
+    }
+}
+
+#[test]
+fn core_cli_scan_and_ci_do_not_reference_maintainer_fetch_helpers() {
+    let root = repo_root();
+    let mut files = Vec::new();
+    walk_files(&root.join("crates/harness-guard-core"), &mut files);
+    walk_files(&root.join("crates/harness-guard-cli/src"), &mut files);
+    files.push(root.join(".github/workflows/ci.yml"));
+    assert!(files.iter().any(|p| p.ends_with("scan.rs")));
+    let needles = ["fetch-cited", "probe-releases", "web.archive.org/save"];
+    for file in files {
+        let text = std::fs::read_to_string(&file)
+            .unwrap_or_else(|_| panic!("{file:?} must be readable UTF-8"));
+        for needle in needles {
+            assert!(
+                !text.contains(needle),
+                "{needle:?} must not appear in product/CI tree {file:?}"
+            );
+        }
     }
 }

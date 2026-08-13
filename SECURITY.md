@@ -19,8 +19,8 @@ Include:
 
 ## Supported version
 
-Harness Guard is an early preview. Security fixes target the current `main`
-branch until versioned releases exist.
+Harness Guard is an early preview. Security fixes target the latest tagged
+preview on `main` (currently `0.0.2`). There is no long-term support line.
 
 ## Security invariants
 

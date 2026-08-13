@@ -154,3 +154,13 @@ until review.
   requires explicit owner authorization for `git tag 0.0.1` and any GitHub
   Release. No package publish. No `ENABLE_FRESHNESS_WORKFLOWS`. Wire-level
   Grok behavior claims remain out of scope until a targeted lab run lands.
+
+## 2026-08-13 — audit-and-release loop landed
+
+- Added the repeatable maintainer loop (checklist + repo-local skill +
+  probe/fetch/gate scripts + tripwires). `SECURITY.md` now names tagged
+  preview `0.0.2` as the supported line.
+- Did not bump binary `0.0.2` or ruleset `2026.08.13`. Did not ship held
+  2026-08-13 candidate rules. Did not enable `ENABLE_FRESHNESS_WORKFLOWS`.
+- Last-mile (push / tag / GitHub Release) still needs a fresh explicit
+  owner go per action. Do not move `0.0.1` or `0.0.2`.

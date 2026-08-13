@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Maintainer audit-and-release loop: `docs/maintenance/audit-and-release-loop.md`,
+  `.grok/skills/audit-and-release/SKILL.md`, and maintainer helpers
+  `scripts/freshness/probe-releases.sh`, `scripts/freshness/fetch-cited.sh`,
+  `scripts/maintenance/run-gates.sh`. Hard-stops before push, annotated tag,
+  or GitHub Release. Scan behavior, shipped rules, and freshness workflow
+  enablement are unchanged.
+
 ## [0.0.2] - 2026-08-13
 
 Ruleset re-verification on current vendor releases. Binary 0.0.1 remains

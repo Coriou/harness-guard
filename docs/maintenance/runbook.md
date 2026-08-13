@@ -61,3 +61,15 @@ npm-first. Latest evidence pack:
 No public verification-cadence claim ("verified monthly", badges, and similar)
 is made until the freshness pipeline has actually run on a schedule. This is a
 hard rule from the product decision record.
+
+## Audit-and-release loop
+
+The repeatable certified pass (inventory → probe → fetch/hash → certify
+existing rules → docs sweep → hygiene → version/CHANGELOG → gates → STOP)
+lives in `docs/maintenance/audit-and-release-loop.md`. Agents invoke it
+through `.grok/skills/audit-and-release/SKILL.md`.
+
+Invoking that loop does not replace this file’s triage flow, does not
+enable `ENABLE_FRESHNESS_WORKFLOWS`, and does not authorize push, annotated
+tag, GitHub Release, package publish, or repo-settings changes. Run this
+loop when you next sit down to maintain the repo.

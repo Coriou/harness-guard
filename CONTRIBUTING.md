@@ -83,11 +83,16 @@ Give the agent a clean branch or worktree, a bounded task, and this prompt:
 
 ```text
 Read AGENTS.md, CONTRIBUTING.md, and CONTEXT.md first. Work only on <task>.
-Use synthetic fixtures; never inspect ambient HOME, CODEX_HOME, ~/.codex, or
-other sensitive stores. Preserve no-network/no-execution scan guarantees and
+If the task is an audit, re-verify, freshness pass, or release prep, follow
+`.grok/skills/audit-and-release/SKILL.md` and
+`docs/maintenance/audit-and-release-loop.md`. Use synthetic fixtures; never
+inspect ambient HOME, CODEX_HOME, ~/.codex, ~/.claude, ~/.grok, or other
+sensitive stores. Preserve no-network/no-execution scan guarantees and
 redaction. Add focused tests, run the repository validation commands, then
-report the changed files, test evidence, and any unresolved risk. Do not add a
-new rule, tool, dependency, workflow activation, or publishing action unless
+report the changed files, gate evidence (which gates ran and their exit
+status), and any unresolved risk. Hard-stop before push, annotated tag, or
+GitHub Release unless the task names that exact action. Do not add a new
+rule, tool, dependency, workflow activation, or publishing action unless
 the task explicitly authorizes it.
 ```
 

@@ -3,10 +3,12 @@
 **Project:** Harness Guard
 **Purpose:** Local, execution-free, per-finding-cited config auditor.
 **Context date:** 2026-08-13
-**Current phase:** 0.0.1 multi-harness content complete; ruleset re-verified
-2026-08-13. The owner-gated release-gate run and tag checklist (Task 25)
-remain — no tag, GitHub Release, package publish, or workflow enablement
-without exact owner authorization.
+**Current phase:** 0.0.2 is tagged; ruleset CalVer is 2026.08.13. Repeat a
+freshness / docs / release-prep pass via
+`docs/maintenance/audit-and-release-loop.md` and
+`.grok/skills/audit-and-release/SKILL.md`. Tags `0.0.1` and `0.0.2` exist;
+do not move them. Last-mile (push, annotated tag, GitHub Release) needs a
+fresh explicit owner go per action.
 
 ## Current implemented scope
 
@@ -106,9 +108,9 @@ plan/auth context, and official primary source.
 The repository is public. Freshness workflows remain triage-only and disabled.
 Do not publish packages, create a GitHub Release, or make other external
 changes without the exact authorization required by `AGENTS.md`. Public GitHub
-already has annotated tag `0.0.1` at the 2026-07-17 tip. This freshness
-commit is tagged `0.0.2`. Do not move `0.0.1`. Do not create a GitHub
-Release or enable freshness workflows without a separate owner go.
+has annotated tags `0.0.1` (2026-07-17 tip) and `0.0.2` (2026-08-13
+freshness), plus a GitHub Release for `0.0.2`. Do not move those tags.
+Further Releases or workflow enablement need a separate owner go.
 
 ## 2026-08-13 candidate-rule decisions (evaluated, not shipped)
 
@@ -125,6 +127,9 @@ Official sources still document extra keys. None were added in this pass:
 
 ## Session continuity
 
+- Follow `docs/maintenance/audit-and-release-loop.md` to repeat the
+  2026-08-13 certified pass. Triage of authored-off freshness jobs stays in
+  `docs/maintenance/runbook.md`.
 - Follow `docs/maintenance/runbook.md` for evidence and rule changes.
 - Preserve actual retrieval dates, exact official URLs, semantic hashes, archive
   URLs when available, and version evidence.
