@@ -13,7 +13,7 @@ individually-sourced findings you can act on or hand to a human.
 
 ## Installing
 
-There is no published package yet: 0.0.1 ships as source only, no crates.io
+There is no published package yet: 0.0.2 ships as source only, no crates.io
 or npm distribution. An operator installs it once with
 
 ```bash
@@ -36,16 +36,16 @@ whether/how to invoke the tool, and the only supported discovery entrypoint
 ```json
 {
   "schema_version": "1.0",
-  "harness_guard_version": "0.0.1",
-  "ruleset_version": "2026.07.17",
+  "harness_guard_version": "0.0.2",
+  "ruleset_version": "2026.08.13",
   "report_schema_version": "1.1",
   "tools": [
     { "tool": "claude-code", "rules": 5, "categories": ["retention", "telemetry"],
-      "rules_last_verified_version": "2.1.204", "rules_verified_date": "2026-07-17" },
+      "rules_last_verified_version": "2.1.223", "rules_verified_date": "2026-08-13" },
     { "tool": "codex", "rules": 4, "categories": ["retention", "telemetry", "transfer"],
-      "rules_last_verified_version": "0.144.5", "rules_verified_date": "2026-07-16" },
+      "rules_last_verified_version": "0.147.0", "rules_verified_date": "2026-08-13" },
     { "tool": "grok-build", "rules": 4, "categories": ["telemetry", "transfer"],
-      "rules_last_verified_version": "0.2.102", "rules_verified_date": "2026-07-17" }
+      "rules_last_verified_version": "1.0.3", "rules_verified_date": "2026-08-13" }
   ],
   "commands": ["scan", "list", "explain", "version", "capabilities", "completions"],
   "exit_codes": { "0": "no findings at/above --fail-on", "1": "findings at/above --fail-on", "2": "degraded or internal/usage error" }
@@ -57,7 +57,7 @@ Read this, don't assume it:
 - `tools[].rules` is the number of bundled rules for that tool *right now*.
   `grok-build` ships four local-posture rules (telemetry master switch,
   feedback, session/trace upload sub-switch, external OTEL prompt log) cited
-  from OSS primary sources for version `0.2.102` — not wire-level behavior.
+  from OSS primary sources for version `1.0.3` — not wire-level behavior.
 - `harness_guard_version` (the binary) and `ruleset_version` (the rule data,
   CalVer) move independently. A `scan` can report stale findings on a
   perfectly current binary if the *rules* haven't been re-verified for a new

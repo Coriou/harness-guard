@@ -94,7 +94,7 @@ const GROK_CASES: [&str; 14] = [
     "version-out-of-range",
 ];
 
-/// npm-layout in-range cases (committed package.json @ 0.2.102). Managed-install
+/// npm-layout in-range cases (committed package.json @ 1.0.3). Managed-install
 /// is asserted separately — no package.json; version comes from the runtime
 /// PATH symlink target basename.
 const GROK_IN_RANGE_VERSION_CASES: [&str; 10] = [
@@ -290,7 +290,7 @@ fn in_range_fixture_version_markers_are_synthetic_and_exact_latest() {
             serde_json::from_str(&std::fs::read_to_string(path.join("package.json")).unwrap())
                 .unwrap();
         assert_eq!(package["name"], "@openai/codex");
-        assert_eq!(package["version"], "0.144.5");
+        assert_eq!(package["version"], "0.147.0");
     }
 
     let unknown_path = codex_root.join("unknown-version/files/path");
@@ -319,7 +319,7 @@ fn claude_code_in_range_fixture_version_markers_are_synthetic_and_exact_latest()
             serde_json::from_str(&std::fs::read_to_string(path.join("package.json")).unwrap())
                 .unwrap();
         assert_eq!(package["name"], "@anthropic-ai/claude-code");
-        assert_eq!(package["version"], "2.1.204");
+        assert_eq!(package["version"], "2.1.223");
     }
 
     let unknown_path = claude_root.join("unknown-version/files/path");
@@ -393,7 +393,7 @@ fn grok_build_in_range_fixture_version_markers_are_synthetic_and_exact_latest() 
             serde_json::from_str(&std::fs::read_to_string(path.join("package.json")).unwrap())
                 .unwrap();
         assert_eq!(package["name"], "@xai-official/grok");
-        assert_eq!(package["version"], "0.2.102");
+        assert_eq!(package["version"], "1.0.3");
     }
 
     let unknown_path = grok_root.join("unknown-version/files/path");
@@ -407,7 +407,7 @@ fn grok_build_in_range_fixture_version_markers_are_synthetic_and_exact_latest() 
     assert!(!managed.join("path/package.json").exists());
     assert!(!managed.join("path/grok").exists());
     assert_eq!(
-        std::fs::read_to_string(managed.join("path/downloads/grok-0.2.102-macos-x86_64")).unwrap(),
+        std::fs::read_to_string(managed.join("path/downloads/grok-1.0.3-macos-x86_64")).unwrap(),
         "synthetic managed-install binary; never executed by harness-guard\n"
     );
     let managed_expected: serde_json::Value = serde_json::from_str(
@@ -416,7 +416,7 @@ fn grok_build_in_range_fixture_version_markers_are_synthetic_and_exact_latest() 
     .unwrap();
     assert_eq!(
         managed_expected["expected_report"]["tools"][0]["detected_version"],
-        "0.2.102"
+        "1.0.3"
     );
     assert_eq!(
         managed_expected["expected_report"]["tools"][0]["version_in_range"],

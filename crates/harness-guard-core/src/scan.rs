@@ -273,9 +273,9 @@ mod tests {
 
     #[test]
     fn per_tool_aggregates_are_conservative_in_both_dimensions() {
-        // Two synthetic rules: greatest maxes 0.144.5 (verified 2026-07-16) and
-        // 0.150.0 (verified 2026-07-10). Weakest guarantee: min of maxes =
-        // 0.144.5; earliest date = 2026-07-10.
+        // Two synthetic rules: greatest maxes 0.147.0 (from embedded
+        // codex-analytics-01) and 0.150.0 (verified 2026-07-10). Weakest
+        // guarantee: min of maxes = 0.147.0; earliest date = 2026-07-10.
         //
         // Task 18 added claude-code rules that sort before every codex rule
         // (alphabetical by id), so "first loaded rule" is no longer reliably
@@ -296,7 +296,7 @@ mod tests {
         let newer = harness_guard_rules::loader::ValidatedRule::try_from_raw(newer).unwrap();
         let pair = [base, &newer];
         let (version, date) = conservative_aggregates(&pair);
-        assert_eq!(version.as_deref(), Some("0.144.5"));
+        assert_eq!(version.as_deref(), Some("0.147.0"));
         assert_eq!(date.as_deref(), Some("2026-07-10"));
         assert_eq!(conservative_aggregates(&[]), (None, None));
     }

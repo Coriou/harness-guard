@@ -361,7 +361,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("none".into()))),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(finding.status, Status::Pass);
         assert!(finding.source.is_some(), "pass requires a citation (§5.4)");
@@ -369,12 +369,12 @@ mod tests {
             finding.observation.as_deref(),
             Some("history.persistence = \"none\"")
         );
-        assert_eq!(finding.valid_until.as_deref(), Some("0.144.5"));
+        assert_eq!(finding.valid_until.as_deref(), Some("0.147.0"));
     }
 
     #[test]
     fn unset_in_range_is_unknown_because_other_layers_are_uninspected() {
-        let finding = evaluate_rule(&rule(), &parsed(None), Some("0.144.5"));
+        let finding = evaluate_rule(&rule(), &parsed(None), Some("0.144.6"));
         assert_eq!(finding.status, Status::Unknown);
         assert_eq!(finding.severity, None);
         assert_eq!(
@@ -396,7 +396,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("save-all".into()))),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(finding.status, Status::Finding);
         assert_eq!(
@@ -410,7 +410,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("archive".into()))),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(finding.status, Status::Unknown);
         assert!(finding.severity.is_none() && finding.confidence.is_none());
@@ -428,14 +428,14 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Other)),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(finding.status, Status::Unknown);
     }
 
     #[test]
     fn missing_config_with_tool_detected_is_unknown() {
-        let finding = evaluate_rule(&rule(), &ConfigState::Missing, Some("0.144.5"));
+        let finding = evaluate_rule(&rule(), &ConfigState::Missing, Some("0.144.6"));
         assert_eq!(finding.status, Status::Unknown);
     }
 
@@ -444,7 +444,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &ConfigState::Unreadable(crate::readfs::RefusalReason::PermissionDenied),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(finding.status, Status::Unknown);
         assert!(
@@ -523,13 +523,13 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &ConfigState::Unreadable(crate::readfs::RefusalReason::PermissionDenied),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(
             finding.message,
             "Cannot determine history persistence posture: config file is not readable (permission denied)"
         );
-        let finding = evaluate_rule(&rule(), &parsed(None), Some("0.144.5"));
+        let finding = evaluate_rule(&rule(), &parsed(None), Some("0.144.6"));
         assert_eq!(
             finding.message,
             "Cannot determine history persistence posture: history.persistence is unset in the user-level config; uninspected system, profile, trusted-project, or CLI layers may determine the effective value."
@@ -537,7 +537,7 @@ mod tests {
         let finding = evaluate_rule(
             &rule(),
             &parsed(Some(ExtractedValue::Str("archive".into()))),
-            Some("0.144.5"),
+            Some("0.144.6"),
         );
         assert_eq!(
             finding.message,
@@ -571,7 +571,7 @@ mod tests {
             RefusalReason::Io,
         ];
         for reason in reasons {
-            for detected_version in [None, Some("0.144.5"), Some("9.9.9")] {
+            for detected_version in [None, Some("0.144.6"), Some("9.9.9")] {
                 let finding =
                     evaluate_rule(&rule(), &ConfigState::Unreadable(reason), detected_version);
                 assert_eq!(finding.status, Status::Unknown);
@@ -592,7 +592,7 @@ mod tests {
             key_path: None,
             message: "expected an equals sign".to_string(),
         };
-        for detected_version in [None, Some("0.144.5"), Some("9.9.9")] {
+        for detected_version in [None, Some("0.144.6"), Some("9.9.9")] {
             let finding = evaluate_rule(
                 &rule(),
                 &ConfigState::Unparseable(failure.clone()),

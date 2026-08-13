@@ -1,16 +1,15 @@
 ---
 source: crates/harness-guard-cli/tests/scan_snapshots.rs
-assertion_line: 33
 expression: text
 ---
-harness-guard 0.0.1 · ruleset 2026.07.17 · scanned [TIMESTAMP] · no network requests made
+harness-guard 0.0.2 · ruleset 2026.08.13 · scanned [TIMESTAMP] · no network requests made
 
 detected tools
-  ● claude-code 2.1.204 · config [CONFIG_PATH] · confidence high
+  ● claude-code 2.1.223 · config [CONFIG_PATH] · confidence high
   ○ codex — not detected
   ○ grok-build — not detected
 
-claude-code 2.1.204 — rules verified ≤2.1.204 · 2026-07-17
+claude-code 2.1.223 — rules verified ≤2.1.223 · 2026-08-13
 0 warning · 0 info · 5 unknown · 0 stale · 0 passed
 
 ?? UNKNOWN: Cannot determine local session transcript retention window: cleanupPeriodDays is unset in the user-level config; Claude Code's documented 30-day default applies absent an override, but uninspected managed, project, local, or CLI-flag layers may supply a different effective value.

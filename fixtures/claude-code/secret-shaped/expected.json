@@ -3,15 +3,15 @@
   "case": "secret-shaped",
   "description": "A secret-shaped bareword token ({\"cleanupPeriodDays\": xk-hostile...}) is invalid JSON syntax; the categorical parse diagnostic and every finding must never surface the token, only the structural error category.",
   "expected_report": {
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "claude-code",
-        "detected_version": "2.1.204",
+        "detected_version": "2.1.223",
         "detection_confidence": "high",
-        "rules_last_verified_version": "2.1.204",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "2.1.223",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": true,
         "findings": [
           {
@@ -24,8 +24,8 @@
             "observation": null,
             "remediation": null,
             "source": null,
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": "config not safely parseable: invalid JSON syntax",
             "verify_url": "https://code.claude.com/docs/en/settings",
             "stale_reason": null
@@ -40,8 +40,8 @@
             "observation": null,
             "remediation": null,
             "source": null,
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": "config not safely parseable: invalid JSON syntax",
             "verify_url": "https://code.claude.com/docs/en/data-usage",
             "stale_reason": null
@@ -56,8 +56,8 @@
             "observation": null,
             "remediation": null,
             "source": null,
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": "config not safely parseable: invalid JSON syntax",
             "verify_url": "https://code.claude.com/docs/en/data-usage",
             "stale_reason": null
@@ -72,8 +72,8 @@
             "observation": null,
             "remediation": null,
             "source": null,
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": "config not safely parseable: invalid JSON syntax",
             "verify_url": "https://code.claude.com/docs/en/data-usage",
             "stale_reason": null
@@ -88,8 +88,8 @@
             "observation": null,
             "remediation": null,
             "source": null,
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": "config not safely parseable: invalid JSON syntax",
             "verify_url": "https://code.claude.com/docs/en/data-usage",
             "stale_reason": null

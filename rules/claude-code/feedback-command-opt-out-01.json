@@ -4,22 +4,34 @@
   "tool": "claude-code",
   "category": "telemetry",
   "title": "/feedback command opt-out",
-  "why_it_matters": "Running Claude Code's /feedback command sends a copy of the conversation history, including code, to Anthropic; the user chooses how much history to include before submitting (the current session only, by default, or additional sessions from the same project over a longer window), and transcripts shared this way are retained for 5 years. Submitted feedback is stored in Google Cloud Storage, which Anthropic's documentation states encrypts data at rest by default, and may optionally file a GitHub issue in Anthropic's public repository. The command is on by default for direct Claude API usage and off by default for every alternative model-provider integration documented in Anthropic's 'Default behaviors by API provider' table (Google Cloud's Agent Platform, Amazon Bedrock, Microsoft Foundry, and Claude Platform on AWS). Setting the environment variable DISABLE_FEEDBACK_COMMAND=1 disables the /feedback command outright. Anthropic's settings reference documents no dedicated boolean settings.json key for this control; DISABLE_FEEDBACK_COMMAND is documented only as an environment variable, and the same reference states that any environment variable may be checked into settings.json's user-scope env object — so this rule observes DISABLE_FEEDBACK_COMMAND only as embedded at that path (env.DISABLE_FEEDBACK_COMMAND) inside the inspected user-level settings.json. It cannot observe an ambient shell- or process-level DISABLE_FEEDBACK_COMMAND set outside this file, and it does not evaluate the separate DISABLE_TELEMETRY, DISABLE_ERROR_REPORTING, CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC controls.",
+  "why_it_matters": "Running Claude Code's /feedback command sends a copy of the conversation history, including code, to Anthropic; the user chooses how much history to include before submitting (the current session only, by default, or additional sessions from the same project over a longer window), and transcripts shared this way are retained for 5 years. Submitted feedback is stored in Google Cloud Storage, which Anthropic's documentation states encrypts data at rest by default, and may optionally file a GitHub issue in Anthropic's public repository. The command is on by default for direct Claude API usage and off by default for every alternative model-provider integration documented in Anthropic's 'Default behaviors by API provider' table (Google Cloud's Agent Platform, Amazon Bedrock, Microsoft Foundry, and Claude Platform on AWS). Setting the environment variable DISABLE_FEEDBACK_COMMAND=1 disables the /feedback command outright. Anthropic's settings reference documents no dedicated boolean settings.json key for this control; DISABLE_FEEDBACK_COMMAND is documented only as an environment variable, and the same reference states that any environment variable may be checked into settings.json's user-scope env object \u2014 so this rule observes DISABLE_FEEDBACK_COMMAND only as embedded at that path (env.DISABLE_FEEDBACK_COMMAND) inside the inspected user-level settings.json. It cannot observe an ambient shell- or process-level DISABLE_FEEDBACK_COMMAND set outside this file, and it does not evaluate the separate DISABLE_TELEMETRY, DISABLE_ERROR_REPORTING, CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY, or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC controls.",
   "unknown_subject": "/feedback command opt-out posture",
-  "os": ["macos", "linux"],
-  "scopes": ["user"],
+  "os": [
+    "macos",
+    "linux"
+  ],
+  "scopes": [
+    "user"
+  ],
   "auth_prerequisites": null,
   "observation": {
     "file": "settings.json",
     "key": "env.DISABLE_FEEDBACK_COMMAND",
     "type": "enum",
-    "allowed_render": ["1", "unset"]
+    "allowed_render": [
+      "1",
+      "unset"
+    ]
   },
   "outcomes": [
     {
       "when": "env.DISABLE_FEEDBACK_COMMAND is explicitly \"1\"",
       "status": "pass",
-      "match": { "equals": { "value": "1" } },
+      "match": {
+        "equals": {
+          "value": "1"
+        }
+      },
       "severity": null,
       "confidence": "high",
       "message": "The inspected user-level settings.json sets env.DISABLE_FEEDBACK_COMMAND = \"1\", disabling Claude Code's /feedback command.",
@@ -28,7 +40,9 @@
     {
       "when": "env.DISABLE_FEEDBACK_COMMAND is unset in the user-level config or the user-level config is absent",
       "status": "unknown",
-      "match": { "unset": true },
+      "match": {
+        "unset": true
+      },
       "severity": null,
       "confidence": null,
       "message": "Effective /feedback command posture cannot be determined from an unset user-level value because uninspected configuration layers and the ambient process environment may supply or override it.",
@@ -38,16 +52,22 @@
     {
       "when": "env.DISABLE_FEEDBACK_COMMAND is set to a value other than the documented opt-out token \"1\"",
       "status": "unknown",
-      "match": { "unrecognized": true },
+      "match": {
+        "unrecognized": true
+      },
       "severity": null,
       "confidence": null,
-      "message": "env.DISABLE_FEEDBACK_COMMAND is set to a value other than the documented opt-out token \"1\" — raw values are never displayed.",
-      "unknown_reason": "env.DISABLE_FEEDBACK_COMMAND is set to a value other than the documented opt-out token \"1\" — raw values are never displayed",
+      "message": "env.DISABLE_FEEDBACK_COMMAND is set to a value other than the documented opt-out token \"1\" \u2014 raw values are never displayed.",
+      "unknown_reason": "env.DISABLE_FEEDBACK_COMMAND is set to a value other than the documented opt-out token \"1\" \u2014 raw values are never displayed",
       "verify_url": "https://code.claude.com/docs/en/data-usage"
     }
   ],
   "tested_versions": [
-    { "min": "<=2.1.204", "max": "2.1.204", "verified_on": "2026-07-17" }
+    {
+      "min": "<=2.1.223",
+      "max": "2.1.223",
+      "verified_on": "2026-08-13"
+    }
   ],
   "sources": [
     {
@@ -56,10 +76,10 @@
       "publisher": "Anthropic",
       "title": "Data usage",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-17",
-      "content_hash": "sha256:694dc0f48a48b841b58f6eb6fac0cc3d33b9124e52df6cb6d38bf4eecd0730cc",
-      "archived_url": "https://web.archive.org/web/20260716225036/https://code.claude.com/docs/en/data-usage",
-      "notes": "States, under 'Feedback using the /feedback command': 'If you choose to send us feedback about Claude Code using the /feedback command, we may use your feedback to improve our products and services. Transcripts shared via /feedback are retained for 5 years... To opt out, set the DISABLE_FEEDBACK_COMMAND environment variable to 1.' Also: submitted feedback is 'stored in Google Cloud Storage, which encrypts stored data at rest by default. Optionally, a GitHub issue is created in the public repository.' The 'Default behaviors by API provider' table documents /feedback reports as: Claude API — default on, DISABLE_FEEDBACK_COMMAND=1 to disable; Google Cloud's Agent Platform / Amazon Bedrock / Microsoft Foundry / Claude Platform on AWS — each default off. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:d6b0bdb07421bfaed2eba9b2732897b284a712bcd2ee9ef78829a74af926f7fa",
+      "archived_url": "https://web.archive.org/web/20260813152410/https://code.claude.com/docs/en/data-usage",
+      "notes": "States, under 'Feedback using the /feedback command': 'If you choose to send us feedback about Claude Code using the /feedback command, we may use your feedback to improve our products and services. Transcripts shared via /feedback are retained for 5 years... To opt out, set the DISABLE_FEEDBACK_COMMAND environment variable to 1.' Also: submitted feedback is 'stored in Google Cloud Storage, which encrypts stored data at rest by default. Optionally, a GitHub issue is created in the public repository.' The 'Default behaviors by API provider' table documents /feedback reports as: Claude API \u2014 default on, DISABLE_FEEDBACK_COMMAND=1 to disable; Google Cloud's Agent Platform / Amazon Bedrock / Microsoft Foundry / Claude Platform on AWS \u2014 each default off. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval. Re-verified 2026-08-13 against live official sources; observation keys and documented defaults unchanged through 2.1.223."
     },
     {
       "schema_version": "1.0",
@@ -67,10 +87,10 @@
       "publisher": "Anthropic",
       "title": "Claude Code settings",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-17",
-      "content_hash": "sha256:2e09d4e56f86027f7b7ceaa7be4cc87ef3724cbb432e8988f419a8efa3d731e1",
-      "archived_url": "https://web.archive.org/web/20260716225057/https://code.claude.com/docs/en/settings",
-      "notes": "Documents the top-level env settings.json key: 'Environment variables applied to every session,' example {\"FOO\": \"bar\"}, and documents no dedicated boolean /feedback-command key. Also documents the user scope resolving to ~/.claude/settings.json (lowest precedence) — the only scope this rule inspects. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:e36667171532f40e5a06843512d12d8746a9628a01108681a88b1b3b2ba2458e",
+      "archived_url": "https://web.archive.org/web/20260813152428/https://code.claude.com/docs/en/settings",
+      "notes": "Documents the top-level env settings.json key: 'Environment variables applied to every session,' example {\"FOO\": \"bar\"}, and documents no dedicated boolean /feedback-command key. Also documents the user scope resolving to ~/.claude/settings.json (lowest precedence) \u2014 the only scope this rule inspects. Re-fetched and re-verified 2026-07-17; content hash unchanged from the prior retrieval. Re-verified 2026-08-13 against live official sources; observation keys and documented defaults unchanged through 2.1.223."
     }
   ],
   "limitations": [

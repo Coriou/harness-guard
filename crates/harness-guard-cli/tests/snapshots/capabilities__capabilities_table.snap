@@ -2,14 +2,13 @@
 source: crates/harness-guard-cli/tests/capabilities.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
-harness-guard 0.0.1 · ruleset 2026.07.17 · report schema 1.1
+harness-guard 0.0.2 · ruleset 2026.08.13 · report schema 1.1
 +-------------+-------+--------------------------------+------------+-------------+
 | tool        | rules | categories                     | verified ≤ | verified on |
 +=================================================================================+
-| claude-code | 5     | retention, telemetry           | 2.1.204    | 2026-07-17  |
+| claude-code | 5     | retention, telemetry           | 2.1.223    | 2026-08-13  |
 |-------------+-------+--------------------------------+------------+-------------|
-| codex       | 4     | retention, telemetry, transfer | 0.144.5    | 2026-07-16  |
+| codex       | 4     | retention, telemetry, transfer | 0.147.0    | 2026-08-13  |
 |-------------+-------+--------------------------------+------------+-------------|
-| grok-build  | 4     | telemetry, transfer            | 0.2.102    | 2026-07-17  |
+| grok-build  | 4     | telemetry, transfer            | 1.0.3      | 2026-08-13  |
 +-------------+-------+--------------------------------+------------+-------------+
-

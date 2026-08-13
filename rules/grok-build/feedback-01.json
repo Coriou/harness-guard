@@ -6,20 +6,33 @@
   "title": "In-product feedback system",
   "why_it_matters": "Grok Build's user guide documents [features] feedback as the feedback system toggle with documented default true. Disabling it at user scope removes the local submission channel for in-product feedback. This rule only observes whether that channel is explicitly disabled or enabled at the user-level config; it does not determine what content any individual feedback submission includes, and other configuration layers are not inspected.",
   "unknown_subject": "feedback system posture",
-  "os": ["macos", "linux"],
-  "scopes": ["user"],
+  "os": [
+    "macos",
+    "linux"
+  ],
+  "scopes": [
+    "user"
+  ],
   "auth_prerequisites": null,
   "observation": {
     "file": "config.toml",
     "key": "features.feedback",
     "type": "bool",
-    "allowed_render": ["true", "false", "unset"]
+    "allowed_render": [
+      "true",
+      "false",
+      "unset"
+    ]
   },
   "outcomes": [
     {
       "when": "features.feedback is explicitly false",
       "status": "pass",
-      "match": { "equals": { "value": false } },
+      "match": {
+        "equals": {
+          "value": false
+        }
+      },
       "severity": null,
       "confidence": "high",
       "message": "The inspected user-level config disables the feedback system (features.feedback = false).",
@@ -28,7 +41,11 @@
     {
       "when": "features.feedback is explicitly true in the user-level config",
       "status": "finding",
-      "match": { "equals": { "value": true } },
+      "match": {
+        "equals": {
+          "value": true
+        }
+      },
       "severity": "info",
       "confidence": "high",
       "message": "The inspected user-level config explicitly enables the feedback system (features.feedback = true), the same behavior the user guide documents as default.",
@@ -40,7 +57,9 @@
     {
       "when": "features.feedback is unset in the user-level config or the user-level config is absent",
       "status": "unknown",
-      "match": { "unset": true },
+      "match": {
+        "unset": true
+      },
       "severity": null,
       "confidence": null,
       "message": "Effective feedback system posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
@@ -50,35 +69,41 @@
     {
       "when": "features.feedback is set to a value outside boolean true/false",
       "status": "unknown",
-      "match": { "unrecognized": true },
+      "match": {
+        "unrecognized": true
+      },
       "severity": null,
       "confidence": null,
-      "message": "features.feedback is set to an unrecognized value — raw values are never displayed.",
-      "unknown_reason": "features.feedback is set to an unrecognized value — raw values are never displayed",
+      "message": "features.feedback is set to an unrecognized value \u2014 raw values are never displayed.",
+      "unknown_reason": "features.feedback is set to an unrecognized value \u2014 raw values are never displayed",
       "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
     }
   ],
   "tested_versions": [
-    { "min": "<=0.2.102", "max": "0.2.102", "verified_on": "2026-07-17" }
+    {
+      "min": "<=1.0.3",
+      "max": "1.0.3",
+      "verified_on": "2026-08-13"
+    }
   ],
   "sources": [
     {
       "schema_version": "1.0",
       "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
       "publisher": "xAI",
-      "title": "Grok Build user guide — Configuration",
+      "title": "Grok Build user guide \u2014 Configuration",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-17",
-      "content_hash": "sha256:7b19d8b0cb8c589f672bc49a47d217de206f25ad4893b1233c02031cfd3a8319",
-      "archived_url": null,
-      "notes": "In-tree user guide at OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1 (retrieved 2026-07-17). Documents [features] feedback = true as \"feedback system (default: true)\". Local posture only; no wire capture."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:cd16d3a9758ce038de942f83b86e4c3ac271fbd31b01afe7b83c32ddae4ec2b9",
+      "archived_url": "https://web.archive.org/web/20260813152448/https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+      "notes": "In-tree user guide at OSS SOURCE_REV ba69d70c2f7d70a130a323b2becdf137af784c7f (retrieved 2026-07-17). Documents [features] feedback = true as \"feedback system (default: true)\". Local posture only; no wire capture. Re-verified 2026-08-13 against channel/npm 1.0.3 and monorepo SOURCE_REV ea094a8c369475f97c85540d01730baec0dce5d6 (main tip e5fd4816d43260c15ba785f103990c1ed6cea230); observation keys and documented defaults unchanged through 1.0.3."
     }
   ],
   "limitations": [
     "Only the user-level GROK_HOME/config.toml is inspected; CLI flags, environment variables, managed/requirements config, and project-scoped config are not inspected.",
     "An explicit user-level value describes that layer only and does not prove the effective value for every invocation.",
     "This rule does not determine what content any individual feedback submission includes.",
-    "This rule cannot confirm any server-side or remote retention of submitted feedback — no local file can.",
+    "This rule cannot confirm any server-side or remote retention of submitted feedback \u2014 no local file can.",
     "Auth/account state is user-confirmed-or-unknown; this rule never infers it."
   ],
   "unknown_conditions": [

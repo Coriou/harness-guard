@@ -41,7 +41,9 @@ guard.
 
 Grok Build's primary install channel is the CLI channel pointer
 `https://x.ai/cli/stable` (and sibling `alpha` / `enterprise` pointers), not
-npm-first. Evidence pack: `docs/research/evidence/grok-build/2026-07-17/`.
+npm-first. Latest evidence pack:
+`docs/research/evidence/grok-build/2026-08-13/` (prior: 2026-07-20,
+2026-07-17).
 
 - `freshness/last-seen.json` records both the cli-pointer under `channels.grok-build`
   and the npm package `@xai-official/grok` under `packages` (same version when

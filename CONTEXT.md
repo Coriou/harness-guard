@@ -2,14 +2,11 @@
 
 **Project:** Harness Guard
 **Purpose:** Local, execution-free, per-finding-cited config auditor.
-**Context date:** 2026-07-17
-**Current phase:** 0.0.1 multi-harness release content complete
-(`docs/superpowers/plans/2026-07-16-harness-guard-0.0.1-multi-harness.md`,
-Tasks 1–24 done). Only the owner-gated release-gate run and tag checklist
-(Task 25) remain — no tag, GitHub Release, package publish, or workflow
-enablement without exact owner authorization. See the latest handoff under
-`docs/superpowers/handoffs/` for prior session status (superseded in part by
-the shipped Grok rules and this documentation pass).
+**Context date:** 2026-08-13
+**Current phase:** 0.0.1 multi-harness content complete; ruleset re-verified
+2026-08-13. The owner-gated release-gate run and tag checklist (Task 25)
+remain — no tag, GitHub Release, package publish, or workflow enablement
+without exact owner authorization.
 
 ## Current implemented scope
 
@@ -20,26 +17,28 @@ harnesses**:
 
 - **Codex CLI** — 4 source-cited rules (history persistence, analytics,
   feedback, OpenTelemetry prompt logging); categories retention, telemetry,
-  transfer; verified through 0.144.5.
+  transfer; verified through **0.147.0**.
 - **Claude Code** — 5 source-cited rules (session-history cleanup period,
   telemetry / error-reporting / feedback-command / feedback-survey opt-outs);
-  categories retention, telemetry; verified through 2.1.204.
+  categories retention, telemetry; verified through stable **2.1.223**.
 - **Grok Build** — 4 local-posture rules (`features.telemetry`,
   `features.feedback`, `telemetry.trace_upload`,
   `telemetry.otel_log_user_prompts`); categories telemetry, transfer; tested
-  on 0.2.102 with evidence under
-  `docs/research/evidence/grok-build/2026-07-17/`. Detection uses PATH binary
-  `grok`, npm package `@xai-official/grok`, and a managed-install symlink
-  basename version fallback; `GROK_HOME` is honored. Rules describe local
-  config posture only — not wire-level upload behavior.
+  on **1.0.3** (npm + `https://x.ai/cli/stable`) with evidence under
+  `docs/research/evidence/grok-build/2026-08-13/` (prior: 2026-07-20,
+  2026-07-17). Detection uses PATH binary `grok`, npm package
+  `@xai-official/grok`, and a managed-install symlink basename version
+  fallback; `GROK_HOME` is honored. Rules describe local config posture only
+  — not wire-level upload behavior.
 
 The `capabilities` subcommand and `docs/agent-guide.md` expose this inventory
 machine-readably so it never needs to be hardcoded by a consumer. The bundled
-ruleset CalVer is **2026.07.17**. Workspace / binary version is **0.0.1**.
+ruleset CalVer is **2026.08.13**. Workspace / binary version is **0.0.2**.
 
-GitHub Copilot CLI, Gemini CLI, Cursor, OpenCode, and the other tools discussed
-in early research and product-strategy documents are not implemented or
-supported. Those documents describe possible sequencing, not shipped coverage.
+GitHub Copilot CLI (watched at npm `1.0.79`), Gemini CLI, Cursor, OpenCode,
+and the other tools discussed in early research and product-strategy
+documents are not implemented or supported. Those documents describe possible
+sequencing, not shipped coverage.
 Adding a harness, rule, write/fix behavior, network feature, database, output
 format, GUI, or new public claim requires explicit approval and fresh primary
 evidence.
@@ -106,7 +105,23 @@ plan/auth context, and official primary source.
 
 The repository is public. Freshness workflows remain triage-only and disabled.
 Do not publish packages, create a GitHub Release, or make other external
-changes without the exact authorization required by `AGENTS.md`.
+changes without the exact authorization required by `AGENTS.md`. Public GitHub
+already has annotated tag `0.0.1` at the 2026-07-17 tip. This freshness
+commit is tagged `0.0.2`. Do not move `0.0.1`. Do not create a GitHub
+Release or enable freshness workflows without a separate owner go.
+
+## 2026-08-13 candidate-rule decisions (evaluated, not shipped)
+
+Official sources still document extra keys. None were added in this pass:
+
+| Candidate | Why not shipped |
+| --- | --- |
+| Grok `/privacy` coding-data / training | Account/settings UI, not a user-scope `config.toml` key this product can observe. |
+| Grok `telemetry.mixpanel_enabled` | Documented sub-switch, but the OSS type is a non-optional `bool` whose default is baked-token-dependent. Needs its own fixture matrix and a careful unset/default write-up. |
+| Grok `telemetry.otel_log_tool_details` | Clean sibling of `otel_log_user_prompts`. Held so freshness of the existing 13 stays a single reviewable change. |
+| Claude `DO_NOT_TRACK` | Already noted as an alternate survey-disable path in `claude-code-feedback-survey-opt-out-01`. Not a distinct observation. |
+| Claude `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | Documented umbrella; still no explicit `=1` token. Existing limitations already refuse to evaluate it. |
+| Claude `skipWebFetchPreflight` / `feedbackSurveyRate` | Security-blocklist / survey-frequency, outside current retention/telemetry/transfer categories. |
 
 ## Session continuity
 

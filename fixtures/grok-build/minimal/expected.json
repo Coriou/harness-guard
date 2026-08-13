@@ -4,15 +4,15 @@
   "description": "An empty synthetic user config cannot establish any grok-build rule's effective value because other configuration layers are not inspected.",
   "expected_report": {
     "schema_version": "1.1",
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "grok-build",
-        "detected_version": "0.2.102",
+        "detected_version": "1.0.3",
         "detection_confidence": "high",
-        "rules_last_verified_version": "0.2.102",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "1.0.3",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": true,
         "findings": [
           {
@@ -25,8 +25,8 @@
             "observation": "features.feedback unset in user config",
             "remediation": null,
             "source": null,
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": "features.feedback is unset in the user-level config; the user guide documents default true, but uninspected CLI flags, environment variables, managed/requirements config, or other layers may determine the effective value.",
             "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
             "stale_reason": null
@@ -41,8 +41,8 @@
             "observation": "telemetry.otel_log_user_prompts unset in user config",
             "remediation": null,
             "source": null,
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": "telemetry.otel_log_user_prompts is unset in the user-level config; the user guide example redacts raw prompts (false) and OSS types default the Option to None (off unless enabled), but uninspected CLI flags, environment variables, managed/requirements config, or other layers may determine the effective value.",
             "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
             "stale_reason": null
@@ -57,8 +57,8 @@
             "observation": "features.telemetry unset in user config",
             "remediation": null,
             "source": null,
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": "features.telemetry is unset in the user-level config; OSS TelemetryMode defaults to Disabled and the user guide shows an explicit false example, but uninspected CLI flags, environment variables, managed/requirements config, or other layers may determine the effective value.",
             "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
             "stale_reason": null
@@ -73,8 +73,8 @@
             "observation": "telemetry.trace_upload unset in user config",
             "remediation": null,
             "source": null,
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": "telemetry.trace_upload is unset in the user-level config; OSS documents that None inherits [features] telemetry, so the effective value cannot be established from this key alone without inspecting the master switch and other layers.",
             "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
             "stale_reason": null

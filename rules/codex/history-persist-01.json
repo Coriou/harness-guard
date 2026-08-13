@@ -6,20 +6,33 @@
   "title": "Session history persistence",
   "why_it_matters": "Codex CLI's built-in default saves local session transcripts to history.jsonl under CODEX_HOME. Sensitive content included in a transcript may remain on disk; a separate optional history.max_bytes cap can compact the oldest entries, and this rule does not inspect that cap or every configuration layer that can override the user-level setting.",
   "unknown_subject": "history persistence posture",
-  "os": ["macos", "linux"],
-  "scopes": ["user"],
+  "os": [
+    "macos",
+    "linux"
+  ],
+  "scopes": [
+    "user"
+  ],
   "auth_prerequisites": null,
   "observation": {
     "file": "config.toml",
     "key": "history.persistence",
     "type": "enum",
-    "allowed_render": ["save-all", "none", "unset"]
+    "allowed_render": [
+      "save-all",
+      "none",
+      "unset"
+    ]
   },
   "outcomes": [
     {
       "when": "history.persistence is explicitly \"none\"",
       "status": "pass",
-      "match": { "equals": { "value": "none" } },
+      "match": {
+        "equals": {
+          "value": "none"
+        }
+      },
       "severity": null,
       "confidence": "high",
       "message": "The inspected user-level config sets history.persistence = \"none\".",
@@ -28,7 +41,11 @@
     {
       "when": "history.persistence is explicitly \"save-all\" in the user-level config",
       "status": "finding",
-      "match": { "equals": { "value": "save-all" } },
+      "match": {
+        "equals": {
+          "value": "save-all"
+        }
+      },
       "severity": "warning",
       "confidence": "high",
       "message": "The inspected user-level config explicitly enables local history persistence (history.persistence = \"save-all\").",
@@ -40,7 +57,9 @@
     {
       "when": "history.persistence is unset in the user-level config or the user-level config is absent",
       "status": "unknown",
-      "match": { "unset": true },
+      "match": {
+        "unset": true
+      },
       "severity": null,
       "confidence": null,
       "message": "Effective history persistence cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
@@ -50,16 +69,22 @@
     {
       "when": "history.persistence is set to a value outside the documented enum",
       "status": "unknown",
-      "match": { "unrecognized": true },
+      "match": {
+        "unrecognized": true
+      },
       "severity": null,
       "confidence": null,
-      "message": "history.persistence is set to an unrecognized value — raw values are never displayed.",
-      "unknown_reason": "history.persistence is set to an unrecognized value — raw values are never displayed",
+      "message": "history.persistence is set to an unrecognized value \u2014 raw values are never displayed.",
+      "unknown_reason": "history.persistence is set to an unrecognized value \u2014 raw values are never displayed",
       "verify_url": "https://learn.chatgpt.com/docs/config-file/config-reference"
     }
   ],
   "tested_versions": [
-    { "min": "<=0.144.5", "max": "0.144.5", "verified_on": "2026-07-16" }
+    {
+      "min": "<=0.147.0",
+      "max": "0.147.0",
+      "verified_on": "2026-08-13"
+    }
   ],
   "sources": [
     {
@@ -68,10 +93,10 @@
       "publisher": "OpenAI",
       "title": "Codex configuration reference",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-16",
-      "content_hash": "sha256:de1707a407f3cadaa1bc4e86a3d289b9e64f0ce70b1edbd0b8914e98f84d185d",
-      "archived_url": "https://web.archive.org/web/20260716115618/https://learn.chatgpt.com/docs/config-file/config-reference",
-      "notes": "Documents history.persistence values save-all | none, user-level and trusted-project config, and profile files. The developers.openai.com/codex/config-reference alias redirects to this canonical URL."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:df8563951d18982902e01a4a5cf00a553d7f0353aa90a786304467ded0e368b4",
+      "archived_url": "https://web.archive.org/web/20260813152247/https://learn.chatgpt.com/docs/config-file/config-reference",
+      "notes": "Documents history.persistence values save-all | none, user-level and trusted-project config, and profile files. The developers.openai.com/codex/config-reference alias redirects to this canonical URL. Re-verified 2026-08-13 against live official sources; observation keys and documented defaults unchanged through 0.147.0."
     },
     {
       "schema_version": "1.0",
@@ -79,10 +104,10 @@
       "publisher": "OpenAI",
       "title": "Codex advanced configuration",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-16",
-      "content_hash": "sha256:85675e13af7727a5941bbfa2224c02f2039b322f308f3229db142f8f829b2a0f",
-      "archived_url": "https://web.archive.org/web/20260716061819/https://learn.chatgpt.com/docs/config-file/config-advanced",
-      "notes": "States the default persistence behavior applied when the key is unset and documents optional history.max_bytes compaction. The developers.openai.com/codex/config-advanced alias redirects to this canonical URL."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:bb25d30ffcac773e1fc8907480b8f4aa89a8b6729cade321282a0a43945410df",
+      "archived_url": "https://web.archive.org/web/20260813152306/https://learn.chatgpt.com/docs/config-file/config-advanced",
+      "notes": "States the default persistence behavior applied when the key is unset and documents optional history.max_bytes compaction. The developers.openai.com/codex/config-advanced alias redirects to this canonical URL. Re-verified 2026-08-13 against live official sources; observation keys and documented defaults unchanged through 0.147.0."
     },
     {
       "schema_version": "1.0",
@@ -90,17 +115,17 @@
       "publisher": "OpenAI",
       "title": "Codex configuration basics",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-16",
-      "content_hash": "sha256:9823d3632a18076df3a6283fb20fd05ee598348f797ddac5f9b15733b7014165",
-      "archived_url": null,
-      "notes": "Documents configuration precedence: CLI overrides, trusted-project config, selected profile, user config, system config, then built-in defaults."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:a9f786ee9d2990a779ff54e898834a550cf5ab687469e4ea731fda14bdd4a9c0",
+      "archived_url": "https://web.archive.org/web/20260813152359/https://learn.chatgpt.com/docs/config-file/config-basic",
+      "notes": "Documents configuration precedence: CLI overrides, trusted-project config, selected profile, user config, system config, then built-in defaults. Re-verified 2026-08-13 against live official sources; observation keys and documented defaults unchanged through 0.147.0."
     }
   ],
   "limitations": [
     "Only the user-level CODEX_HOME/config.toml is inspected; system config, selected profiles, trusted-project config, and CLI overrides are not inspected.",
     "An explicit user-level value describes that layer only and does not prove the effective value for every profile, trusted project, or invocation.",
     "This rule does not inspect history.max_bytes; a configured cap may compact the oldest entries in history.jsonl.",
-    "This rule cannot confirm any server-side or remote retention — no local file can.",
+    "This rule cannot confirm any server-side or remote retention \u2014 no local file can.",
     "Auth method (ChatGPT sign-in vs API key) changes data-policy interpretation and is user-confirmed-or-unknown; this rule never infers it."
   ],
   "unknown_conditions": [

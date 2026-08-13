@@ -3,15 +3,15 @@
   "case": "hardened",
   "description": "The documented safe values are configured at user scope for every claude-code rule, for the exact latest certified synthetic Claude Code version.",
   "expected_report": {
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "claude-code",
-        "detected_version": "2.1.204",
+        "detected_version": "2.1.223",
         "detection_confidence": "high",
-        "rules_last_verified_version": "2.1.204",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "2.1.223",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": true,
         "findings": [
           {
@@ -25,10 +25,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/settings",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -44,10 +44,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -63,10 +63,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -82,10 +82,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -101,10 +101,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null

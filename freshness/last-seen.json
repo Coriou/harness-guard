@@ -1,30 +1,30 @@
 {
   "schema_version": "1.0",
-  "checked": "2026-07-17",
+  "checked": "2026-08-13",
   "packages": {
     "@anthropic-ai/claude-code": {
       "dist_tag": "stable",
-      "version": "2.1.202"
+      "version": "2.1.223"
     },
     "@openai/codex": {
       "dist_tag": "latest",
-      "version": "0.144.5"
+      "version": "0.147.0"
     },
     "@github/copilot": {
       "dist_tag": "latest",
-      "version": "1.0.70"
+      "version": "1.0.79"
     },
     "@xai-official/grok": {
       "dist_tag": "latest",
-      "version": "0.2.102"
+      "version": "1.0.3"
     }
   },
   "channels": {
     "grok-build": {
       "channel": "cli-pointer",
       "url": "https://x.ai/cli/stable",
-      "version": "0.2.102",
-      "notes": "Primary install channel per evidence pack 2026-07-17; npm @xai-official/grok is also published at the same version and is the release-watch probe."
+      "version": "1.0.3",
+      "notes": "Primary install channel; npm @xai-official/grok agrees at 1.0.3 as of 2026-08-13. release-watch probes npm; re-check this pointer when triage fires."
     }
   }
 }

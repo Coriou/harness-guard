@@ -4,15 +4,15 @@
   "description": "The documented risky values are explicitly configured for every grok-build rule and produce warning/info findings.",
   "expected_report": {
     "schema_version": "1.1",
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "grok-build",
-        "detected_version": "0.2.102",
+        "detected_version": "1.0.3",
         "detection_confidence": "high",
-        "rules_last_verified_version": "0.2.102",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "1.0.3",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": true,
         "findings": [
           {
@@ -29,10 +29,10 @@
             },
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -51,10 +51,10 @@
             },
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -73,10 +73,10 @@
             },
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null
@@ -95,10 +95,10 @@
             },
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": null

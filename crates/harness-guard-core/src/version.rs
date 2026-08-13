@@ -249,32 +249,32 @@ mod tests {
 
     #[test]
     fn parse_strict_triples_only() {
-        assert_eq!(parse_version("0.144.5"), Some((0, 144, 5)));
-        assert_eq!(parse_version("0.144.5-darwin-arm64"), None);
-        assert_eq!(parse_version("v0.144.5"), None);
+        assert_eq!(parse_version("0.144.6"), Some((0, 144, 6)));
+        assert_eq!(parse_version("0.144.6-darwin-arm64"), None);
+        assert_eq!(parse_version("v0.144.6"), None);
         assert_eq!(parse_version(""), None);
     }
 
     #[test]
     fn le_prefixed_min_is_unbounded_below() {
-        let ranges = [tv("<=0.144.5", "0.144.5")];
+        let ranges = [tv("<=0.144.6", "0.144.6")];
         assert!(version_in_range("0.1.0", &ranges));
-        assert!(version_in_range("0.144.5", &ranges));
-        assert!(!version_in_range("0.144.6", &ranges));
+        assert!(version_in_range("0.144.6", &ranges));
+        assert!(!version_in_range("0.144.7", &ranges));
         assert!(!version_in_range("9.9.9", &ranges));
     }
 
     #[test]
     fn plain_min_is_a_real_lower_bound() {
-        let ranges = [tv("0.100.0", "0.144.5")];
+        let ranges = [tv("0.100.0", "0.144.6")];
         assert!(!version_in_range("0.99.9", &ranges));
         assert!(version_in_range("0.100.0", &ranges));
     }
 
     #[test]
     fn unparseable_detected_version_never_matches() {
-        let ranges = [tv("<=0.144.5", "0.144.5")];
-        assert!(!version_in_range("0.144.5-darwin-arm64", &ranges));
+        let ranges = [tv("<=0.144.6", "0.144.6")];
+        assert!(!version_in_range("0.144.6-darwin-arm64", &ranges));
     }
 
     fn npm_layout(version_json: &str) -> (tempfile::TempDir, DiscoveryRoot) {
@@ -295,23 +295,23 @@ mod tests {
 
     #[test]
     fn npm_layout_detects_clean_version() {
-        let (_dir, root) = npm_layout(r#"{"name": "@openai/codex", "version": "0.144.5"}"#);
+        let (_dir, root) = npm_layout(r#"{"name": "@openai/codex", "version": "0.144.6"}"#);
         assert_eq!(
             detect_version(&root, HarnessId::Codex),
-            Some("0.144.5".to_string())
+            Some("0.144.6".to_string())
         );
     }
 
     #[test]
     fn wrong_package_name_is_ignored() {
-        let (_dir, root) = npm_layout(r#"{"name": "something-else", "version": "0.144.5"}"#);
+        let (_dir, root) = npm_layout(r#"{"name": "something-else", "version": "0.144.6"}"#);
         assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
     #[test]
     fn suffixed_version_is_rejected() {
         let (_dir, root) =
-            npm_layout(r#"{"name": "@openai/codex", "version": "0.144.5-darwin-arm64"}"#);
+            npm_layout(r#"{"name": "@openai/codex", "version": "0.144.6-darwin-arm64"}"#);
         assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
 
@@ -340,7 +340,7 @@ mod tests {
     fn oversized_package_json_is_refused() {
         let padding = "x".repeat(MAX_PACKAGE_JSON_BYTES as usize);
         let package =
-            format!(r#"{{"name":"@openai/codex","version":"0.144.5","padding":"{padding}"}}"#);
+            format!(r#"{{"name":"@openai/codex","version":"0.144.6","padding":"{padding}"}}"#);
         let (_dir, root) = npm_layout(&package);
         assert_eq!(detect_version(&root, HarnessId::Codex), None);
     }
@@ -352,7 +352,7 @@ mod tests {
         std::fs::create_dir_all(bin.join("codex")).unwrap();
         std::fs::write(
             bin.join("package.json"),
-            r#"{"name":"@openai/codex","version":"0.144.5"}"#,
+            r#"{"name":"@openai/codex","version":"0.144.6"}"#,
         )
         .unwrap();
         let root = DiscoveryRoot {
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn regular_package_replacement_after_open_uses_stable_original_handle() {
-        let (_dir, root) = npm_layout(r#"{"name":"@openai/codex","version":"0.144.5"}"#);
+        let (_dir, root) = npm_layout(r#"{"name":"@openai/codex","version":"0.144.6"}"#);
         let package_json = root.path_dirs[0].parent().unwrap().join("package.json");
         let displaced = package_json.with_file_name("original.json");
         let replacement = package_json.with_file_name("replacement.json");
@@ -382,7 +382,7 @@ mod tests {
             std::fs::rename(&replacement, &package_json).unwrap();
         });
 
-        assert_eq!(detected, Some("0.144.5".to_string()));
+        assert_eq!(detected, Some("0.144.6".to_string()));
         assert_ne!(detected, Some("9.9.9".to_string()));
     }
 
@@ -396,7 +396,7 @@ mod tests {
         std::fs::write(package.join("bin/codex"), "shim").unwrap();
         std::fs::write(
             package.join("package.json"),
-            r#"{"name": "@openai/codex", "version": "0.144.5"}"#,
+            r#"{"name": "@openai/codex", "version": "0.144.6"}"#,
         )
         .unwrap();
         let bin = base.join("bin");
@@ -410,7 +410,7 @@ mod tests {
         };
         assert_eq!(
             detect_version(&root, HarnessId::Codex),
-            Some("0.144.5".to_string())
+            Some("0.144.6".to_string())
         );
     }
 
@@ -466,7 +466,7 @@ mod tests {
         std::fs::write(package.join("bin/grok"), "#!/usr/bin/env node\n").unwrap();
         std::fs::write(
             package.join("package.json"),
-            r#"{"name": "@xai-official/grok", "version": "0.2.102"}"#,
+            r#"{"name": "@xai-official/grok", "version": "1.0.3"}"#,
         )
         .unwrap();
         let root = DiscoveryRoot {
@@ -477,7 +477,7 @@ mod tests {
         };
         assert_eq!(
             detect_version(&root, HarnessId::GrokBuild),
-            Some("0.2.102".to_string())
+            Some("1.0.3".to_string())
         );
         assert!(binary_on_path(&root, HarnessId::GrokBuild));
         assert_eq!(detect_version(&root, HarnessId::Codex), None);
@@ -524,7 +524,7 @@ mod tests {
         let path = base.join("path");
         std::fs::create_dir_all(&downloads).unwrap();
         std::fs::create_dir_all(&path).unwrap();
-        let target = downloads.join("grok-0.2.102-macos-x86_64");
+        let target = downloads.join("grok-1.0.3-macos-x86_64");
         std::fs::write(&target, "synthetic managed binary; never executed").unwrap();
         std::os::unix::fs::symlink(&target, path.join("grok")).unwrap();
         let root = DiscoveryRoot {
@@ -535,7 +535,7 @@ mod tests {
         };
         assert_eq!(
             detect_version(&root, HarnessId::GrokBuild),
-            Some("0.2.102".to_string())
+            Some("1.0.3".to_string())
         );
         assert!(binary_on_path(&root, HarnessId::GrokBuild));
     }
@@ -548,7 +548,7 @@ mod tests {
         let path = base.join("path");
         std::fs::create_dir_all(&path).unwrap();
         std::os::unix::fs::symlink(
-            base.join("downloads/grok-0.2.102-macos-x86_64"),
+            base.join("downloads/grok-1.0.3-macos-x86_64"),
             path.join("grok"),
         )
         .unwrap();

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "harness_guard_version": "0.0.1",
-  "ruleset_version": "2026.07.17",
+  "harness_guard_version": "0.0.2",
+  "ruleset_version": "2026.08.13",
   "report_schema_version": "1.1",
   "tools": [
     {
@@ -11,8 +11,8 @@
         "retention",
         "telemetry"
       ],
-      "rules_last_verified_version": "2.1.204",
-      "rules_verified_date": "2026-07-17"
+      "rules_last_verified_version": "2.1.223",
+      "rules_verified_date": "2026-08-13"
     },
     {
       "tool": "codex",
@@ -22,8 +22,8 @@
         "telemetry",
         "transfer"
       ],
-      "rules_last_verified_version": "0.144.5",
-      "rules_verified_date": "2026-07-16"
+      "rules_last_verified_version": "0.147.0",
+      "rules_verified_date": "2026-08-13"
     },
     {
       "tool": "grok-build",
@@ -32,8 +32,8 @@
         "telemetry",
         "transfer"
       ],
-      "rules_last_verified_version": "0.2.102",
-      "rules_verified_date": "2026-07-17"
+      "rules_last_verified_version": "1.0.3",
+      "rules_verified_date": "2026-08-13"
     }
   ],
   "commands": [

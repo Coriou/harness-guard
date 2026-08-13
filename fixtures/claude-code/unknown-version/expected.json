@@ -3,15 +3,15 @@
   "case": "unknown-version",
   "description": "An absent version marker conservatively produces a non-disclosing stale-ruleset result for every claude-code rule; the unrecognized env.DISABLE_TELEMETRY value uses the non-disclosing fallback, the three other env-based rules render their unset observation verbatim (env.KEY unset in user config, which discloses no configured content), and cleanupPeriodDays's unset rendering is quoted verbatim the same way.",
   "expected_report": {
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "claude-code",
         "detected_version": null,
         "detection_confidence": "medium",
-        "rules_last_verified_version": "2.1.204",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "2.1.223",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": false,
         "findings": [
           {
@@ -25,10 +25,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/settings",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -44,10 +44,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -63,10 +63,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -82,10 +82,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -101,10 +101,10 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"

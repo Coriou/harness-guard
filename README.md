@@ -35,14 +35,14 @@ result looks like this:
 
 ```text
 detected tools
-  ● codex 0.144.5 · config ~/.codex/config.toml · confidence high
+  ● codex 0.147.0 · config ~/.codex/config.toml · confidence high
 
 !! WARNING: The inspected user-level config explicitly enables local history persistence (history.persistence = "save-all").
    observed: history.persistence = "save-all"
    fix: Add to CODEX_HOME/config.toml (normally ~/.codex/config.toml):
         [history]
         persistence = "none"
-   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-07-16)
+   = source: https://learn.chatgpt.com/docs/config-file/config-reference (2026-08-13)
 ```
 
 No numeric score is produced. Read findings individually; `unknown` and
@@ -168,7 +168,7 @@ rule data and will not drift from what a scan actually evaluates.
 
 - Grok Build rules describe **local config posture only** (telemetry master
   switch, feedback, session/trace upload sub-switch, external OTEL prompt
-  log), cited from OSS primary sources for version `0.2.102`. They do not
+  log), cited from OSS primary sources for version `1.0.3`. They do not
   claim wire-level upload behavior.
 - Only the user-level config for each harness is inspected. System config,
   selected profiles, trusted-project config, and CLI overrides are not

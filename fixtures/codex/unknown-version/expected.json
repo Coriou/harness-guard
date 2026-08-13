@@ -3,15 +3,15 @@
   "case": "unknown-version",
   "description": "An absent version marker conservatively produces a non-disclosing stale-ruleset result for every codex rule; the unrecognized persistence value uses the non-disclosing fallback while the other rules' unset values are quoted verbatim (their unset rendering discloses no configured content).",
   "expected_report": {
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "codex",
         "detected_version": null,
         "detection_confidence": "medium",
-        "rules_last_verified_version": "0.144.5",
-        "rules_verified_date": "2026-07-16",
+        "rules_last_verified_version": "0.147.0",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": false,
         "findings": [
           {
@@ -25,10 +25,10 @@
             "remediation": null,
             "source": {
               "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.144.5",
-            "valid_until": "0.144.5",
+            "valid_from": "<=0.147.0",
+            "valid_until": "0.147.0",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -44,10 +44,10 @@
             "remediation": null,
             "source": {
               "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.144.5",
-            "valid_until": "0.144.5",
+            "valid_from": "<=0.147.0",
+            "valid_until": "0.147.0",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -63,10 +63,10 @@
             "remediation": null,
             "source": {
               "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
-              "retrieved": "2026-07-16"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.144.5",
-            "valid_until": "0.144.5",
+            "valid_from": "<=0.147.0",
+            "valid_until": "0.147.0",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"
@@ -82,10 +82,10 @@
             "remediation": null,
             "source": {
               "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.144.5",
-            "valid_until": "0.144.5",
+            "valid_from": "<=0.147.0",
+            "valid_until": "0.147.0",
             "unknown_reason": null,
             "verify_url": null,
             "stale_reason": "tool version not detected — no version marker found on PATH"

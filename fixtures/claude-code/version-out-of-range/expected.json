@@ -3,15 +3,15 @@
   "case": "version-out-of-range",
   "description": "Values that would otherwise look safe (cleanupPeriodDays, DISABLE_TELEMETRY) or simply be unset (the three env-only rules with no configured value here) all conservatively produce a stale-ruleset result for every claude-code rule once the synthetic version is beyond the tested range.",
   "expected_report": {
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "claude-code",
         "detected_version": "9.9.9",
         "detection_confidence": "high",
-        "rules_last_verified_version": "2.1.204",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "2.1.223",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": false,
         "findings": [
           {
@@ -25,13 +25,13 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/settings",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.223)"
           },
           {
             "rule_id": "claude-code-error-reporting-opt-out-01",
@@ -44,13 +44,13 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.223)"
           },
           {
             "rule_id": "claude-code-feedback-command-opt-out-01",
@@ -63,13 +63,13 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.223)"
           },
           {
             "rule_id": "claude-code-feedback-survey-opt-out-01",
@@ -82,13 +82,13 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.223)"
           },
           {
             "rule_id": "claude-code-telemetry-opt-out-01",
@@ -101,13 +101,13 @@
             "remediation": null,
             "source": {
               "url": "https://code.claude.com/docs/en/data-usage",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=2.1.204",
-            "valid_until": "2.1.204",
+            "valid_from": "<=2.1.223",
+            "valid_until": "2.1.223",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.204)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 2.1.223)"
           }
         ]
       }

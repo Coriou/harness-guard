@@ -8,7 +8,7 @@ fn list_shows_detection_only() {
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.contains("codex"));
-    assert!(text.contains("0.144.5"));
+    assert!(text.contains("0.147.0"));
     assert!(
         text.contains("claude-code"),
         "list must enumerate claude-code even when undetected"
@@ -66,7 +66,7 @@ fn list_path_only_version_detection_has_medium_confidence() {
     std::fs::write(path.join("codex"), "synthetic marker; never executed").unwrap();
     std::fs::write(
         path.join("package.json"),
-        r#"{"name":"@openai/codex","version":"0.144.5"}"#,
+        r#"{"name":"@openai/codex","version":"0.147.0"}"#,
     )
     .unwrap();
 
@@ -78,7 +78,7 @@ fn list_path_only_version_detection_has_medium_confidence() {
     );
     let text = String::from_utf8_lossy(&output.stdout);
     assert_eq!(output.status.code(), Some(0));
-    assert!(text.contains("0.144.5"));
+    assert!(text.contains("0.147.0"));
     assert!(text.contains("medium"));
 }
 
@@ -116,7 +116,7 @@ fn explain_shows_full_evidence_record() {
         "archived",
         "web.archive.org",
         "tested versions",
-        "<=0.144.5",
+        "<=0.147.0",
         "verified",
         "limitations",
         "unknown conditions",
@@ -156,7 +156,7 @@ fn explain_shows_full_evidence_record_for_a_claude_code_rule() {
         "archived",
         "web.archive.org",
         "tested versions",
-        "<=2.1.204",
+        "<=2.1.223",
         "verified",
         "limitations",
         "unknown conditions",
@@ -186,8 +186,8 @@ fn version_reports_binary_and_ruleset_separately() {
     let output = run_case("hardened", &["version"]);
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
-    assert!(text.contains("harness-guard 0.0.1"));
-    assert!(text.contains("ruleset 2026.07.17"));
+    assert!(text.contains("harness-guard 0.0.2"));
+    assert!(text.contains("ruleset 2026.08.13"));
 }
 
 #[test]
@@ -195,8 +195,8 @@ fn top_level_version_reports_binary_and_ruleset_separately() {
     let output = run_case("hardened", &["--version"]);
     assert_eq!(output.status.code(), Some(0));
     let text = String::from_utf8_lossy(&output.stdout);
-    assert!(text.contains("harness-guard 0.0.1"));
-    assert!(text.contains("ruleset 2026.07.17"));
+    assert!(text.contains("harness-guard 0.0.2"));
+    assert!(text.contains("ruleset 2026.08.13"));
 }
 
 #[test]

@@ -4,22 +4,35 @@
   "tool": "grok-build",
   "category": "telemetry",
   "title": "Product telemetry master switch",
-  "why_it_matters": "Grok Build's user guide documents [features] telemetry as the master switch for anonymous usage telemetry (SpaceXAI product telemetry). The OSS telemetry types accept a boolean or the string mode \"session_metrics\"; this rule observes only boolean true/false at the user-level config — string modes fall to unrecognized/unknown. Source defaults TelemetryMode to Disabled, but the user guide example shows telemetry = false as the explicit opt-out and other configuration layers (CLI flags, environment variables, managed/requirements config) are not inspected. This rule describes local posture only and does not claim wire-level upload behavior.",
+  "why_it_matters": "Grok Build's user guide documents [features] telemetry as the master switch for anonymous usage telemetry (SpaceXAI product telemetry). The OSS telemetry types accept a boolean or the string mode \"session_metrics\"; this rule observes only boolean true/false at the user-level config \u2014 string modes fall to unrecognized/unknown. Source defaults TelemetryMode to Disabled, but the user guide example shows telemetry = false as the explicit opt-out and other configuration layers (CLI flags, environment variables, managed/requirements config) are not inspected. This rule describes local posture only and does not claim wire-level upload behavior.",
   "unknown_subject": "product telemetry master-switch posture",
-  "os": ["macos", "linux"],
-  "scopes": ["user"],
+  "os": [
+    "macos",
+    "linux"
+  ],
+  "scopes": [
+    "user"
+  ],
   "auth_prerequisites": null,
   "observation": {
     "file": "config.toml",
     "key": "features.telemetry",
     "type": "bool",
-    "allowed_render": ["true", "false", "unset"]
+    "allowed_render": [
+      "true",
+      "false",
+      "unset"
+    ]
   },
   "outcomes": [
     {
       "when": "features.telemetry is explicitly false",
       "status": "pass",
-      "match": { "equals": { "value": false } },
+      "match": {
+        "equals": {
+          "value": false
+        }
+      },
       "severity": null,
       "confidence": "high",
       "message": "The inspected user-level config disables the product telemetry master switch (features.telemetry = false).",
@@ -28,7 +41,11 @@
     {
       "when": "features.telemetry is explicitly true in the user-level config",
       "status": "finding",
-      "match": { "equals": { "value": true } },
+      "match": {
+        "equals": {
+          "value": true
+        }
+      },
       "severity": "info",
       "confidence": "high",
       "message": "The inspected user-level config explicitly enables the product telemetry master switch (features.telemetry = true).",
@@ -40,7 +57,9 @@
     {
       "when": "features.telemetry is unset in the user-level config or the user-level config is absent",
       "status": "unknown",
-      "match": { "unset": true },
+      "match": {
+        "unset": true
+      },
       "severity": null,
       "confidence": null,
       "message": "Effective product telemetry master-switch posture cannot be determined from an unset user-level value because uninspected configuration layers may supply or override it.",
@@ -50,28 +69,34 @@
     {
       "when": "features.telemetry is set to a value outside boolean true/false (including string modes such as session_metrics)",
       "status": "unknown",
-      "match": { "unrecognized": true },
+      "match": {
+        "unrecognized": true
+      },
       "severity": null,
       "confidence": null,
-      "message": "features.telemetry is set to an unrecognized value — raw values are never displayed.",
-      "unknown_reason": "features.telemetry is set to an unrecognized value — raw values are never displayed",
+      "message": "features.telemetry is set to an unrecognized value \u2014 raw values are never displayed.",
+      "unknown_reason": "features.telemetry is set to an unrecognized value \u2014 raw values are never displayed",
       "verify_url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md"
     }
   ],
   "tested_versions": [
-    { "min": "<=0.2.102", "max": "0.2.102", "verified_on": "2026-07-17" }
+    {
+      "min": "<=1.0.3",
+      "max": "1.0.3",
+      "verified_on": "2026-08-13"
+    }
   ],
   "sources": [
     {
       "schema_version": "1.0",
       "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
       "publisher": "xAI",
-      "title": "Grok Build user guide — Configuration",
+      "title": "Grok Build user guide \u2014 Configuration",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-17",
-      "content_hash": "sha256:7b19d8b0cb8c589f672bc49a47d217de206f25ad4893b1233c02031cfd3a8319",
-      "archived_url": null,
-      "notes": "In-tree user guide at OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1 (retrieved 2026-07-17). Documents [features] telemetry = false as anonymous usage telemetry master switch, and the [telemetry] table for selective sub-controls. Prefer this OSS primary over lagging docs.x.ai when they disagree (owner decision 2026-07-17). Local posture only; no wire capture."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:cd16d3a9758ce038de942f83b86e4c3ac271fbd31b01afe7b83c32ddae4ec2b9",
+      "archived_url": "https://web.archive.org/web/20260813152448/https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
+      "notes": "In-tree user guide at OSS SOURCE_REV ba69d70c2f7d70a130a323b2becdf137af784c7f (retrieved 2026-07-17). Documents [features] telemetry = false as anonymous usage telemetry master switch, and the [telemetry] table for selective sub-controls. Prefer this OSS primary over lagging docs.x.ai when they disagree (owner decision 2026-07-17). Local posture only; no wire capture. Re-verified 2026-08-13 against channel/npm 1.0.3 and monorepo SOURCE_REV ea094a8c369475f97c85540d01730baec0dce5d6 (main tip e5fd4816d43260c15ba785f103990c1ed6cea230); observation keys and documented defaults unchanged through 1.0.3."
     },
     {
       "schema_version": "1.0",
@@ -79,17 +104,17 @@
       "publisher": "xAI",
       "title": "Grok Build telemetry configuration types",
       "evidence_class": "official-documentation",
-      "retrieved": "2026-07-17",
-      "content_hash": "sha256:11044f207a0894d0c0e2f729bc8c88fcc51b1b98a85d9eaadf85491b124a8e36",
-      "archived_url": null,
-      "notes": "OSS SOURCE_REV 124d85bc5dc6e7805560215fcc6d5413944920e1. TelemetryMode default is Disabled; wire format for [features] telemetry accepts bool or \"session_metrics\" string. String modes are outside this rule's bool observation domain."
+      "retrieved": "2026-08-13",
+      "content_hash": "sha256:4939cadc8d141187503eaad1a793a723b2d987333f6fb648a717c1f1f7da132f",
+      "archived_url": "https://web.archive.org/web/20260813152506/https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-telemetry/src/config.rs",
+      "notes": "OSS SOURCE_REV ba69d70c2f7d70a130a323b2becdf137af784c7f. TelemetryMode default is Disabled; wire format for [features] telemetry accepts bool or \"session_metrics\" string. String modes are outside this rule's bool observation domain. Re-verified 2026-08-13 against channel/npm 1.0.3 and monorepo SOURCE_REV ea094a8c369475f97c85540d01730baec0dce5d6 (main tip e5fd4816d43260c15ba785f103990c1ed6cea230); observation keys and documented defaults unchanged through 1.0.3."
     }
   ],
   "limitations": [
     "Only the user-level GROK_HOME/config.toml is inspected; CLI flags, environment variables, managed/requirements config, and project-scoped config are not inspected.",
     "An explicit user-level value describes that layer only and does not prove the effective value for every invocation.",
     "String telemetry modes such as \"session_metrics\" are outside the boolean observation domain and yield unrecognized/unknown.",
-    "This rule does not inspect wire-level uploads, Mixpanel, or session/trace upload behavior — local posture only.",
+    "This rule does not inspect wire-level uploads, Mixpanel, or session/trace upload behavior \u2014 local posture only.",
     "Auth/account state is user-confirmed-or-unknown; this rule never infers it."
   ],
   "unknown_conditions": [

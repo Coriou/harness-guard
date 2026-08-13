@@ -4,15 +4,15 @@
   "description": "Safe-looking values with a synthetic version beyond the tested range conservatively produce a stale-ruleset result for every grok-build rule.",
   "expected_report": {
     "schema_version": "1.1",
-    "ruleset_version": "2026.07.17",
+    "ruleset_version": "2026.08.13",
     "network_requests_made": 0,
     "tools": [
       {
         "tool": "grok-build",
         "detected_version": "9.9.9",
         "detection_confidence": "high",
-        "rules_last_verified_version": "0.2.102",
-        "rules_verified_date": "2026-07-17",
+        "rules_last_verified_version": "1.0.3",
+        "rules_verified_date": "2026-08-13",
         "version_in_range": false,
         "findings": [
           {
@@ -26,13 +26,13 @@
             "remediation": null,
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.2.102)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 1.0.3)"
           },
           {
             "rule_id": "grok-build-otel-prompt-log-01",
@@ -45,13 +45,13 @@
             "remediation": null,
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.2.102)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 1.0.3)"
           },
           {
             "rule_id": "grok-build-telemetry-01",
@@ -64,13 +64,13 @@
             "remediation": null,
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.2.102)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 1.0.3)"
           },
           {
             "rule_id": "grok-build-trace-upload-01",
@@ -83,13 +83,13 @@
             "remediation": null,
             "source": {
               "url": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md",
-              "retrieved": "2026-07-17"
+              "retrieved": "2026-08-13"
             },
-            "valid_from": "<=0.2.102",
-            "valid_until": "0.2.102",
+            "valid_from": "<=1.0.3",
+            "valid_until": "1.0.3",
             "unknown_reason": null,
             "verify_url": null,
-            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 0.2.102)"
+            "stale_reason": "detected version 9.9.9 is outside every tested range (max tested 1.0.3)"
           }
         ]
       }
